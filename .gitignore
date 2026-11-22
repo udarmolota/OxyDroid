@@ -41,3 +41,8 @@ box64/debian/changelog
 
 # Research notes and listings derived from the game files: kept locally
 /research/
+
+
+# IDE settings and CI workflows: kept locally, not published
+/.idea/
+/.github/
