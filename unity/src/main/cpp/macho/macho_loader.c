@@ -202,6 +202,7 @@ struct macho_lib {
     pthread_key_t tlv_key;
     int throws;                 /* imports __cxa_throw */
     uint64_t unwind_addr, unwind_size;   /* __unwind_info section, image offsets */
+    uint64_t ehframe_addr, ehframe_size; /* __eh_frame section (DWARF for a few functions), or 0 */
     const void* eh_frame;       /* the DWARF tables registered with the EH runtime, or NULL */
 };
 
@@ -314,6 +315,7 @@ static void macho_open_runtime(void) {
  * is missing the dylib's EH imports fall back to libc++_shared and a throw inside it aborts. */
 static void* (*macho_eh_symbol)(const char*) = NULL;
 static int (*macho_eh_register)(const void*) = NULL;
+static int (*macho_eh_register_range)(const void*, size_t) = NULL;
 static int macho_eh_opened = 0;
 
 static void macho_open_eh_runtime(void) {
@@ -328,6 +330,7 @@ static void macho_open_eh_runtime(void) {
     }
     macho_eh_symbol = (void* (*)(const char*))dlsym(h, "oxydroid_macho_eh_symbol");
     macho_eh_register = (int (*)(const void*))dlsym(h, "oxydroid_macho_eh_register");
+    macho_eh_register_range = (int (*)(const void*, size_t))dlsym(h, "oxydroid_macho_eh_register_range");
     int (*version)(void) = (int (*)(void))dlsym(h, "oxydroid_macho_eh_version");
     if (!macho_eh_symbol || !macho_eh_register) {
         LOG_REPORTED("[macho] EH runtime is incomplete: C++ exceptions inside a dylib will abort");
@@ -399,7 +402,7 @@ static int macho_import_is_layout_sensitive(const char* name) {
     return 0;
 }
 
-static void* macho_resolve_import(macho_lib_t* lib, const char* macho_name) {
+static void* macho_resolve_import_raw(macho_lib_t* lib, const char* macho_name) {
     /* One leading underscore is the C symbol convention on Darwin: "_memcpy", "__ZNSt...". */
     const char* name = (macho_name[0] == '_') ? macho_name + 1 : macho_name;
     const char* own_name = name;
@@ -440,6 +443,86 @@ static void* macho_resolve_import(macho_lib_t* lib, const char* macho_name) {
     if (own) return own;
 
     return dlsym(RTLD_DEFAULT, name);
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/*
+ * Constructors and destructors return `this` on Apple's arm64 (as on 32-bit ARM); under the generic
+ * AArch64 C++ ABI Android uses they return nothing. Apple's compiler relies on it: after
+ *     bl  SomeClass::~SomeClass()
+ * it goes on using x0 as the object. A destructor of the dylib that ends in a tail call to an
+ * imported one therefore hands its caller whatever the Android function left in x0. First seen as
+ * "delete (void*)1" in SimBase::DestroyTasks, whose ParallelTaskQueue destructor ends in
+ * std::thread's, std::mutex's and std::condition_variable's.
+ *
+ * So every imported complete/base constructor and destructor (C1, C2, D1, D2; not the deleting D0,
+ * which returns nothing on both sides) is reached through a few instructions that keep x0 over the
+ * call and return it. This covers libc++_shared's functions and our own shims alike. The extra
+ * frame would shift stack-passed arguments; no constructor these dylibs import has that many.
+ */
+#define MACHO_THIS_THUNK_SIZE 40
+#define MACHO_THIS_POOL_SIZE  (64u * 1024u)
+
+static uint8_t* macho_this_pool;
+static size_t macho_this_used;
+
+static int macho_name_is_ctor_or_dtor(const char* name) {
+    if (strncmp(name, "_ZN", 3) != 0 || name[3] == 'K') return 0;   /* a const method is never one */
+    return strstr(name, "C1E") || strstr(name, "C2E") || strstr(name, "D1E") || strstr(name, "D2E");
+}
+
+static void* macho_this_thunk(void* target) {
+    static const uint32_t code[8] = {
+        0xA9BE7BFDu,   /* stp  x29, x30, [sp, #-32]! */
+        0x910003FDu,   /* mov  x29, sp               */
+        0xF9000BE0u,   /* str  x0, [sp, #16]         */
+        0x580000B0u,   /* ldr  x16, target (pc + 20) */
+        0xD63F0200u,   /* blr  x16                   */
+        0xF9400BE0u,   /* ldr  x0, [sp, #16]         */
+        0xA8C27BFDu,   /* ldp  x29, x30, [sp], #32   */
+        0xD65F03C0u,   /* ret                        */
+    };
+    if (!macho_this_pool) {
+        void* m = mmap(NULL, MACHO_THIS_POOL_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        if (m == MAP_FAILED) return NULL;
+        macho_this_pool = m;
+        macho_this_used = 0;
+    }
+    if (macho_this_used + MACHO_THIS_THUNK_SIZE > MACHO_THIS_POOL_SIZE) return NULL;
+    uint8_t* t = macho_this_pool + macho_this_used;
+    macho_this_used += MACHO_THIS_THUNK_SIZE;
+    memcpy(t, code, sizeof(code));
+    uint64_t addr = (uint64_t)(uintptr_t)target;
+    memcpy(t + sizeof(code), &addr, sizeof(addr));
+    return t;
+}
+
+/* The thunks written while binding become executable (and stop being writable) before any code of
+ * the dylib runs. A later load starts a new pool. */
+static const char* macho_this_seal(const macho_lib_t* lib) {
+    if (!macho_this_pool) return NULL;
+    int count = (int)(macho_this_used / MACHO_THIS_THUNK_SIZE);
+    __builtin___clear_cache((char*)macho_this_pool, (char*)macho_this_pool + macho_this_used);
+    if (mprotect(macho_this_pool, MACHO_THIS_POOL_SIZE, PROT_READ | PROT_EXEC) != 0)
+        return "mprotect of the constructor thunks failed";
+    LOGI("[macho] %s: %d imported constructors/destructors return this through thunks", lib->name, count);
+    macho_this_pool = NULL;
+    macho_this_used = 0;
+    return NULL;
+}
+
+void* macho_dlsym(macho_lib_t* lib, const char* name);
+
+static void* macho_resolve_import(macho_lib_t* lib, const char* macho_name) {
+    void* addr = macho_resolve_import_raw(lib, macho_name);
+    if (!addr) return NULL;
+    const char* name = (macho_name[0] == '_') ? macho_name + 1 : macho_name;
+    if (!macho_name_is_ctor_or_dtor(name)) return addr;
+    /* The image's own definitions (weak binds) are Apple code and return this already. */
+    if (lib->base && (uint8_t*)addr >= lib->base && (uint8_t*)addr < lib->base + lib->map_size) return addr;
+    void* thunk = macho_this_thunk(addr);
+    if (!thunk) LOG_REPORTED("[macho] %s: no room for a constructor thunk (%s)", lib->name, name);
+    return thunk;
 }
 
 /* ------------------------------------------------------------------------------------------ */
@@ -596,14 +679,25 @@ static const char* macho_apply_binds(macho_load_ctx_t* ctx, const uint8_t* p, co
             if (p >= end) return "unterminated symbol name in bind stream";
             p++;
             sym_addr = macho_resolve_import(lib, sym);
-            sym_missing = (sym_addr == NULL);
-            if (sym_missing) macho_note_unresolved(ctx, sym);
             if (macho_import_is_layout_sensitive(sym)
                     && !macho_string_import(sym[0] == '_' ? sym + 1 : sym)) {
-                if (ctx->nlayout_conflict < MACHO_MAX_UNRESOLVED)
-                    ctx->layout_conflict[ctx->nlayout_conflict] = strdup(sym);
-                ctx->nlayout_conflict++;
+                /* A name with std::string in it that no shim serves. The weak-bind table is full of
+                 * such names that are the image's own: template instantiations and the guard
+                 * variables of function-local statics (SimDLL's httplib has fourteen). Those are
+                 * compiled for Apple's layout and only ever met by the image's code, so its own
+                 * definition is taken, ahead of a same-named Android one. Only a name the image
+                 * does not define is a real import of the other layout, and refuses the load. */
+                void* own = macho_dlsym(lib, sym[0] == '_' ? sym + 1 : sym);
+                if (own) {
+                    sym_addr = own;
+                } else {
+                    if (ctx->nlayout_conflict < MACHO_MAX_UNRESOLVED)
+                        ctx->layout_conflict[ctx->nlayout_conflict] = strdup(sym);
+                    ctx->nlayout_conflict++;
+                }
             }
+            sym_missing = (sym_addr == NULL);
+            if (sym_missing) macho_note_unresolved(ctx, sym);
             break;
         }
         case BIND_OPCODE_SET_TYPE_IMM:
@@ -767,6 +861,10 @@ static const char* macho_parse_commands(macho_load_ctx_t* ctx, const mach_header
                 if (strncmp(sect->sectname, "__unwind_info", 16) == 0) {
                     lib->unwind_addr = sect->addr;
                     lib->unwind_size = sect->size;
+                }
+                if (strncmp(sect->sectname, "__eh_frame", 16) == 0) {
+                    lib->ehframe_addr = sect->addr;
+                    lib->ehframe_size = sect->size;
                 }
                 if ((sect->flags & (S_ATTR_PURE_INSTRUCTIONS | S_ATTR_SOME_INSTRUCTIONS)) && sect->size) {
                     if (ctx->ncode == MACHO_MAX_CODE_SECTS) return "too many code sections";
@@ -1215,6 +1313,10 @@ macho_lib_t* macho_load(const char* path) {
         return macho_reject(&ctx, file, name, why);
     }
 
+    /* --- constructor/destructor thunks: executable from here on --- */
+    err = macho_this_seal(lib);
+    if (err) return macho_reject(&ctx, file, name, err);
+
     /* --- thread-local variables: descriptors keyed to this image, while __DATA is writable --- */
     err = macho_tlv_setup(lib);
     if (err) return macho_reject(&ctx, file, name, err);
@@ -1271,6 +1373,16 @@ macho_lib_t* macho_load(const char* path) {
             }
             lib->eh_frame = eh_frame;
             LOGI("[macho] %s: %u unwind entries registered, %u with handlers", lib->name, nfde, nlsda);
+            /* The functions the compact table sends to DWARF: the dylib's own FDEs, in place (they
+             * address code and handler tables relative to themselves). */
+            if (lib->ehframe_size) {
+                if (lib->ehframe_addr + lib->ehframe_size > lib->map_size)
+                    return macho_reject(&ctx, file, name, "__eh_frame outside the image");
+                if (!macho_eh_register_range)
+                    return macho_reject(&ctx, file, name, "EH runtime too old for a dylib with __eh_frame");
+                int dwarf = macho_eh_register_range(lib->base + lib->ehframe_addr, (size_t)lib->ehframe_size);
+                LOGI("[macho] %s: %d DWARF unwind entries registered from __eh_frame", lib->name, dwarf);
+            }
         }
     } else if (lib->throws) {
         LOG_REPORTED("[macho] %s throws C++ exceptions but has no usable unwind support here: a throw "

@@ -220,3 +220,16 @@ target_link_libraries(oxydroid_exec
     oxydroid
     log
     android)
+
+# ---------------------------------------------------------------------------
+# liboxydroidtex.so — the game's BC textures converted once to ASTC, in place, for GPUs without BC
+# formats (Mali, PowerVR): texconv/texconv.cpp behind game/TextureConverter.java. astcenc (Arm,
+# Apache 2.0) encodes, bcdec (MIT) decodes. Always -O3: a block encoder at -O0 is ten times slower
+# and the pass runs while the player waits.
+# ---------------------------------------------------------------------------
+file(GLOB ASTCENC_SOURCES texconv/astcenc/astcenc_*.cpp)
+add_library(oxydroidtex SHARED texconv/texconv.cpp ${ASTCENC_SOURCES})
+target_compile_definitions(oxydroidtex PRIVATE
+    ASTCENC_NEON=1 ASTCENC_SVE=0 ASTCENC_SSE=0 ASTCENC_AVX=0 ASTCENC_POPCNT=0 ASTCENC_F16C=0)
+target_compile_options(oxydroidtex PRIVATE -O3)
+target_link_libraries(oxydroidtex log dl)

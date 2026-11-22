@@ -207,6 +207,7 @@
 
                     <Button
                         android:id="@+id/btn_transfer_icon_packs"
+                        android:visibility="gone"
                         style="@style/AppTheme.TransferButton.Outlined"
                         android:text="@string/transfer_icons_button" />
                 </LinearLayout>

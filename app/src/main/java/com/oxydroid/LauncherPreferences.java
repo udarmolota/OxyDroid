@@ -172,15 +172,16 @@ public class LauncherPreferences {
     // can go down to ~50% (720/1440). A fixed percentage floor would force a high-res
     // "potato" to render needlessly many pixels (→ 5 FPS), so the real floor is
     // computed per device by minRenderScalePercent(); the stored value is only clamped
-    // to a sane absolute range. Default: the device floor (RENDER_SCALE_ABS_MIN, raised to
-    // minRenderScalePercent() when applied) — the lightest option, so the most phones can run it.
+    // to a sane absolute range. Default: the highest scale offered (RENDER_SCALE_MAX_OFFERED).
+    // Oxygen Not Included is 2D and light on the GPU, and at a low resolution its interface, which
+    // the game sizes in pixels, grows until the buttons leave the screen. A weak phone can lower it.
     public static final int RENDER_SCALE_ABS_MIN = 25;
     // Highest scale the settings offer (72% = 778 rows on a 1080p panel). 85% and native were too
     // heavy for phones; a value stored before they were removed is capped here when applied.
     public static final int RENDER_SCALE_MAX_OFFERED = 72;
 
     public int getRenderScalePercent() {
-        int v = prefs.getInt("render_scale_pct", RENDER_SCALE_ABS_MIN);
+        int v = prefs.getInt("render_scale_pct", RENDER_SCALE_MAX_OFFERED);
         return Math.max(RENDER_SCALE_ABS_MIN, Math.min(100, v));
     }
 
@@ -192,16 +193,17 @@ public class LauncherPreferences {
     public float getRenderScale() { return getRenderScalePercent() / 100f; }
 
     /**
-     * Lowest render-scale percent that still yields a &gt;=960x540 internal resolution
+     * Lowest render-scale percent that still yields a &gt;=1152x648 internal resolution
      * for the given physical surface, so high-res phones can scale further down than
      * low-res ones. Pass landscape dimensions (the larger value as width). Clamped to
      * [RENDER_SCALE_ABS_MIN, 100].
      */
     public static int minRenderScalePercent(int surfaceW, int surfaceH) {
-        // Valheim scales its UI to any resolution; the old 1280x720 floor was RimWorld's UI minimum.
-        // Floor at 960x540 so the render scale can go well below 72% on 1080p-class panels.
-        if (surfaceW <= 0 || surfaceH <= 0) return 50;   // safe fallback (1080p floor)
-        double need = Math.max(960.0 / surfaceW, 540.0 / surfaceH);
+        // Oxygen Not Included sizes its interface in pixels and has screens taller than a 540-row
+        // frame can show at any readable size (the duplicant selection of a new colony: its buttons
+        // end up below the screen). 648 rows is the lowest that fits; on a 1080p panel that is 60%.
+        if (surfaceW <= 0 || surfaceH <= 0) return 60;   // safe fallback (1080p floor)
+        double need = Math.max(1152.0 / surfaceW, 648.0 / surfaceH);
         int pct = (int) Math.ceil(need * 100.0);
         return Math.max(RENDER_SCALE_ABS_MIN, Math.min(100, pct));
     }

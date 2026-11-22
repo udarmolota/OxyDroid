@@ -92,6 +92,15 @@ public final class NativeEngine {
      */
     public static Intent prepare(Context context, GameInstance instance, com.oxydroid.SteamTicketLogin.Result steam)
             throws IOException {
+        return prepare(context, instance, steam, null);
+    }
+
+    /**
+     * As above; {@code textures} hears about the one-time conversion of the game's textures to ASTC,
+     * which a GPU without BC formats needs (TextureConverter) and which takes minutes.
+     */
+    public static Intent prepare(Context context, GameInstance instance, com.oxydroid.SteamTicketLogin.Result steam,
+                                 TextureConverter.Progress textures) throws IOException {
         File gameDir = new File(instance.getGamePath());
         File dataDir = new File(gameDir, instance.getDataDirectoryName());
         if (!new File(dataDir, "globalgamemanagers").isFile())
@@ -106,10 +115,22 @@ public final class NativeEngine {
         File workDir = new File(gameDir, "native_engine");
         if (!workDir.isDirectory() && !workDir.mkdirs()) throw new IOException("cannot create " + workDir);
 
+        // Before the data archive is built from these files: it then takes the converted ones.
+        // OXYDROID_FAKE_MALI=1 in the environment field: a test of the no-BC path on a GPU that has
+        // BC. The textures are converted as on a Mali, the cinematics are off as there, and the Vulkan
+        // shim (vkshim.c, which reads the variable itself) hides the BC formats from the engine.
+        String astc = userEnvironmentValue(instance.settings(), TextureConverter.ENV);
+        if (astc == null && fakeMali(instance.settings())) astc = "1";
+        if (TextureConverter.wanted(astc)) {
+            for (String line : TextureConverter.convertIfNeeded(dataDir, workDir, textures))
+                com.oxydroid.LauncherLog.line("textures: " + line);
+        }
+
         long apkStamp = apkStamp(context);
         File overrides = extractManagedOverrides(context, apkStamp);
         File archive = buildDataArchive(context, dataDir, workDir, apkStamp);
         File etc = prepareMonoConfig(dataDir, workDir);
+        seedGameDefaults(instance.getUserDataDir());
 
         List<String> env = new ArrayList<>();
         env.add("OXYDROID_IL2MONO_MANAGED=" + overrides.getAbsolutePath() + ":" + new File(dataDir, "Managed").getAbsolutePath());
@@ -153,7 +174,11 @@ public final class NativeEngine {
             if (e.startsWith(NO_SECONDARY + "=")) secondary = e.substring(NO_SECONDARY.length() + 1);
             if (e.startsWith("OXYDROID_UNITY_ARGS=")) userArgs = e.substring("OXYDROID_UNITY_ARGS=".length());
         }
-        if ("1".equals(secondary)) unityArgs.append("-vulkan-disable-secondary-commandbuffers");
+        // Vulkan, always: the game's Linux build lists OpenGL Core before Vulkan, the Android player takes
+        // the first entry for OpenGL ES, and the game has no GLES shaders ("Your device does not match the
+        // hardware requirements of this application").
+        unityArgs.append("-force-vulkan");
+        if ("1".equals(secondary)) unityArgs.append(" -vulkan-disable-secondary-commandbuffers");
         if (userArgs != null && !userArgs.isEmpty())
             unityArgs.append(unityArgs.length() > 0 ? " " : "").append(userArgs.replace(',', ' '));
         if (unityArgs.length() > 0) intent.putExtra("unity", unityArgs.toString());
@@ -197,7 +222,7 @@ public final class NativeEngine {
         // Mali: the game's cinematics are off (bridge NoCinematics.cs; OXYDROID_SKIP_VIDEO=0 in the user's
         // environment turns them back on). Starting the intro lost the GPU on a Mali-G615 and froze the
         // picture; weaker Mali decoders refuse the clip anyway.
-        if (com.oxydroid.GpuInfo.isMali()) env.add("OXYDROID_SKIP_VIDEO=1");
+        if (com.oxydroid.GpuInfo.isMali() || fakeMali(is)) env.add("OXYDROID_SKIP_VIDEO=1");
         // The landscape the overlay locks the activity to, for the bridge to lock the player to as well.
         if (is.isReverseLandscape()) env.add("OXYDROID_REVERSE_LANDSCAPE=1");
         if (is.getHudScale() > 100) env.add("OXYDROID_HUD_SCALE=" + is.getHudScale());
@@ -258,6 +283,20 @@ public final class NativeEngine {
                 token = VULKAN_DRIVER + "=" + vulkanDriverPath(context, token.substring(eq + 1));
             env.add(token);
         }
+    }
+
+    /** OXYDROID_FAKE_MALI=1 in the instance's environment field (see prepare). */
+    private static boolean fakeMali(com.oxydroid.InstanceSettings is) {
+        return "1".equals(userEnvironmentValue(is, "OXYDROID_FAKE_MALI"));
+    }
+
+    /** The value NAME has in the instance's environment field, or null. */
+    private static String userEnvironmentValue(com.oxydroid.InstanceSettings is, String name) {
+        String raw = is.getEnvVars();
+        if (raw == null) return null;
+        for (String token : raw.trim().split("\\s+"))
+            if (token.startsWith(name + "=")) return token.substring(name.length() + 1);
+        return null;
     }
 
     private static final String VULKAN_DRIVER = "OXYDROID_VULKAN_DRIVER";
@@ -513,6 +552,52 @@ public final class NativeEngine {
     }
 
     /**
+     * The game's own settings a phone wants from the first launch, written into its settings file
+     * (kplayerprefs.yaml: three maps, "strings", "ints" and "floats") only where the key is not there
+     * yet, so whatever the player sets in the game's options stays:
+     * <ul>
+     * <li>LowResTextures = 1, the game's "Low resolution textures": the PC textures at full size took
+     * 2.8 GB of graphics memory on a phone, 1.3 GB with this on;</li>
+     * <li>UIScalePref = 110, the "UI size" slider in percent (chosen at the default render resolution,
+     * the highest the launcher offers; the game draws its interface larger at lower resolutions): the PC interface is too small to read
+     * and to hit on a phone screen.</li>
+     * </ul>
+     * Best-effort: a failure here must not stop the launch.
+     */
+    static void seedGameDefaults(File userDataDir) {
+        try {
+            File prefs = new File(userDataDir, "kplayerprefs.yaml");
+            // A new file carries all three maps: the game reads each of them without a null check.
+            String text = prefs.isFile() ? new String(readFile(prefs), StandardCharsets.UTF_8)
+                    : "strings: {}\nints: {}\nfloats: {}\n";
+            String seeded = seedPref(seedPref(text, "ints", "LowResTextures", "1"), "floats", "UIScalePref", "110");
+            if (seeded.equals(text)) return;
+            if (!userDataDir.isDirectory() && !userDataDir.mkdirs()) return;
+            try (OutputStream out = new FileOutputStream(prefs)) {
+                out.write(seeded.getBytes(StandardCharsets.UTF_8));
+            }
+            Log.i(TAG, "game defaults written to " + prefs);
+        } catch (Exception e) {
+            Log.w(TAG, "game defaults not written", e);
+        }
+    }
+
+    /** Adds "  key: value" to a top-level map of the settings file unless the key is already in the file. */
+    static String seedPref(String yaml, String section, String key, String value) {
+        String entry = "  " + key + ": " + value + "\n";
+        if (yaml.contains("\n  " + key + ":") || yaml.startsWith("  " + key + ":")) return yaml;
+        String text = (yaml.isEmpty() || yaml.endsWith("\n")) ? yaml : yaml + "\n";
+        String head = section + ":";
+        int at = text.startsWith(head) ? 0 : text.indexOf("\n" + head);
+        if (at < 0) return text + head + "\n" + entry;            // no such map yet
+        if (at > 0) at++;                                          // past the newline before it
+        int lineEnd = text.indexOf('\n', at);
+        if (lineEnd < 0) lineEnd = text.length();
+        // "ints:" alone opens a block; anything after the colon ("ints: {}") is an empty inline map.
+        return text.substring(0, at) + head + "\n" + entry + text.substring(Math.min(lineEnd + 1, text.length()));
+    }
+
+    /**
      * Where the launcher keeps the macOS build's SimDLL inside a game folder: {@code macos/SimDLL}, a
      * copy of {@code OxygenNotIncluded.app/Contents/PlugIns/SimDLL.bundle/Contents/MacOS/SimDLL}.
      */
@@ -547,7 +632,13 @@ public final class NativeEngine {
                             "<dllmap dll=\"System.Native\" target=\"libmono-native.so\" os=\"!windows\">"
                             + "<dllentry dll=\"libil2cpp.so\" name=\"SystemNative_Stat2\" target=\"il2mono_stat2\"/>"
                             + "<dllentry dll=\"libil2cpp.so\" name=\"SystemNative_LStat2\" target=\"il2mono_lstat2\"/>"
-                            + "</dllmap>")
+                            + "</dllmap>\n"
+                            // Mono takes a library's target from the entry it meets first, and it meets
+                            // the newest first: with the entries above alone, every System.Native
+                            // function was looked up in libil2cpp.so (EntryPointNotFoundException at the
+                            // game's first file check). This plain entry, read last, is met first; the
+                            // two entries above still win for their own functions.
+                            + "\t<dllmap dll=\"System.Native\" target=\"libmono-native.so\" os=\"!windows\" />")
                     .replace("$mono_libdir/libmono-native.so", "libmono-native.so")
                     .replace("target=\"libc.so.6\"", "target=\"libc.so\"")
                     .replace("</configuration>",

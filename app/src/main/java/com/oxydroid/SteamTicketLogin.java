@@ -43,7 +43,8 @@ import in.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback;
  */
 public class SteamTicketLogin implements Runnable {
     private static final String TAG = "OxyDroid/Crossplay";
-    private static final int VALHEIM = 892970;
+    /** Oxygen Not Included on Steam. */
+    private static final int GAME = SteamDownloadSpike.APP_ID;
     /** How long the Steam session outlives the ticket: game start (about a minute) plus PlayFab's check. */
     public static final long HOLD_MS = 5 * 60 * 1000L;
 
@@ -191,7 +192,7 @@ public class SteamTicketLogin implements Runnable {
             }
             listener.onProgress("ticket");
             SteamAuthTicket tickets = steamClient.getHandler(SteamAuthTicket.class);
-            ticket = tickets.getAuthSessionTicket(VALHEIM).get(30, TimeUnit.SECONDS);
+            ticket = tickets.getAuthSessionTicket(GAME).get(30, TimeUnit.SECONDS);
             writeTicket(ticket.getTicket());
             accountInfo.await(5, TimeUnit.SECONDS);   // the name comes in its own message after the logon
             long steamId = steamClient.getSteamID().convertToUInt64();

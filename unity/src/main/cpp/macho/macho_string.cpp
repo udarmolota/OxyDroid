@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <system_error>
 #include <limits>
+#include <locale>
 #include <string>
 #include <thread>
 #include <pthread.h>
@@ -115,6 +116,31 @@ extern "C" macho_string macho_string_from_int(int value) {
     macho_string result{};
     return *macho_string_assign(&result, buffer);
 }
+// Functions that RETURN a std::string. The return type is not part of a function's mangled name, so
+// the loader's layout guard cannot see these: bound to Android's libc++ they would hand an
+// Android-layout string to code that reads Apple's. Each builds the Apple object itself.
+static macho_string string_from_chars(const char* text, size_t count) {
+    macho_string result = allocate(count);
+    if (count) std::memcpy(data(&result), text, count);
+    return result;
+}
+static macho_string string_from_ulong(unsigned long value) {
+    char buffer[32];
+    int n = std::snprintf(buffer, sizeof(buffer), "%lu", value);
+    return string_from_chars(buffer, n > 0 ? static_cast<size_t>(n) : 0);
+}
+static macho_string string_from_ulonglong(unsigned long long value) {
+    char buffer[32];
+    int n = std::snprintf(buffer, sizeof(buffer), "%llu", value);
+    return string_from_chars(buffer, n > 0 ? static_cast<size_t>(n) : 0);
+}
+// std::locale::name() const. A locale is one pointer in both libraries, so Android's own method
+// answers; only its result is rebuilt.
+static macho_string locale_name(const std::locale* self) {
+    const std::string name = self->name();
+    return string_from_chars(name.data(), name.size());
+}
+
 static void random_construct(void*, const macho_string* token) {
     // Darwin's arc4random implementation owns no file descriptor. Never write an Android
     // random_device into the (potentially one-byte) Apple object.
@@ -314,6 +340,8 @@ extern "C" void* macho_string_import(const char* name) {
         B("_ZNSt3__118condition_variableD1Ev", cond_destroy), B("_ZNSt3__118condition_variableD2Ev", cond_destroy),
         B("_ZNSt3__119__thread_local_dataEv", thread_local_data),
         B("_ZNSt3__19to_stringEi", macho_string_from_int),
+        B("_ZNSt3__19to_stringEm", string_from_ulong), B("_ZNSt3__19to_stringEy", string_from_ulonglong),
+        B("_ZNKSt3__16locale4nameEv", locale_name),
         B("_ZNSt3__1plIcNS_11char_traitsIcEENS_9allocatorIcEEEENS_12basic_stringIT_T0_T1_EEPKS6_RKS9_", macho_string_concat),
         B("_ZNSt3__113random_deviceC1ERKNS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEE", random_construct),
         B("_ZNSt3__113random_deviceD1Ev", random_destroy), B("_ZNSt3__113random_deviceclEv", random_next),

@@ -260,6 +260,35 @@ public class NativeUnityActivity extends Activity
         mUnityPlayer.permissionResponse(this, requestCode, permissions, grantResults);
     }
 
+    /**
+     * Landscape only. The player applies the default orientation stored in the game's data on start;
+     * a PC build leaves that at "portrait", where it means nothing, and here it turned the window
+     * upright for a moment. The player then kept drawing a portrait frame, which the system stretched
+     * over the landscape screen. Portrait requests are answered with landscape; the overlay's own
+     * choice between the two landscapes passes through.
+     */
+    @Override public void setRequestedOrientation(int requested) {
+        switch (requested) {
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE:
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE:
+                super.setRequestedOrientation(requested);
+                break;
+            default:
+                super.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+        }
+    }
+
+    /**
+     * Input from the launcher's overlay (on-screen controls, gestures): a mouse or key event as a USB
+     * mouse or keyboard would send it, in this view's own pixels. Called by reflection from the app
+     * module (game.PlayerInput), on the UI thread.
+     */
+    public boolean injectInputEvent(android.view.InputEvent event) {
+        return mUnityPlayer != null && mUnityPlayer.injectEvent(event);
+    }
+
     // Events no view handled go straight to the player.
     @Override public boolean onKeyUp(int keyCode, KeyEvent event) { return mUnityPlayer.getFrameLayout().onKeyUp(keyCode, event); }
     @Override public boolean onKeyDown(int keyCode, KeyEvent event) { return mUnityPlayer.getFrameLayout().onKeyDown(keyCode, event); }

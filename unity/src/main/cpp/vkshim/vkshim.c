@@ -49,6 +49,10 @@ static PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR real_surface_caps;
 static PFN_vkGetPhysicalDeviceFeatures real_gpu_features;
 static PFN_vkGetPhysicalDeviceFormatProperties real_format_props;
 static PFN_vkGetPhysicalDeviceProperties real_gpu_props;
+static PFN_vkGetPhysicalDeviceFeatures2 real_gpu_features2;
+static PFN_vkGetPhysicalDeviceFormatProperties2 real_format_props2;
+static PFN_vkGetPhysicalDeviceImageFormatProperties real_image_format_props;
+static PFN_vkGetPhysicalDeviceImageFormatProperties2 real_image_format_props2;
 static PFN_vkGetPhysicalDeviceProperties2 real_gpu_props2;
 
 // Device-level calls, per device. A queue shares its device's dispatch table, so the first word of
@@ -105,6 +109,12 @@ static void load_real(void)
     real_gpu_features = (PFN_vkGetPhysicalDeviceFeatures)SYM("vkGetPhysicalDeviceFeatures");
     real_format_props = (PFN_vkGetPhysicalDeviceFormatProperties)SYM("vkGetPhysicalDeviceFormatProperties");
     real_gpu_props = (PFN_vkGetPhysicalDeviceProperties)SYM("vkGetPhysicalDeviceProperties");
+    real_gpu_features2 = (PFN_vkGetPhysicalDeviceFeatures2)SYM("vkGetPhysicalDeviceFeatures2");
+    real_format_props2 = (PFN_vkGetPhysicalDeviceFormatProperties2)SYM("vkGetPhysicalDeviceFormatProperties2");
+    real_image_format_props =
+        (PFN_vkGetPhysicalDeviceImageFormatProperties)SYM("vkGetPhysicalDeviceImageFormatProperties");
+    real_image_format_props2 =
+        (PFN_vkGetPhysicalDeviceImageFormatProperties2)SYM("vkGetPhysicalDeviceImageFormatProperties2");
     real_gpu_props2 = (PFN_vkGetPhysicalDeviceProperties2)SYM("vkGetPhysicalDeviceProperties2");
     DeviceFns* t = &g_trampolines;
     t->create_swapchain = (PFN_vkCreateSwapchainKHR)SYM("vkCreateSwapchainKHR");
@@ -888,6 +898,111 @@ EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetDeviceProcAddr(VkDevice dev
     return hook ? hook : real;
 }
 
+// ------------------------------------------------------------------ a GPU without BC, pretended
+// OXYDROID_FAKE_MALI=1 (the instance's environment field): the engine is told the GPU has no BC
+// texture formats, as on a Mali or PowerVR, on a phone whose GPU has them. Unity then unpacks any BC
+// texture it still meets to RGBA32, as it would there, so what the ASTC conversion
+// (app/.../texconv) missed shows in the memory figures on an Adreno test phone. Only the answers to
+// the engine's questions change; the driver, its shader compiler and its faults stay the phone's own.
+
+static bool fake_no_bc(void)
+{
+    static int on = -1;
+    if (on < 0) {
+        const char* v = getenv("OXYDROID_FAKE_MALI");
+        on = v && v[0] == '1';
+        if (on)
+            LOG("OXYDROID_FAKE_MALI: BC texture formats are hidden from the engine");
+    }
+    return on;
+}
+
+static bool is_bc(VkFormat f)
+{
+    return f >= VK_FORMAT_BC1_RGB_UNORM_BLOCK && f <= VK_FORMAT_BC7_SRGB_BLOCK;
+}
+
+static VKAPI_ATTR void VKAPI_CALL shim_GetPhysicalDeviceFeatures(VkPhysicalDevice gpu, VkPhysicalDeviceFeatures* f)
+{
+    if (!real_gpu_features)
+        return;
+    real_gpu_features(gpu, f);
+    if (f && fake_no_bc())
+        f->textureCompressionBC = VK_FALSE;
+}
+
+static VKAPI_ATTR void VKAPI_CALL shim_GetPhysicalDeviceFeatures2(VkPhysicalDevice gpu, VkPhysicalDeviceFeatures2* f)
+{
+    if (!real_gpu_features2)
+        return;
+    real_gpu_features2(gpu, f);
+    if (f && fake_no_bc())
+        f->features.textureCompressionBC = VK_FALSE;
+}
+
+static VKAPI_ATTR void VKAPI_CALL shim_GetPhysicalDeviceFormatProperties(VkPhysicalDevice gpu, VkFormat format,
+                                                                        VkFormatProperties* p)
+{
+    if (!real_format_props)
+        return;
+    real_format_props(gpu, format, p);
+    if (p && is_bc(format) && fake_no_bc())
+        memset(p, 0, sizeof(*p));
+}
+
+static VKAPI_ATTR void VKAPI_CALL shim_GetPhysicalDeviceFormatProperties2(VkPhysicalDevice gpu, VkFormat format,
+                                                                         VkFormatProperties2* p)
+{
+    if (!real_format_props2)
+        return;
+    real_format_props2(gpu, format, p);
+    if (p && is_bc(format) && fake_no_bc())
+        memset(&p->formatProperties, 0, sizeof(p->formatProperties));
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL shim_GetPhysicalDeviceImageFormatProperties(
+    VkPhysicalDevice gpu, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage,
+    VkImageCreateFlags flags, VkImageFormatProperties* p)
+{
+    if (is_bc(format) && fake_no_bc())
+        return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    if (!real_image_format_props)
+        return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    return real_image_format_props(gpu, format, type, tiling, usage, flags, p);
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL shim_GetPhysicalDeviceImageFormatProperties2(
+    VkPhysicalDevice gpu, const VkPhysicalDeviceImageFormatInfo2* info, VkImageFormatProperties2* p)
+{
+    if (info && is_bc(info->format) && fake_no_bc())
+        return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    if (!real_image_format_props2)
+        return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    return real_image_format_props2(gpu, info, p);
+}
+
+// The wrapper for an instance-level format question, or NULL when it is not one (or its real
+// function is missing from the loader). The KHR names of the 1.1 calls get the same wrappers.
+static PFN_vkVoidFunction format_hook(const char* name)
+{
+    if (!strcmp(name, "vkGetPhysicalDeviceFeatures") && real_gpu_features)
+        return (PFN_vkVoidFunction)shim_GetPhysicalDeviceFeatures;
+    if ((!strcmp(name, "vkGetPhysicalDeviceFeatures2") || !strcmp(name, "vkGetPhysicalDeviceFeatures2KHR"))
+        && real_gpu_features2)
+        return (PFN_vkVoidFunction)shim_GetPhysicalDeviceFeatures2;
+    if (!strcmp(name, "vkGetPhysicalDeviceFormatProperties") && real_format_props)
+        return (PFN_vkVoidFunction)shim_GetPhysicalDeviceFormatProperties;
+    if ((!strcmp(name, "vkGetPhysicalDeviceFormatProperties2")
+         || !strcmp(name, "vkGetPhysicalDeviceFormatProperties2KHR")) && real_format_props2)
+        return (PFN_vkVoidFunction)shim_GetPhysicalDeviceFormatProperties2;
+    if (!strcmp(name, "vkGetPhysicalDeviceImageFormatProperties") && real_image_format_props)
+        return (PFN_vkVoidFunction)shim_GetPhysicalDeviceImageFormatProperties;
+    if ((!strcmp(name, "vkGetPhysicalDeviceImageFormatProperties2")
+         || !strcmp(name, "vkGetPhysicalDeviceImageFormatProperties2KHR")) && real_image_format_props2)
+        return (PFN_vkVoidFunction)shim_GetPhysicalDeviceImageFormatProperties2;
+    return NULL;
+}
+
 EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instance, const char* name)
 {
     load_real();
@@ -908,6 +1023,11 @@ EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance
         return (PFN_vkVoidFunction)shim_DestroySurfaceKHR;
     if (!strcmp(name, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"))
         return (PFN_vkVoidFunction)shim_GetPhysicalDeviceSurfaceCapabilitiesKHR;
+    if (fake_no_bc()) {   // only then: otherwise the engine keeps talking to the loader directly
+        PFN_vkVoidFunction format = format_hook(name);
+        if (format)
+            return format;
+    }
     PFN_vkVoidFunction hook = device_hook(name);
     return hook ? hook : real;
 }
@@ -918,6 +1038,21 @@ EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance
 EXPORT VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(VkPhysicalDevice g, const VkDeviceCreateInfo* i,
                                                     const VkAllocationCallbacks* a, VkDevice* d)
 { return shim_CreateDevice(g, i, a, d); }
+EXPORT VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures(VkPhysicalDevice g, VkPhysicalDeviceFeatures* f)
+{ load_real(); shim_GetPhysicalDeviceFeatures(g, f); }
+EXPORT VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(VkPhysicalDevice g, VkPhysicalDeviceFeatures2* f)
+{ load_real(); shim_GetPhysicalDeviceFeatures2(g, f); }
+EXPORT VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties(VkPhysicalDevice g, VkFormat f, VkFormatProperties* p)
+{ load_real(); shim_GetPhysicalDeviceFormatProperties(g, f, p); }
+EXPORT VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2(VkPhysicalDevice g, VkFormat f, VkFormatProperties2* p)
+{ load_real(); shim_GetPhysicalDeviceFormatProperties2(g, f, p); }
+EXPORT VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties(
+    VkPhysicalDevice g, VkFormat f, VkImageType t, VkImageTiling l, VkImageUsageFlags u, VkImageCreateFlags c,
+    VkImageFormatProperties* p)
+{ load_real(); return shim_GetPhysicalDeviceImageFormatProperties(g, f, t, l, u, c, p); }
+EXPORT VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2(
+    VkPhysicalDevice g, const VkPhysicalDeviceImageFormatInfo2* i, VkImageFormatProperties2* p)
+{ load_real(); return shim_GetPhysicalDeviceImageFormatProperties2(g, i, p); }
 EXPORT VKAPI_ATTR VkResult VKAPI_CALL vkCreateAndroidSurfaceKHR(VkInstance n, const VkAndroidSurfaceCreateInfoKHR* i,
                                                                const VkAllocationCallbacks* a, VkSurfaceKHR* s)
 { return shim_CreateAndroidSurfaceKHR(n, i, a, s); }

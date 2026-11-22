@@ -21,18 +21,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Valheim's official news for the launcher's home screen: Iron Gate's own Steam announcements from
+ * Oxygen Not Included's official news for the launcher's home screen: Klei's own Steam announcements from
  * Steam's public news feed (no key, no login). The last answer is kept in a file, so the block is not
  * empty without a network; images are cached too. Everything here runs off the main thread.
  */
 public final class SteamNews {
     private static final String TAG = "OxyDroid/News";
+    /** Oxygen Not Included on Steam. */
+    private static final String APP_ID = "457140";
     private static final String FEED = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/"
-            + "?appid=892970&count=2&maxlength=0&feeds=steam_community_announcements&format=json";
+            + "?appid=" + APP_ID + "&count=2&maxlength=0&feeds=steam_community_announcements&format=json";
     private static final String CLAN_IMAGES = "https://clan.akamai.steamstatic.com/images/";
-    /** For a post with no picture of its own: Valheim's store header. */
+    /** For a post with no picture of its own: the game's store header. */
     private static final String FALLBACK_IMAGE =
-            "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/892970/header.jpg";
+            "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/" + APP_ID + "/header.jpg";
     private static final Pattern CLAN_IMAGE = Pattern.compile("\\{STEAM_CLAN_IMAGE\\}/([^\\[\\]\"\\s]+)");
     private static final int SNIPPET_CHARS = 180;
 
@@ -47,7 +49,7 @@ public final class SteamNews {
 
     private SteamNews() {}
 
-    private static File cacheFile(Context c) { return new File(c.getFilesDir(), "steam_news.json"); }
+    private static File cacheFile(Context c) { return new File(c.getFilesDir(), "steam_news_" + APP_ID + ".json"); }
 
     /** The news from the last successful fetch; empty if there was none. */
     public static List<Item> cached(Context c) {
@@ -112,7 +114,7 @@ public final class SteamNews {
             // store.steampowered.com, so a store news link went to it, and it did not open the
             // post; the announcement page on steamcommunity.com it does (as Zomdroid found).
             String link = gid.isEmpty() ? n.optString("url")
-                    : "https://steamcommunity.com/games/892970/announcements/detail/" + gid;
+                    : "https://steamcommunity.com/games/" + APP_ID + "/announcements/detail/" + gid;
             items.add(new Item(clean(n.optString("title")), snippet(contents), link, image, n.optLong("date")));
         }
         return items;

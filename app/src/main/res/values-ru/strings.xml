@@ -312,7 +312,7 @@
     <string name="hud_scale_label">Размер интерфейса в игре</string>
     <string name="hud_scale_default">Как в игре</string>
     <string name="hud_scale_hint">Делает полоски, панель предметов, миникарту, сообщения, чат и тексты крупнее, чем позволяет масштаб интерфейса самой игры (Настройки \u2192 Accessibility, до 115%). Меню и инвентарь остаются как в игре. Действует со следующего запуска.</string>
-    <string name="news_title">Новости Valheim</string>
+    <string name="news_title">Новости Oxygen Not Included</string>
     <string name="release_notes_title" translatable="false">Что нового в v%1$s</string>
     <string name="release_notes_body" translatable="false"><b>– Моды Thunderstore в лаунчере</b>\nКнопка «Моды» внизу: поиск, сортировка, категории и страница каждого мода. Отметьте нужные моды и установите их вместе со всем, что им нужно, в выбранный инстанс. Каталог скачивается сам на Wi-Fi, а на мобильном интернете сначала спрашивает.\n\n<b>– Нижняя панель</b>\nГлавная, Игра, Моды, Импорт и Проекты в одно касание.\n\n<b>– Импорт / экспорт на одном экране</b>\nСохранения, моды, настройки игры и экранное управление инстанса в одном месте.\n\n<b>– Копирование модов в другой инстанс</b>\nМоды → Копировать…: выберите моды и инстанс. Их настройки переносятся вместе с ними.\n\n<b>– Проекты</b>\nМои другие лаунчеры и их последние версии.\n\n<b>– Исправления</b>\nBluetooth-клавиатуры со стрелками снова печатают в игре (они считались геймпадом). Моды, которые держат файлы в своей папке, например OdinShip, теперь загружаются: установите их заново.\n\n<b>– Проверка подлинности</b>\nКопия, подписанная не мной, сообщит об этом. Скачивайте OxyDroid только с GitHub.\n\n<b>– Консоль работает</b>\nВключите её в настройках игры, откройте L1 + L2 + Start на геймпаде или F5 на клавиатуре и печатайте через кнопку клавиатуры OxyDroid.\n\n<b>– Совет: клавиатура закрывает игру?</b>\nВключите в своей клавиатуре режим «одной рукой» или «плавающая» (в Gboard: меню клавиатуры). Она станет меньше, и игру будет видно.</string>
     <string name="instance_downloading">скачивается, дождитесь окончания</string>
@@ -483,14 +483,14 @@
     <string name="transfer_import">Импорт</string>
     <string name="transfer_export">Экспорт</string>
     <string name="transfer_saves">Сохранения</string>
-    <string name="transfer_saves_hint">Zip с мирами и персонажами инстанса: для резервной копии или чтобы перенести в другой инстанс или на другой телефон. При импорте миры и персонажи с такими же именами заменяются. Сохранения с ПК (папки worlds_local и characters_local в zip) тоже импортируются.</string>
+    <string name="transfer_saves_hint">Zip с колониями инстанса: для резервной копии или чтобы перенести в другой инстанс или на другой телефон. При импорте колонии с такими же именами заменяются. Сохранения с ПК тоже импортируются: заархивируйте папку save_files или cloud_save_files либо папку колонии.</string>
     <string name="transfer_mods">Моды</string>
     <string name="transfer_mods_hint">Импорт: один или несколько .zip с модами (Thunderstore или Nexus). Экспорт: все моды инстанса в одном .zip, который целиком ставится здесь или на другом телефоне.</string>
     <string name="transfer_mods_installing">Устанавливаю моды…</string>
     <string name="transfer_mods_imported">Установлено модов: %1$d</string>
     <string name="transfer_mods_none">В этом инстансе нет модов.</string>
     <string name="transfer_settings">Настройки игры</string>
-    <string name="transfer_settings_hint">Графика, звук и клавиши. Импорт заменяет текущие настройки инстанса. Только между телефонами: версия для ПК хранит настройки в другом месте.</string>
+    <string name="transfer_settings_hint">Настройки игры и клавиши. Импорт заменяет текущие настройки инстанса. При переносе с ПК разрешение и путь к последнему сохранению не берутся.</string>
     <string name="transfer_controls">Экранное управление</string>
     <string name="transfer_controls_hint">Раскладка управления инстанса вместе с иконками, в .zip. Импорт заменяет раскладку инстанса; подойдёт и просто .json раскладки.</string>
     <string name="transfer_device">Для всего телефона</string>
@@ -508,4 +508,12 @@
     <string name="signature_warning_message">Она подписана другим ключом, поэтому могла быть изменена. Оригинальный OxyDroid есть на GitHub. Игра при этом запускается как обычно.</string>
     <string name="signature_warning_github">Открыть GitHub</string>
     <string name="signature_warning_dont_show">Больше не показывать</string>
+    <string name="editor_move_toolbar">Потяните, чтобы передвинуть панель</string>
+    <string name="editor_layout_default">Oxygen Not Included (по умолчанию)</string>
+    <string name="controls_editor_default_loaded">Загружена раскладка по умолчанию</string>
+    <string name="control_element_no_outline">Без рамки</string>
+    <string name="control_element_no_label">Без подписи</string>
+    <string name="cloud_saves_push_not_yet">Отправка сохранений в облако пока недоступна. Получение из облака работает.</string>
+    <string name="textures_converting_title">Преобразование текстур</string>
+    <string name="textures_converting_message">Текстуры игры преобразуются под этот GPU: %1$d%%. Это делается один раз и занимает несколько минут; не закрывайте лаунчер.</string>
 </resources>

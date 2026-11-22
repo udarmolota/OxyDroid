@@ -33,6 +33,19 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
+        <!-- The grip: drag it to move the toolbar off the buttons being placed; the place is remembered. -->
+        <TextView
+            android:id="@+id/editor_toolbar_grip"
+            android:layout_width="36dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="3dp"
+            android:gravity="center"
+            android:background="@drawable/editor_grip_bg"
+            android:contentDescription="@string/editor_move_toolbar"
+            android:text="⠿"
+            android:textColor="#FFFFFFFF"
+            android:textSize="20sp" />
+
         <Button
             android:id="@+id/add_btn"
             style="@style/AppTheme.EditorToolbarButton"
@@ -194,11 +207,11 @@
                 <!-- Drag to look (buttons only); sits above the sensitivity slider it enables -->
                 <CheckBox
                     android:id="@+id/element_drag_look_cb"
+                    android:visibility="gone"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="@string/control_element_drag_look"
                     android:textSize="13sp"
-                    android:visibility="gone"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/element_opacity_sb"/>
@@ -206,12 +219,12 @@
                 <!-- The drag's style, shown while drag to look is on: a stick (default) or a touchpad -->
                 <CheckBox
                     android:id="@+id/element_drag_look_touchpad_cb"
+                    android:visibility="gone"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="24dp"
                     android:text="@string/control_element_drag_look_touchpad"
                     android:textSize="13sp"
-                    android:visibility="gone"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/element_drag_look_cb"/>
@@ -312,6 +325,29 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/element_float_zone_sb"/>
 
+                <!-- Touchpad: drawn without its frame / without its "TOUCH" label -->
+                <CheckBox
+                    android:id="@+id/element_no_outline_cb"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/control_element_no_outline"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/element_tap_click_cb"/>
+
+                <CheckBox
+                    android:id="@+id/element_no_label_cb"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/control_element_no_label"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/element_no_outline_cb"/>
+
                 <!-- Text + Toggle -->
                 <LinearLayout
                     android:id="@+id/element_toggle_text_row_ll"
@@ -323,7 +359,7 @@
                     android:layout_marginTop="16dp"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/element_tap_click_cb">
+                    app:layout_constraintTop_toBottomOf="@+id/element_no_label_cb">
 
                     <TextView
                         android:id="@+id/element_text_tv"
@@ -338,6 +374,7 @@
 
                     <TextView
                         android:id="@+id/element_toggling_tv"
+                        android:visibility="gone"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -374,6 +411,7 @@
 
                     <CheckBox
                         android:id="@+id/element_toggling_cb"
+                        android:visibility="gone"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -473,6 +511,7 @@
 
                 <TextView
                     android:id="@+id/element_input_type_tv"
+                    android:visibility="gone"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:textAppearance="?attr/textAppearanceLabelSmall"
@@ -486,6 +525,7 @@
                 <Spinner
                     android:textSize="12sp"
                     android:id="@+id/element_input_type_s"
+                    android:visibility="gone"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:layout_constraintStart_toStartOf="parent"

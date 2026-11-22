@@ -43,7 +43,9 @@ public final class ControlsStorage {
      *  new player never has to aim a cursor at small cells on a phone screen, and a physical pad
      *  connected later works the same way. */
     public static final String ASSET_GAMEPAD = "controls/valheim_gamepad.json";
-    public static final String DEFAULT_ASSET = ASSET_GAMEPAD;
+    /** Oxygen Not Included: mouse stick, camera stick, both mouse buttons, time controls. */
+    public static final String ASSET_ONI = "controls/oni_default.json";
+    public static final String DEFAULT_ASSET = ASSET_ONI;
 
     public static final String FILE_NAME = "controls.json";
     public static final String ICONS_DIR = "icons";

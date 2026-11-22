@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Accent = OxyDroid brand (brick + gold) -->
+        <!-- OxyDroid brand: light blue primary, red secondary (values/colors.xml) -->
         <item name="colorPrimary">@color/rd_primary</item>
-        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorOnPrimary">@color/rd_on_primary</item>
         <item name="colorPrimaryContainer">@color/rd_primary_container</item>
         <item name="colorOnPrimaryContainer">@color/rd_on_primary_container</item>
         <item name="colorOutline">@color/rd_primary</item>

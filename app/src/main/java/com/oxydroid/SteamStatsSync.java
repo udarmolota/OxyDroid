@@ -33,11 +33,11 @@ import in.dragonbra.javasteam.steam.steamclient.SteamClient;
 import in.dragonbra.javasteam.types.KeyValue;
 
 /**
- * Valheim's Steam achievements and stats from the native engine, sent to the account and brought
+ * The game's Steam achievements and stats from the native engine, sent to the account and brought
  * back. In the game the libsteam_api stub keeps them in a text file (OXYDROID_STEAM_STATS: "stat NAME
  * VALUE BASE", "ach NAME"; BASE = Steam's value at the last sync). With a signed-in client this reads
- * the account's stats and the game's schema (achievements are bits of "ACHIEVEMENTS" stats: Valheim
- * has blocks 16 and 17), merges and stores:
+ * the account's stats and the game's schema (achievements are bits of "ACHIEVEMENTS" stats, in
+ * whatever blocks the schema names), merges and stores:
  * <ul>
  *   <li>achievements: the account's set plus the phone's, never fewer;</li>
  *   <li>counters: Steam's value plus what the phone added since the last sync (VALUE - BASE); "Max…"
@@ -50,7 +50,8 @@ import in.dragonbra.javasteam.types.KeyValue;
  */
 public final class SteamStatsSync {
     private static final String TAG = "OxyDroid/Achievements";
-    private static final int VALHEIM = 892970;
+    /** Oxygen Not Included on Steam. */
+    private static final int GAME = SteamDownloadSpike.APP_ID;
 
     private SteamStatsSync() {}
 
@@ -101,7 +102,7 @@ public final class SteamStatsSync {
      */
     public static int sync(SteamClient client, File file) throws Exception {
         UserStatsCallback r = client.getHandler(SteamUserStats.class)
-                .getUserStats(VALHEIM, client.getSteamID()).toFuture().get(30, TimeUnit.SECONDS);
+                .getUserStats(GAME, client.getSteamID()).toFuture().get(30, TimeUnit.SECONDS);
         if (r.getResult() != EResult.OK) throw new IOException("Steam stats: " + r.getResult());
 
         // Schema: stats by name, achievements by name -> (block, bit).
@@ -171,7 +172,7 @@ public final class SteamStatsSync {
         return newAchievements;
     }
 
-    /** Stores the changed stat values while Steam sees Valheim running, then clears "playing". */
+    /** Stores the changed stat values while Steam sees the game running, then clears "playing". */
     private static void store(SteamClient client, int crc, Map<Integer, Integer> changes) throws Exception {
         StoreHandler handler = client.getHandler(StoreHandler.class);
         playing(client, true);
@@ -179,7 +180,7 @@ public final class SteamStatsSync {
             ClientMsgProtobuf<CMsgClientStoreUserStats2.Builder> msg =
                     new ClientMsgProtobuf<>(CMsgClientStoreUserStats2.class, EMsg.ClientStoreUserStats2);
             long me = client.getSteamID().convertToUInt64();
-            msg.getBody().setGameId(VALHEIM).setSettorSteamId(me).setSetteeSteamId(me).setCrcStats(crc)
+            msg.getBody().setGameId(GAME).setSettorSteamId(me).setSetteeSteamId(me).setCrcStats(crc)
                     .setExplicitReset(false);
             for (Map.Entry<Integer, Integer> e : changes.entrySet())
                 msg.getBody().addStatsBuilder().setStatId(e.getKey()).setStatValue(e.getValue());
@@ -201,7 +202,7 @@ public final class SteamStatsSync {
     private static void playing(SteamClient client, boolean on) {
         ClientMsgProtobuf<CMsgClientGamesPlayed.Builder> msg =
                 new ClientMsgProtobuf<>(CMsgClientGamesPlayed.class, EMsg.ClientGamesPlayed);
-        if (on) msg.getBody().addGamesPlayedBuilder().setGameId(VALHEIM);
+        if (on) msg.getBody().addGamesPlayedBuilder().setGameId(GAME);
         client.send(msg);
         if (on) {
             try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
@@ -268,7 +269,7 @@ public final class SteamStatsSync {
     /** The account's values as both value and base; the phone's names Steam does not know stay. */
     private static void write(File file, Map<String, StatDef> defs, Map<Integer, String> bitNames,
                               Map<Integer, Integer> steam, Local local) throws IOException {
-        StringBuilder sb = new StringBuilder("# OxyDroid: Valheim's Steam achievements and stats on this phone (BASE = Steam's value at the last sync)\n");
+        StringBuilder sb = new StringBuilder("# OxyDroid: the game's Steam achievements and stats on this phone (BASE = Steam's value at the last sync)\n");
         for (StatDef d : defs.values()) {
             int raw = steam.getOrDefault(d.id, 0);
             String v = d.isFloat ? Float.toString(Float.intBitsToFloat(raw)) : Integer.toString(raw);

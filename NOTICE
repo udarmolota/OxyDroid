@@ -139,6 +139,15 @@ UnitySwappyWrapper     Unity Technologies (Unity's Android Support package), bui
 (libswappywrapper.so)  the Android Games SDK frame pacing library (Swappy), Apache License
                        2.0, Copyright (c) Google LLC.
 
+astcenc                Apache License 2.0   Copyright (c) Arm Limited and Contributors
+(liboxydroidtex.so)                         github.com/ARM-software/astc-encoder (5.3.0);
+                                            license in app/src/main/cpp/texconv/astcenc/.
+                                            Converts the game's textures to ASTC on GPUs
+                                            without BC formats.
+
+bcdec                  MIT License          Copyright (c) 2022 Sergii Kudlai
+(liboxydroidtex.so)                         github.com/iOrange/bcdec
+
 il2mono (libil2cpp.so),  OxyDroid original work (GPL-3.0 with the additional permission
 Vulkan shim (libvkshim.so,  above): the IL2CPP embedding API on ARM64 Mono, the Vulkan
 libvkdriverhook.so),        observing shim and its driver loader, and the managed bridge

@@ -126,8 +126,26 @@ int oxydroid_macho_eh_unregister(const void* eh_frame) {
     return macho_eh_walk(eh_frame, __unw_remove_dynamic_fde);
 }
 
+/* The dylib's own __eh_frame section (functions whose compact unwind entry says "see DWARF"). A
+ * Mach-O section carries no terminator, so the walk is bounded by the section's size. */
+__attribute__((visibility("default")))
+int oxydroid_macho_eh_register_range(const void* eh_frame, size_t size) {
+    const uint8_t* p = eh_frame;
+    const uint8_t* end = p + size;
+    int n = 0;
+    while (p + 8 <= end) {
+        uint32_t length, id;
+        memcpy(&length, p, 4);
+        if (length == 0 || length == 0xffffffffu || length > (size_t)(end - p) - 4) break;
+        memcpy(&id, p + 4, 4);
+        if (id != 0) { __unw_add_dynamic_fde((uintptr_t)p); n++; }
+        p += 4 + (size_t)length;
+    }
+    return n;
+}
+
 /* A version stamp for the log, so a mismatched pair of libraries is visible. */
 __attribute__((visibility("default")))
 int oxydroid_macho_eh_version(void) {
-    return 1;
+    return 2;
 }

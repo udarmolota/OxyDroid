@@ -158,7 +158,7 @@ In the cloud: %2$s
     <!-- "What's new" dialog, shown once per version (LauncherFragment.maybeShowReleaseNotes), in all
          four languages, cut from the release notes. Read with getText, so <b>/<i> are kept; keep it on
          one line, because a line break inside a string resource turns into a leading space. -->
-    <string name="news_title">Valheim news</string>
+    <string name="news_title">Oxygen Not Included news</string>
     <string name="release_notes_title" translatable="false">What\'s new in v%1$s</string>
     <!-- Drawer footer icon labels (accessibility) -->
     <string name="link_x">RimDroid on X</string>
@@ -504,14 +504,14 @@ In the cloud: %2$s
     <string name="transfer_import">Import</string>
     <string name="transfer_export">Export</string>
     <string name="transfer_saves">Saves</string>
-    <string name="transfer_saves_hint">A zip of this instance\'s worlds and characters: to keep, or to move to another instance or phone. Worlds and characters with the same names are replaced on import. PC saves zipped from worlds_local and characters_local import too.</string>
+    <string name="transfer_saves_hint">A zip of this instance\'s colonies: to keep, or to move to another instance or phone. Colonies with the same names are replaced on import. PC saves import too: zip the save_files or cloud_save_files folder, or a colony folder.</string>
     <string name="transfer_mods">Mods</string>
     <string name="transfer_mods_hint">Import: one or more mod .zip files (Thunderstore or Nexus). Export: every mod of this instance in one .zip, which installs whole here or on another phone.</string>
     <string name="transfer_mods_installing">Installing mods…</string>
     <string name="transfer_mods_imported">Mods installed: %1$d</string>
     <string name="transfer_mods_none">This instance has no mods.</string>
     <string name="transfer_settings">Game settings</string>
-    <string name="transfer_settings_hint">Graphics, sound and key bindings. Import replaces the instance\'s current ones. Phone to phone only: the PC version keeps its settings elsewhere.</string>
+    <string name="transfer_settings_hint">The game\'s options and key bindings. Import replaces the instance\'s current ones. From a PC, the resolution and the last-save path are left out.</string>
     <string name="transfer_controls">On-screen controls</string>
     <string name="transfer_controls_hint">The instance\'s controls layout with its icons, as a .zip. Import replaces the instance\'s layout; a bare controls .json is accepted too.</string>
     <string name="transfer_device">For the whole phone</string>
@@ -530,4 +530,12 @@ In the cloud: %2$s
     <string name="signature_warning_message">It is signed with a different key, so it may have been modified. The original OxyDroid is on GitHub. The game still starts as usual.</string>
     <string name="signature_warning_github">Open GitHub</string>
     <string name="signature_warning_dont_show">Don\'t show again</string>
+    <string name="editor_move_toolbar">Drag to move the toolbar</string>
+    <string name="editor_layout_default">Oxygen Not Included (default)</string>
+    <string name="controls_editor_default_loaded">Default layout loaded</string>
+    <string name="control_element_no_outline">No frame</string>
+    <string name="control_element_no_label">No label</string>
+    <string name="cloud_saves_push_not_yet">Sending saves to the cloud is not available yet. Getting them from the cloud works.</string>
+    <string name="textures_converting_title">Converting textures</string>
+    <string name="textures_converting_message">Converting the game\'s textures for this GPU: %1$d%%. This is done once and takes a few minutes; keep the launcher open.</string>
 </resources>

@@ -201,6 +201,47 @@ static void macho_tlv_atexit(void (*fn)(void*), void* arg) {
 }
 
 /* ------------------------------------------------------------------------------------------ */
+/* Diagnostics: operator delete as the dylib calls it. A pointer in the first 64 KB is never a heap
+ * block; it is the mark of an object read with the wrong layout (first seen as "Scudo ERROR:
+ * misaligned pointer when deallocating address 0x1" while a colony was being created). Android's
+ * allocator kills the process for it and Unity's crash handler hides where it came from, so the
+ * call is reported with the chain of return addresses (the dylib keeps frame pointers; subtract the
+ * image base from the "[macho] ... loaded natively ... at" line) and then dropped. */
+
+__attribute__((noinline)) static void macho_report_bad_delete(void* p, void** frame) {
+    static int reports;
+    if (reports >= 8) return;
+    reports++;
+    char line[400];
+    int n = snprintf(line, sizeof(line), "bad delete of %p, called from:", p);
+    for (int depth = 0; depth < 12 && frame && n < (int)sizeof(line) - 20; depth++) {
+        void** next = (void**)frame[0];
+        n += snprintf(line + n, sizeof(line) - (size_t)n, " %p", frame[1]);
+        if (next <= frame) break;   /* frame records only ever go up the stack */
+        frame = next;
+    }
+    LOGE("%s", line);
+}
+
+extern void _ZdlPv(void*);   /* operator delete(void*) */
+extern void _ZdaPv(void*);   /* operator delete[](void*) */
+
+__attribute__((noinline)) static void macho_checked_delete(void* p) {
+    if ((uintptr_t)p != 0 && (uintptr_t)p < 0x10000) {
+        macho_report_bad_delete(p, __builtin_frame_address(0));
+        return;
+    }
+    _ZdlPv(p);
+}
+__attribute__((noinline)) static void macho_checked_delete_array(void* p) {
+    if ((uintptr_t)p != 0 && (uintptr_t)p < 0x10000) {
+        macho_report_bad_delete(p, __builtin_frame_address(0));
+        return;
+    }
+    _ZdaPv(p);
+}
+
+/* ------------------------------------------------------------------------------------------ */
 /* Inert on purpose (see the header comment). */
 
 static int macho_socket_refused(int domain, int type, int protocol) {
@@ -324,6 +365,9 @@ void* macho_darwin_import(const char* name) {
         { "socket",      (void*)macho_socket_refused },
         { "getaddrinfo", (void*)macho_getaddrinfo_refused },
         { "signal",      (void*)macho_signal_ignored },
+        /* diagnostics */
+        { "_ZdlPv", (void*)macho_checked_delete },
+        { "_ZdaPv", (void*)macho_checked_delete_array },
         /* variadic */
         { "printf",    (void*)macho_apple_printf },
         { "fprintf",   (void*)macho_apple_fprintf },

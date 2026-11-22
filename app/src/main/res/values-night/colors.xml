@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- DARK mode: the logo itself — ember orange lifted so it reads on dark surfaces, and the
-         surfaces are the logo's teal-navy sky (#001a29 / #003848) instead of grey. -->
-    <color name="rd_primary">#FF8A5B</color>
-    <color name="rd_primary_dark">#FF8A5B</color>
-    <color name="rd_primary_container">#8D351A</color>
-    <color name="rd_on_primary_container">#FFDBCC</color>
-    <color name="rd_secondary">#A9C9D4</color>
+    <!-- DARK mode: the title art's light blue at full brightness, with dark text on it; the red
+         accent lifted so it reads on dark surfaces. Surfaces stay the deep blue-navy. -->
+    <color name="rd_primary">#4FD3EE</color>
+    <color name="rd_on_primary">#00323D</color>
+    <color name="rd_primary_dark">#4FD3EE</color>
+    <color name="rd_primary_container">#0F5A6B</color>
+    <color name="rd_on_primary_container">#C5EEF6</color>
+    <color name="rd_secondary">#F86868</color>
 
     <!-- Material 3 dark scheme — teal-navy neutrals. -->
-    <color name="md_theme_secondary">#A6CBD8</color>
-    <color name="md_theme_onSecondary">#0A3440</color>
-    <color name="md_theme_secondaryContainer">#234C58</color>
-    <color name="md_theme_onSecondaryContainer">#C6E7F0</color>
+    <color name="md_theme_secondary">#F86868</color>
+    <color name="md_theme_onSecondary">#5F0A0C</color>
+    <color name="md_theme_secondaryContainer">#8C1D1D</color>
+    <color name="md_theme_onSecondaryContainer">#FFDAD6</color>
     <color name="md_theme_tertiary">#9FC8DA</color>
     <color name="md_theme_onTertiary">#003543</color>
     <color name="md_theme_tertiaryContainer">#1E4A5A</color>
@@ -31,7 +32,7 @@
     <color name="md_theme_outlineVariant">#3A4850</color>
     <color name="md_theme_inverseSurface">#DDE4E8</color>
     <color name="md_theme_inverseOnSurface">#2C3237</color>
-    <color name="md_theme_inversePrimary">#C2451A</color>
+    <color name="md_theme_inversePrimary">#1493B0</color>
     <color name="md_theme_surfaceDim">#0B161E</color>
     <color name="md_theme_surfaceBright">#2E3B44</color>
     <color name="md_theme_surfaceContainerLowest">#050D13</color>

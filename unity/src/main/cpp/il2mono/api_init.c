@@ -197,12 +197,56 @@ static int32_t platform_override(void)
     {
         g_orig_set_sleep_timeout(SLEEP_TIMEOUT_NEVER_SLEEP);
         LOGI("Screen.sleepTimeout -> NeverSleep");
+        // Oxygen Not Included never sets Application.targetFrameRate (it paces itself with vSync,
+        // which the Android player ignores), so the override above is never reached and the player
+        // stays at its default of 30 fps. Apply the launcher's cap once, as "unlimited" would.
+        set_target_frame_rate_override(-1);
     }
     return RUNTIME_PLATFORM_LINUX_PLAYER;
 }
 
+// Screen.SetResolution. A PC game sets its resolution itself, from what the system calls the screen's
+// own: Android reports that in the phone's natural, upright orientation, so Oxygen Not Included asked
+// for 1080x2340 on a landscape screen and the player's upright frame was stretched over it. The
+// launcher's render resolution (OXYDROID_SCREEN_WIDTH/HEIGHT) wins over any request; without one an
+// upright request is turned on its side. The fullscreen mode and refresh rate pass through.
+typedef void (*SetResolutionFn)(int32_t width, int32_t height, int32_t fullscreen_mode, void* refresh_rate);
+static SetResolutionFn g_orig_set_resolution;
+
+static void set_resolution_override(int32_t width, int32_t height, int32_t fullscreen_mode, void* refresh_rate)
+{
+    static int reported;
+    int32_t w = width, h = height;
+    const char* ew = getenv("OXYDROID_SCREEN_WIDTH");
+    const char* eh = getenv("OXYDROID_SCREEN_HEIGHT");
+    int32_t lw = ew ? atoi(ew) : 0, lh = eh ? atoi(eh) : 0;
+    if (lw > 0 && lh > 0)
+    {
+        w = lw;
+        h = lh;
+    }
+    else if (w < h)
+    {
+        w = height;
+        h = width;
+    }
+    if ((w != width || h != height) && !reported)
+    {
+        reported = 1;
+        LOGI("Screen.SetResolution %dx%d -> %dx%d", width, height, w, h);
+    }
+    if (g_orig_set_resolution)
+        g_orig_set_resolution(w, h, fullscreen_mode, refresh_rate);
+}
+
 static const void* override_icall(const char* name, const void* method)
 {
+    if (!strcmp(name, "UnityEngine.Screen::SetResolution_Injected"))
+    {
+        g_orig_set_resolution = (SetResolutionFn)method;
+        LOGI("icall override: %s (landscape, launcher resolution)", name);
+        return (const void*)set_resolution_override;
+    }
     if (!strcmp(name, "UnityEngine.Application::set_targetFrameRate"))
     {
         g_orig_set_target_frame_rate = (SetTargetFrameRateFn)method;

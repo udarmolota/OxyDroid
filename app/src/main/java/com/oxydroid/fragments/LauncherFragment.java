@@ -600,16 +600,53 @@ public class LauncherFragment extends Fragment {
     // over to the native player's own process. steam = the crossplay sign-in, null = offline.
     private void launchNativeEngine(android.content.Context app, GameInstance gi, com.oxydroid.SteamTicketLogin.Result steam) {
         android.widget.Toast.makeText(app, R.string.native_engine_preparing, android.widget.Toast.LENGTH_SHORT).show();
+        final android.os.Handler ui = new android.os.Handler(android.os.Looper.getMainLooper());
+        // The one-time texture conversion (a GPU without BC formats) takes minutes: a dialog with its
+        // progress, made when the conversion first reports, and the keep-alive notification so the
+        // work goes on with the launcher off screen.
+        final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
+        final boolean[] keepAlive = new boolean[1];
+        final int[] shownPercent = { -1 };
+        com.oxydroid.game.TextureConverter.Progress textures = (done, total) -> {
+            int percent = total <= 0 ? 100 : (int) Math.min(100, done * 100 / total);
+            ui.post(() -> {
+                if (percent == shownPercent[0]) return;
+                shownPercent[0] = percent;
+                if (!keepAlive[0]) {
+                    keepAlive[0] = true;
+                    com.oxydroid.DownloadKeepAliveService.start(app, app.getString(R.string.textures_converting_title));
+                }
+                android.app.Activity activity = getActivity();
+                if (dialog[0] == null && activity != null && !activity.isFinishing()) {
+                    dialog[0] = new androidx.appcompat.app.AlertDialog.Builder(activity)
+                            .setTitle(R.string.textures_converting_title)
+                            .setMessage(app.getString(R.string.textures_converting_message, percent))
+                            .setCancelable(false)
+                            .show();
+                } else if (dialog[0] != null) {
+                    dialog[0].setMessage(app.getString(R.string.textures_converting_message, percent));
+                }
+            });
+        };
         new Thread(() -> {
             try {
-                android.content.Intent intent = com.oxydroid.game.NativeEngine.prepare(app, gi, steam);
+                android.content.Intent intent = com.oxydroid.game.NativeEngine.prepare(app, gi, steam, textures);
                 app.startActivity(intent);
             } catch (Throwable e) {
                 Log.e(TAG, "Native engine launch failed", e);
                 com.oxydroid.LauncherLog.line("NATIVE ENGINE FAILED: " + Log.getStackTraceString(e));
-                new android.os.Handler(android.os.Looper.getMainLooper()).post(() ->
+                ui.post(() ->
                         android.widget.Toast.makeText(app, app.getString(R.string.native_engine_failed, e.getMessage()),
                                 android.widget.Toast.LENGTH_LONG).show());
+            } finally {
+                ui.post(() -> {
+                    if (keepAlive[0]) com.oxydroid.DownloadKeepAliveService.stop(app);
+                    try {
+                        if (dialog[0] != null && dialog[0].isShowing()) dialog[0].dismiss();
+                    } catch (RuntimeException ignored) {
+                        // the launcher's window is already gone
+                    }
+                });
             }
         }).start();
     }
@@ -651,7 +688,7 @@ public class LauncherFragment extends Fragment {
                 }
             }
         } catch (Exception ignored) {}
-        return "rimworld";
+        return com.oxydroid.AppStorage.DEFAULT_INSTANCE_NAME;
     }
 
     /** After a ZIP instance install from the launcher button, detect the GPU and set the recommended

@@ -67,6 +67,13 @@ public class ControlElementDescription {
      */
     public final boolean tapDisabled;
     /**
+     * Touchpad only: drawn without its frame / without its "TOUCH" label. A large pad covering half
+     * the screen reads better as a faint area. Both default to false (frame and label drawn), so a
+     * layout saved before these fields existed looks as it did. From Zomdroid.
+     */
+    public final boolean noOutline;
+    public final boolean noLabel;
+    /**
      * Buttons only: while the button is held, moving the same finger turns the camera, like the
      * fire button in mobile shooters (hold attack/block/draw the bow and aim with one thumb).
      * Keyboard/mouse buttons move the mouse, gamepad buttons deflect a virtual right stick; the
@@ -183,6 +190,19 @@ public class ControlElementDescription {
                                      String iconFile, boolean noTint, boolean tapDisabled,
                                      boolean dragLook, boolean floating, float floatZone,
                                      boolean dragLookTouchpad) {
+        this(centerXRelative, centerYRelative, scale, type, bindings, text, color, alpha,
+                inputType, icon, isToggle, sensitivity, style, iconFile, noTint, tapDisabled,
+                dragLook, floating, floatZone, dragLookTouchpad, false, false);
+    }
+
+    public ControlElementDescription(float centerXRelative, float centerYRelative, float scale,
+                                     @NonNull AbstractControlElement.Type type, @NonNull GLFWBinding[] bindings,
+                                     String text, int color, int alpha,
+                                     AbstractControlElement.InputType inputType, @NonNull Icon icon,
+                                     boolean isToggle, float sensitivity, Style style,
+                                     String iconFile, boolean noTint, boolean tapDisabled,
+                                     boolean dragLook, boolean floating, float floatZone,
+                                     boolean dragLookTouchpad, boolean noOutline, boolean noLabel) {
         // Clamped rather than rejected: describe() runs on every save, and an element dragged to
         // the very edge (or a hand-edited file) must not make saving throw and lose the layout.
         this.centerXRelative = clampF(centerXRelative, 0.001f, 0.999f);
@@ -203,6 +223,8 @@ public class ControlElementDescription {
         this.tapDisabled = tapDisabled;
         this.dragLook = dragLook;
         this.dragLookTouchpad = dragLookTouchpad;
+        this.noOutline = noOutline;
+        this.noLabel = noLabel;
         this.floating = floating;
         // 0 (a layout from before the field, or a constructor that does not take it), NaN or a
         // negative value mean "not set".
@@ -215,9 +237,11 @@ public class ControlElementDescription {
         switch (type) {
             case BUTTON_CIRCLE:
             case BUTTON_RECT:
+                // A keyboard key: the editor offers no gamepad type for this game (the overlay's
+                // gamepad input reaches nothing), so a new button must not start as one.
                 return new ControlElementDescription(0.5f, 0.5f, 1.f, type,
-                        new GLFWBinding[]{GLFWBinding.GAMEPAD_BUTTON_A}, "A", Color.WHITE, 150,
-                        AbstractControlElement.InputType.GAMEPAD, Icon.NO_ICON, false);
+                        new GLFWBinding[]{GLFWBinding.KEY_SPACE}, "Space", Color.WHITE, 150,
+                        AbstractControlElement.InputType.MNK, Icon.NO_ICON, false);
             case DPAD:
                 return new ControlElementDescription(0.5f, 0.5f, 1.f, type,
                         new GLFWBinding[]{}, null, Color.WHITE, 150,

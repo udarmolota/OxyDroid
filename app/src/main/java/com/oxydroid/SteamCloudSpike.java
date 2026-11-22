@@ -117,6 +117,7 @@ public class SteamCloudSpike implements Runnable, Cancellable {
     private final java.util.Set<String> selected;         // null = every file; else only these filenames
     private File pullDir;                                 // pull target: a temp dir, NOT the Saves/ folder
     private File compareDir;                              // pull: existing Saves/, to skip identical files
+    private File coloniesDir;                             // Oxygen Not Included pull: its local save_files/
     private final SteamDownloadSpike.Listener listener;   // same shape → same UI wiring
 
     private SteamClient steamClient;
@@ -163,6 +164,21 @@ public class SteamCloudSpike implements Runnable, Cancellable {
         SteamCloudSpike s = new SteamCloudSpike(user, pass, appId, null, false, false, null, l);
         s.pullDir = tempDir;
         s.compareDir = savesDir;
+        return s;
+    }
+
+    /**
+     * Oxygen Not Included: download every colony in the cloud straight into {@code saveFilesDir}, the
+     * game's local {@code save_files/} folder. The cloud keeps colonies under
+     * {@code cloud_save_files/<SteamID>/}; the game only lists the folder of the SteamID it runs
+     * under, which is not the account's here, so the local folder is where they are sure to show.
+     * A file already on the phone with the same content is skipped; one that differs is kept next to
+     * the new copy as {@code <name>.before-cloud}.
+     */
+    public static SteamCloudSpike forPullColonies(String user, String pass, int appId, File saveFilesDir,
+                                                  SteamDownloadSpike.Listener l) {
+        SteamCloudSpike s = new SteamCloudSpike(user, pass, appId, null, false, false, null, l);
+        s.coloniesDir = saveFilesDir;
         return s;
     }
 
@@ -350,6 +366,11 @@ public class SteamCloudSpike implements Runnable, Cancellable {
                 return;
             }
 
+            if (coloniesDir != null) {
+                pullColonies(cloud, files, prefixes);
+                return;
+            }
+
             // Split every cloud path into (Valheim folder, path inside it) ONCE, from the full
             // prefix + filename. JavaSteam hands over the protobuf's file_name verbatim and Steam
             // decides how much of the path goes into path_prefixes, so working on the joined string
@@ -500,6 +521,47 @@ public class SteamCloudSpike implements Runnable, Cancellable {
         } finally {
             running = false;   // one-shot: end the callback loop either way
         }
+    }
+
+    /** The Oxygen Not Included pull: see {@link #forPullColonies}. */
+    private void pullColonies(SteamCloud cloud, List<AppFileInfo> files, List<String> prefixes) {
+        int ok = 0, same = 0, failed = 0, other = 0;
+        for (AppFileInfo f : files) {
+            if (!running) break;
+            String full = prefixOf(f, prefixes) + f.getFilename();
+            // The same rule as a zip import: what follows save_files/ or cloud_save_files/<SteamID>/.
+            String rel = GameDataTransfer.saveTarget(full.replace('\\', '/'));
+            if (rel == null || rel.contains("..")) {
+                other++;
+                Log.i(TAG, "not a colony file, left in the cloud: " + full);
+                continue;
+            }
+            File dest = new File(coloniesDir, rel);
+            if (sameContent(dest, f.getShaFile())) { same++; continue; }
+            byte[] raw = fetchAndDecode(cloud, full, f.getRawFileSize(), f.getShaFile(), true);
+            if (raw == null) { failed++; continue; }   // fetchAndDecode said why
+            File parent = dest.getParentFile();
+            if (parent != null && !parent.isDirectory() && !parent.mkdirs()) { failed++; continue; }
+            if (dest.isFile()) {
+                File keep = new File(dest.getPath() + ".before-cloud");
+                //noinspection ResultOfMethodCallIgnored
+                keep.delete();
+                //noinspection ResultOfMethodCallIgnored
+                dest.renameTo(keep);
+            }
+            if (!writeFile(dest, raw)) { failed++; continue; }
+            long ts = f.getTimestamp() == null ? 0L : f.getTimestamp().getTime();
+            if (ts > 0) //noinspection ResultOfMethodCallIgnored
+                dest.setLastModified(ts);
+            ok++;
+            progress("Downloaded: " + rel + " (" + (raw.length / 1024) + " KB)");
+        }
+        enumerationCompleted = true;
+        done("Downloaded " + ok + " file(s)"
+                + (same > 0 ? (", " + same + " already up to date") : "")
+                + (other > 0 ? (", " + other + " not colony files") : "")
+                + (failed > 0 ? (", " + failed + " failed") : "")
+                + ". Disconnected from Steam.");
     }
 
     /**

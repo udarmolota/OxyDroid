@@ -329,6 +329,9 @@ public class InstanceSettings {
      * behind the player's back.
      */
     public int getEngine() {
+        // Oxygen Not Included: the native engine whenever the APK carries it. The choice is no longer
+        // on the settings screen, so an instance must not stay on an engine it cannot leave.
+        if (com.oxydroid.game.NativeEngine.isAvailable()) return ENGINE_NATIVE;
         int engine;
         if (p.contains(pfx + "engine")) engine = p.getInt(pfx + "engine", ENGINE_BOX64_MONO);
         else if (p.getBoolean(pfx + "native_engine", false)) engine = ENGINE_NATIVE;

@@ -94,9 +94,16 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
 
     private static final String TAG = "OxyDroid/SteamDL";
 
-    /** Valheim on Steam: `DepotDownloader -app 892970 -depot 892971`, newest public build. */
-    public static final int APP_ID = 892970;
-    private static final int LINUX_DEPOT = 892971;
+    /** Oxygen Not Included on Steam: `DepotDownloader -app 457140 -depot 457143`, newest public build. */
+    public static final int APP_ID = 457140;
+    private static final int LINUX_DEPOT = 457143;
+    /**
+     * The macOS depot of the same app. One file of it is needed: the simulation library, which the
+     * Linux depot has for x86-64 only and the macOS one with an arm64 slice (NativeEngine.macSimDll,
+     * unity/src/main/cpp/simdll). It must be the same build as the Linux files.
+     */
+    private static final int MAC_DEPOT = 457142;
+    private static final String MAC_SIMDLL = "SimDLL.bundle/Contents/MacOS/SimDLL";
 
     private static final int MAX_DOWNLOAD_ATTEMPTS = 3;
     /** Re-tries of the INITIAL sign-in if the CM connection drops mid-approval (Steam-Mobile excursion). */
@@ -153,7 +160,7 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
     private int downloadAttempts;
     private int authAttempts;                      // initial-sign-in attempts (drops during approval)
 
-    /** GAME mode: download Valheim into instances/&lt;name&gt; and make it launchable. */
+    /** GAME mode: download the game into instances/&lt;name&gt; and make it launchable. */
     public SteamDownloadSpike(String username, String password, String instanceName,
                               boolean manifestOnly, long manifestId, Listener listener) {
         this.username = username;
@@ -493,7 +500,7 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
             if (state.exists()) progress("Found partial download — resuming where it stopped…");
         }
         // Manifest: an explicit user build wins, otherwise an empty list = the newest build of the
-        // public branch. (RimDroid pinned a frozen 1.5 manifest here; Valheim just follows public.)
+        // public branch.
         List<Long> manifests = (manifestId > 0) ? List.of(manifestId) : List.of();
         String verLabel = (manifestId > 0) ? ("manifest " + manifestId) : "newest public build";
         progress((manifestOnly ? "[manifest-only] " : "")
@@ -533,13 +540,13 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
         SteamApps apps = steamClient.getHandler(SteamApps.class);
         SteamContent content = steamClient.getHandler(SteamContent.class);
 
-        long gid = (manifestId > 0) ? manifestId : resolveManifestGid();
+        long gid = (manifestId > 0) ? manifestId : resolveManifestGid(LINUX_DEPOT);
         if (gid == 0L) { done("Could not resolve a build to download."); running = false; return; }
         progress("Depot " + LINUX_DEPOT + ", manifest " + Long.toUnsignedString(gid)
                 + (buildId > 0 ? (", build " + buildId) : ""));
 
         byte[] depotKey = getDepotKey(apps, LINUX_DEPOT, APP_ID);
-        if (depotKey == null) { done("No depot key — is Valheim owned on this account?"); running = false; return; }
+        if (depotKey == null) { done("No depot key — is Oxygen Not Included owned on this account?"); running = false; return; }
 
         File outDir = new File(installDir);
         if (!outDir.isDirectory() && !outDir.mkdirs()) {
@@ -680,6 +687,9 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
         if (firstError.get() != null) throw new Exception(describe(firstError.get()), firstError.get());
         if (!running) { done("Download cancelled."); return; }
 
+        fetchMacSimDll(apps, content, cdn, servers, outDir);
+        if (!running) { done("Download cancelled."); return; }
+
         downloadCompleted = true;
         finalizeInstance();
         done("Instance '" + instanceName + "' downloaded — ready to launch.");
@@ -687,8 +697,89 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
         try { steamUser.logOff(); } catch (Throwable ignored) {}
     }
 
-    /** The public branch's manifest for our Linux depot, from PICS; also records its build id. */
-    private long resolveManifestGid() {
+    /**
+     * The simulation library from the macOS depot, into macos/SimDLL of the instance. Only that one
+     * file is fetched (about 2 MB of a multi-GB depot). The manifest is the public branch's, i.e. the
+     * same build as a Linux download of the public branch; with a Linux manifest pinned by hand the
+     * two can differ, which is said in the log. Throws when the file cannot be had: without it the
+     * game stops at its first simulation step, so the download must not report success.
+     */
+    private void fetchMacSimDll(SteamApps apps, SteamContent content, Client cdn, List<Server> servers,
+                                File outDir) throws Exception {
+        progress("Simulation library: macOS depot " + MAC_DEPOT + "…");
+        long gid = resolveManifestGid(MAC_DEPOT);
+        if (gid == 0L) throw new java.io.IOException("no public manifest for the macOS depot " + MAC_DEPOT);
+        if (manifestId > 0)
+            progress("Note: the Linux build was chosen by hand; the simulation library is the newest "
+                    + "public one and may not match it.");
+        byte[] key = getDepotKey(apps, MAC_DEPOT, APP_ID);
+        if (key == null) throw new java.io.IOException("no key for the macOS depot " + MAC_DEPOT);
+        long requestCode = awaitDeferred(
+                content.getManifestRequestCode(MAC_DEPOT, APP_ID, gid, "public", null, GlobalScope.INSTANCE), 30000);
+        Map<String, String> tokens = new HashMap<>();   // CDN tokens are per depot: not the Linux cache
+        DepotManifest manifest = null;
+        Exception lastErr = null;
+        for (Server srv : servers) {
+            try {
+                manifest = cdn.downloadManifestFuture(MAC_DEPOT, gid, requestCode, srv, key, null,
+                        cdnTokenFor(content, MAC_DEPOT, srv, tokens)).get(120, TimeUnit.SECONDS);
+                break;
+            } catch (Exception e) {
+                lastErr = e;
+                Log.w(TAG, "macOS manifest via " + srv.getHost() + " failed: " + describe(e));
+            }
+        }
+        if (manifest == null) throw new java.io.IOException("macOS manifest download failed: " + describe(lastErr));
+
+        FileData wanted = null;
+        for (FileData f : manifest.getFiles()) {
+            String name = f.getFileName() == null ? "" : f.getFileName().replace('\\', '/');
+            if (name.endsWith(MAC_SIMDLL) && !f.getFlags().contains(EDepotFileFlag.Directory)) { wanted = f; break; }
+        }
+        if (wanted == null) throw new java.io.IOException(MAC_SIMDLL + " is not in the macOS depot");
+
+        File target = com.oxydroid.game.NativeEngine.macSimDll(outDir);
+        if (sameFile(target, wanted)) { progress("Simulation library already up to date."); return; }
+        File parent = target.getParentFile();
+        if (parent != null && !parent.isDirectory() && !parent.mkdirs())
+            throw new java.io.IOException("cannot create " + parent);
+        File tmp = new File(parent, target.getName() + ".part");
+        try (RandomAccessFile raf = new RandomAccessFile(tmp, "rw")) {
+            raf.setLength(wanted.getTotalSize());
+            int cursor = 0;
+            for (ChunkData chunk : wanted.getChunks()) {
+                byte[] dest = new byte[Math.max(chunk.getCompressedLength(), chunk.getUncompressedLength())];
+                int written = -1;
+                Exception chunkErr = null;
+                for (int t = 0; t < MAX_CHUNK_TRIES && written < 0; t++) {
+                    if (!running) return;
+                    Server srv = servers.get(Math.floorMod(cursor++, servers.size()));
+                    try {
+                        written = cdn.downloadDepotChunkFuture(MAC_DEPOT, chunk, srv, dest, key, null,
+                                cdnTokenFor(content, MAC_DEPOT, srv, tokens)).get(120, TimeUnit.SECONDS);
+                    } catch (Exception e) {
+                        chunkErr = e;
+                        Log.w(TAG, "SimDLL chunk via " + srv.getHost() + " failed: " + describe(e));
+                    }
+                }
+                if (written < 0) throw chunkErr != null ? chunkErr : new java.io.IOException("chunk download failed");
+                raf.seek(chunk.getOffset());
+                raf.write(dest, 0, written);
+            }
+        }
+        if (!sameFile(tmp, wanted)) {
+            //noinspection ResultOfMethodCallIgnored
+            tmp.delete();
+            throw new java.io.IOException("the downloaded simulation library does not match its checksum");
+        }
+        //noinspection ResultOfMethodCallIgnored
+        target.delete();
+        if (!tmp.renameTo(target)) throw new java.io.IOException("cannot place " + target);
+        progress("Simulation library downloaded (" + (target.length() / 1024) + " KB).");
+    }
+
+    /** The public branch's manifest for a depot of the app, from PICS; also records the build id. */
+    private long resolveManifestGid(int depotId) {
         try {
             SteamApps apps = steamClient.getHandler(SteamApps.class);
             long token = 0L;
@@ -706,7 +797,7 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
                 if (info == null) continue;
                 KeyValue depots = info.getKeyValues().get("depots");
                 buildId = depots.get("branches").get("public").get("buildid").asLong(0L);
-                KeyValue depot = depots.get(String.valueOf(LINUX_DEPOT));
+                KeyValue depot = depots.get(String.valueOf(depotId));
                 String gid = depot.get("manifests").get("public").get("gid").asString();
                 if (gid != null && !gid.isEmpty()) return Long.parseUnsignedLong(gid);
             }
@@ -919,11 +1010,8 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
             new File(dir, GameInstance.DOWNLOAD_MARKER).delete();   // the copy is complete now
             File bin = new File(dir, GameDescriptor.ONI.executable());
             if (bin.exists()) bin.setExecutable(true, false);
-            // Same setup the zip installer runs: Goldberg shim in place of Valve's libsteam_api,
-            // steam_settings for offline single player, and the auto-login pref off. Without it
-            // Valheim quits at startup.
-            String warning = ValheimInstanceSetup.apply(dir, this::progress);
-            if (warning != null) progress(warning);
+            // Nothing to set up in the game folder: the native engine brings its own Steam library
+            // and reads the game files as they are.
             // The install-time save fix (Assembly-CSharp bspatch) used to run here. Removed
             // entirely 2026-08-28 — root-fixed in box64 (see InstallerService for the history).
             LauncherPreferences.requireSingleton().setLastInstanceName(instanceName);
@@ -946,7 +1034,7 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
         try {
             AppStorage storage = AppStorage.requireSingleton();
             String versionTag = readVersionTag(instanceDir);
-            File zip = new File(storage.getDownloadsDir(), "Valheim_" + versionTag + ".zip");
+            File zip = new File(storage.getDownloadsDir(), "OxygenNotIncluded_" + versionTag + ".zip");
             // Several GB of game go into one archive here. It is the slowest part of the whole
             // install and it happens AFTER the progress bar has reached 100%, which is exactly where
             // people think the app has hung and close it. Say what is happening, and how long.
@@ -965,7 +1053,7 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
     }
 
     /**
-     * What to call the backup archive. Valheim keeps its own version number inside compiled code, so
+     * What to call the backup archive. The game keeps its own version number inside compiled code, so
      * the honest identifier is Steam's: the build id of the branch we downloaded, or the manifest id
      * when the player pinned one by hand. "unknown" only if neither is known.
      */

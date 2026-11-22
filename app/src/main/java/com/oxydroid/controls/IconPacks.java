@@ -213,6 +213,33 @@ public final class IconPacks {
 
     // Valheim's own default keys and its default gamepad layout ("Default", Classic in its code):
     // read from the game's ZInput (2026-10-07). A button bound to exactly this set gets the icon.
+    /**
+     * An icon of a built-in pack by the file name a layout stores for it ("pack_&lt;id&gt;_&lt;icon&gt;.png"),
+     * read straight from the APK's assets, or null. Lets the bundled default layout carry icons
+     * without an icons folder: a new instance has none until something is saved.
+     */
+    @Nullable
+    public static Bitmap loadBuiltInByFileName(@NonNull Context context, @Nullable String fileName) {
+        if (fileName == null || !fileName.startsWith("pack_") || !fileName.endsWith(".png")) return null;
+        try {
+            String[] ids = context.getAssets().list(ASSET_DIR);
+            if (ids == null) return null;
+            for (String id : ids) {
+                String prefix = "pack_" + id + "_";
+                if (!fileName.startsWith(prefix)) continue;
+                String icon = fileName.substring(prefix.length(), fileName.length() - 4);
+                try (InputStream in = context.getAssets().open(ASSET_DIR + "/" + id + "/" + icon + ".png")) {
+                    return BitmapFactory.decodeStream(in);
+                } catch (IOException ignored) {
+                    // not in this pack: another pack's id may be a prefix of this one
+                }
+            }
+        } catch (IOException ignored) {
+            // no packs in the APK
+        }
+        return null;
+    }
+
     private static final Map<Set<String>, String> ACTIONS = new HashMap<>();
 
     private static void action(String icon, String... bindings) {

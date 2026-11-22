@@ -885,6 +885,7 @@ public class ButtonControlElement extends AbstractControlElement {
             File dir = parentView.getControlsIconsDir();
             File f = (dir != null) ? new File(dir, fileName) : null;
             Bitmap bmp = (f != null && f.isFile()) ? BitmapFactory.decodeFile(f.getAbsolutePath()) : null;
+            if (bmp == null) bmp = IconPacks.loadBuiltInByFileName(parentView.getContext(), fileName);
             if (bmp == null) {
                 this.iconFile = null;
                 setIcon(this.icon);

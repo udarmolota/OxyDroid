@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- OxyDroid brand: Valheim's logo. Accent = the ember ORANGE-RED of the "V" (#C84617 at its
-         brightest, #8D351A in the shade); neutrals = the deep TEAL-NAVY of the sky behind it
-         (#003848 / #001a29), lightened here for the light scheme. -->
-    <color name="rd_primary">#C2451A</color>
-    <color name="rd_primary_dark">#8D351A</color>
-    <color name="rd_primary_container">#FFDBCC</color>
-    <color name="rd_on_primary_container">#3A0B00</color>
-    <color name="rd_secondary">#2F5A66</color>
+    <!-- OxyDroid brand, from Oxygen Not Included's title art. Primary = its LIGHT BLUE (the glow of
+         the background, #28C7E4 at its brightest), taken a step deeper here so white text reads on
+         it in the light scheme. Accent = the RED of the word "NOT" (#D83838). Neutrals = cool
+         blue-greys. -->
+    <color name="rd_primary">#1493B0</color>
+    <color name="rd_on_primary">#FFFFFF</color>
+    <color name="rd_primary_dark">#0E6F82</color>
+    <color name="rd_primary_container">#C5EEF6</color>
+    <color name="rd_on_primary_container">#001F26</color>
+    <color name="rd_secondary">#D83838</color>
 
     <!-- Material 3 light scheme — cool teal-navy neutrals, teal secondary/tertiary. -->
-    <color name="md_theme_secondary">#1F5462</color>
+    <color name="md_theme_secondary">#D83838</color>
     <color name="md_theme_onSecondary">#FFFFFF</color>
-    <color name="md_theme_secondaryContainer">#C6E7F0</color>
-    <color name="md_theme_onSecondaryContainer">#001F27</color>
+    <color name="md_theme_secondaryContainer">#FFDAD6</color>
+    <color name="md_theme_onSecondaryContainer">#410002</color>
     <color name="md_theme_tertiary">#23485A</color>
     <color name="md_theme_onTertiary">#FFFFFF</color>
     <color name="md_theme_tertiaryContainer">#C5E1EE</color>
@@ -32,7 +34,7 @@
     <color name="md_theme_outlineVariant">#BEC8CF</color>
     <color name="md_theme_inverseSurface">#2C3237</color>
     <color name="md_theme_inverseOnSurface">#EDF1F4</color>
-    <color name="md_theme_inversePrimary">#FFB595</color>
+    <color name="md_theme_inversePrimary">#6FD9F0</color>
     <color name="md_theme_surfaceDim">#D4DBDF</color>
     <color name="md_theme_surfaceBright">#F4F8FA</color>
     <color name="md_theme_surfaceContainerLowest">#FFFFFF</color>

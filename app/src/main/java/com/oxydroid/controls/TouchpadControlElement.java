@@ -165,6 +165,24 @@ public class TouchpadControlElement extends AbstractControlElement {
         return tapDisabled;
     }
 
+    public void setNoOutline(boolean noOutline) {
+        drawable.noOutline = noOutline;
+        parentView.invalidate();
+    }
+
+    public boolean isNoOutline() {
+        return drawable.noOutline;
+    }
+
+    public void setNoLabel(boolean noLabel) {
+        drawable.noLabel = noLabel;
+        parentView.invalidate();
+    }
+
+    public boolean isNoLabel() {
+        return drawable.noLabel;
+    }
+
     @Override
     public ControlElementDescription describe() {
         return new ControlElementDescription(
@@ -176,7 +194,7 @@ public class TouchpadControlElement extends AbstractControlElement {
                 InputType.MNK,
                 ControlElementDescription.Icon.NO_ICON, false,
                 sensitivity, ControlElementDescription.DEFAULT_STYLE, null, false,
-                tapDisabled);
+                tapDisabled, false, false, 0f, false, drawable.noOutline, drawable.noLabel);
     }
 
     private static float dist(float x1, float y1, float x2, float y2) {
@@ -192,6 +210,7 @@ public class TouchpadControlElement extends AbstractControlElement {
 
         int   color, alpha;
         float scale, centerX, centerY;
+        boolean noOutline, noLabel;   // see ControlElementDescription.noOutline / noLabel
         private float halfW, halfH;
         final RectF rect = new RectF();
 
@@ -202,6 +221,8 @@ public class TouchpadControlElement extends AbstractControlElement {
 
         TouchpadDrawable(InputControlsView parentView, ControlElementDescription desc) {
             this.parentView = parentView;
+            noOutline = desc.noOutline;
+            noLabel = desc.noLabel;
             fillPaint.setStyle(Paint.Style.FILL);
             rimPaint .setStyle(Paint.Style.STROKE);
             textPaint.setTextAlign(Paint.Align.CENTER);
@@ -215,15 +236,20 @@ public class TouchpadControlElement extends AbstractControlElement {
         void draw(Canvas canvas) {
             float cr = CORNER_RADIUS_DP * parentView.pixelScale * scale;
             // The shadow and the label follow the opacity: as before at the default, fainter below it.
-            rimPaint.setColor(Color.rgb(30, 30, 30));
-            rimPaint.setAlpha(shadowAlpha());
-            rimPaint.setStrokeWidth((STROKE_WIDTH_DP + 3f) * parentView.pixelScale);
-            canvas.drawRoundRect(rect, cr, cr, rimPaint);
+            if (!noOutline) {
+                rimPaint.setColor(Color.rgb(30, 30, 30));
+                rimPaint.setAlpha(shadowAlpha());
+                rimPaint.setStrokeWidth((STROKE_WIDTH_DP + 3f) * parentView.pixelScale);
+                canvas.drawRoundRect(rect, cr, cr, rimPaint);
+            }
             canvas.drawRoundRect(rect, cr, cr, fillPaint);
-            rimPaint.setColor(color);
-            rimPaint.setAlpha(alpha);
-            rimPaint.setStrokeWidth(STROKE_WIDTH_DP * parentView.pixelScale);
-            canvas.drawRoundRect(rect, cr, cr, rimPaint);
+            if (!noOutline) {
+                rimPaint.setColor(color);
+                rimPaint.setAlpha(alpha);
+                rimPaint.setStrokeWidth(STROKE_WIDTH_DP * parentView.pixelScale);
+                canvas.drawRoundRect(rect, cr, cr, rimPaint);
+            }
+            if (noLabel) return;
             float textSize = 28f * parentView.pixelScale * scale;
             textPaint.setTextSize(textSize);
             textPaint.setAlpha(labelAlpha());

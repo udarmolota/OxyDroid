@@ -103,6 +103,7 @@ public class ControlsEditorActivity extends AppCompatActivity {
 
         // Grid snapping: remembered across editor sessions, editor-only (no effect in game).
         final android.content.SharedPreferences editorPrefs = getSharedPreferences(EDITOR_PREFS, MODE_PRIVATE);
+        setUpToolbarDragging(editorPrefs);
         binding.gridTb.setChecked(editorPrefs.getBoolean("snap_to_grid", false));
         binding.inputControlsV.setSnapToGrid(binding.gridTb.isChecked());
         binding.gridTb.setOnCheckedChangeListener((btn, on) -> {
@@ -110,27 +111,22 @@ public class ControlsEditorActivity extends AppCompatActivity {
             editorPrefs.edit().putBoolean("snap_to_grid", on).apply();
         });
 
-        // The two bundled layouts. Loading one replaces the current layout; elements of the other
-        // kind can be added on top (the game takes gamepad and keyboard input together).
+        // The bundled layout. Loading it replaces the current layout (and the one saved for the instance).
         binding.layoutsBtn.setOnClickListener(v -> {
             new MaterialAlertDialogBuilder(this)
                     .setTitle(R.string.editor_reset)
-                    .setItems(new CharSequence[]{
-                            getString(R.string.editor_layout_vkbd),
-                            getString(R.string.editor_layout_gamepad)
-                    }, (dialog, which) -> {
-                        if (which == 0) {
-                            binding.inputControlsV.replaceControlsFromAsset(ControlsStorage.ASSET_VKBD, true);
-                            Toast.makeText(this, R.string.controls_editor_vkbd_loaded, Toast.LENGTH_SHORT).show();
-                        } else {
-                            binding.inputControlsV.replaceControlsFromAsset(ControlsStorage.ASSET_GAMEPAD, true);
-                            Toast.makeText(this, R.string.controls_editor_gamepad_loaded, Toast.LENGTH_SHORT).show();
-                        }
+                    .setItems(new CharSequence[]{ getString(R.string.editor_layout_default) }, (dialog, which) -> {
+                        binding.inputControlsV.replaceControlsFromAsset(ControlsStorage.DEFAULT_ASSET, true);
+                        Toast.makeText(this, R.string.controls_editor_default_loaded, Toast.LENGTH_SHORT).show();
                     })
                     .setNegativeButton(android.R.string.cancel, null)
                     .show();
         });
 
+        // Not offered for Oxygen Not Included: "toggle" (press once to hold), "drag turns the camera" and
+        // the gamepad input type. The game has no mouse look and takes no gamepad from the overlay, so
+        // these controls stay hidden whatever element is selected (every place below that would show
+        // them sets GONE); the layout file hides them from the start.
         binding.inputControlsV.setElementSettingsController(new InputControlsView.ElementSettingsController() {
             /** Shows (or hides) the sensitivity slider for the element; re-run when the
              *  drag-to-look checkbox changes, since that decides whether a button has one. */
@@ -345,17 +341,17 @@ public class ControlsEditorActivity extends AppCompatActivity {
                     binding.elementDragLookCb.setChecked(button.isDragLook());
                     binding.elementDragLookCb.setOnCheckedChangeListener((v, checked) -> {
                         button.setDragLook(checked);
-                        binding.elementDragLookTouchpadCb.setVisibility(checked ? View.VISIBLE : View.GONE);
+                        binding.elementDragLookTouchpadCb.setVisibility(View.GONE);
                         loadSensitivity(element);
                     });
-                    binding.elementDragLookCb.setVisibility(View.VISIBLE);
+                    binding.elementDragLookCb.setVisibility(View.GONE);
                     // The drag's style: a stick (keeps turning while the finger is off centre) or a
                     // touchpad (turns by the finger's travel, always as mouse movement).
                     binding.elementDragLookTouchpadCb.setOnCheckedChangeListener(null);
                     binding.elementDragLookTouchpadCb.setChecked(button.isDragLookTouchpad());
                     binding.elementDragLookTouchpadCb.setOnCheckedChangeListener(
                             (v, checked) -> button.setDragLookTouchpad(checked));
-                    binding.elementDragLookTouchpadCb.setVisibility(button.isDragLook() ? View.VISIBLE : View.GONE);
+                    binding.elementDragLookTouchpadCb.setVisibility(View.GONE);
                 } else {
                     binding.elementDragLookCb.setVisibility(View.GONE);
                     binding.elementDragLookTouchpadCb.setVisibility(View.GONE);
@@ -377,8 +373,22 @@ public class ControlsEditorActivity extends AppCompatActivity {
                     binding.elementTapClickCb.setOnCheckedChangeListener(
                             (v, checked) -> touchpad.setTapDisabled(!checked));
                     binding.elementTapClickCb.setVisibility(View.VISIBLE);
+                    // Look only: a large pad covering half the screen reads better without its frame
+                    // and its "TOUCH" label.
+                    binding.elementNoOutlineCb.setOnCheckedChangeListener(null);
+                    binding.elementNoOutlineCb.setChecked(touchpad.isNoOutline());
+                    binding.elementNoOutlineCb.setOnCheckedChangeListener(
+                            (v, checked) -> touchpad.setNoOutline(checked));
+                    binding.elementNoOutlineCb.setVisibility(View.VISIBLE);
+                    binding.elementNoLabelCb.setOnCheckedChangeListener(null);
+                    binding.elementNoLabelCb.setChecked(touchpad.isNoLabel());
+                    binding.elementNoLabelCb.setOnCheckedChangeListener(
+                            (v, checked) -> touchpad.setNoLabel(checked));
+                    binding.elementNoLabelCb.setVisibility(View.VISIBLE);
                 } else {
                     binding.elementTapClickCb.setVisibility(View.GONE);
+                    binding.elementNoOutlineCb.setVisibility(View.GONE);
+                    binding.elementNoLabelCb.setVisibility(View.GONE);
                 }
 
                 // apply UI for current type
@@ -414,7 +424,7 @@ public class ControlsEditorActivity extends AppCompatActivity {
                             public void onNothingSelected(AdapterView<?> parent) { }
                         });
                     });
-                    binding.elementInputTypeS.setVisibility(View.VISIBLE);
+                    binding.elementInputTypeS.setVisibility(View.GONE);
                 }
 
                 switch (element.getType()) {
@@ -422,9 +432,9 @@ public class ControlsEditorActivity extends AppCompatActivity {
                     case BUTTON_RECT: {
                         binding.elementToggleTextRowLl.setVisibility(View.VISIBLE);
                         binding.elementTextTv.setVisibility(View.VISIBLE);
-                        binding.elementTogglingTv.setVisibility(View.VISIBLE);
+                        binding.elementTogglingTv.setVisibility(View.GONE);
                         binding.elementToggleTextFieldsLl.setVisibility(View.VISIBLE);
-                        binding.elementTogglingCb.setVisibility(View.VISIBLE);
+                        binding.elementTogglingCb.setVisibility(View.GONE);
                         binding.elementTextEt.setVisibility(View.VISIBLE);
                         binding.elementTextEt.removeTextChangedListener(controlElementTextWatcher);
                         controlElementTextWatcher = new TextWatcher() {
@@ -711,7 +721,7 @@ public class ControlsEditorActivity extends AppCompatActivity {
                         || element.getType() == AbstractControlElement.Type.BUTTON_RECT) {
                     binding.elementBindingsTv.setVisibility(View.VISIBLE);
                     binding.elementBindingsAddIb.setVisibility(View.VISIBLE);
-                    binding.elementTogglingCb.setVisibility(View.VISIBLE);
+                    binding.elementTogglingCb.setVisibility(View.GONE);
 
                     binding.elementTogglingCb.setOnCheckedChangeListener(null);
                     binding.elementTogglingCb.setChecked(element.getToggle());
@@ -824,7 +834,7 @@ public class ControlsEditorActivity extends AppCompatActivity {
                     case BUTTON_RECT: {
                         binding.elementBindingsTv.setVisibility(View.VISIBLE);
                         binding.elementBindingsAddIb.setVisibility(View.VISIBLE);
-                        binding.elementTogglingCb.setVisibility(View.VISIBLE);
+                        binding.elementTogglingCb.setVisibility(View.GONE);
 
                         binding.elementTogglingCb.setOnCheckedChangeListener(null);
                         binding.elementTogglingCb.setChecked(element.getToggle());
@@ -1111,6 +1121,64 @@ public class ControlsEditorActivity extends AppCompatActivity {
         } catch (Exception e) {
             Toast.makeText(this, R.string.control_element_custom_icon_failed, Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private static final String PREF_TOOLBAR_X = "toolbar_x";
+    private static final String PREF_TOOLBAR_Y = "toolbar_y";
+
+    /**
+     * The grip drags the toolbar anywhere on the screen, so it never has to sit on the buttons
+     * being placed. Its place is kept as a fraction of the screen, which survives a different
+     * screen size. From SyxDroid's editor.
+     */
+    @SuppressWarnings("ClickableViewAccessibility")
+    private void setUpToolbarDragging(android.content.SharedPreferences prefs) {
+        View toolbar = binding.editorToolbarLl;
+        View parent = binding.getRoot();
+        parent.post(() -> {
+            if (!prefs.contains(PREF_TOOLBAR_X)) return;
+            toolbar.setTranslationX(prefs.getFloat(PREF_TOOLBAR_X, 0f) * parent.getWidth());
+            toolbar.setTranslationY(prefs.getFloat(PREF_TOOLBAR_Y, 0f) * parent.getHeight());
+            clampToolbar();
+        });
+
+        final float[] start = new float[4];
+        binding.editorToolbarGrip.setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                    start[0] = event.getRawX();
+                    start[1] = event.getRawY();
+                    start[2] = toolbar.getTranslationX();
+                    start[3] = toolbar.getTranslationY();
+                    return true;
+                case android.view.MotionEvent.ACTION_MOVE:
+                    toolbar.setTranslationX(start[2] + event.getRawX() - start[0]);
+                    toolbar.setTranslationY(start[3] + event.getRawY() - start[1]);
+                    clampToolbar();
+                    return true;
+                case android.view.MotionEvent.ACTION_UP:
+                case android.view.MotionEvent.ACTION_CANCEL:
+                    if (parent.getWidth() > 0 && parent.getHeight() > 0)
+                        prefs.edit()
+                                .putFloat(PREF_TOOLBAR_X, toolbar.getTranslationX() / parent.getWidth())
+                                .putFloat(PREF_TOOLBAR_Y, toolbar.getTranslationY() / parent.getHeight())
+                                .apply();
+                    return true;
+            }
+            return false;
+        });
+    }
+
+    /** Keeps the whole toolbar on the screen. */
+    private void clampToolbar() {
+        View toolbar = binding.editorToolbarLl;
+        View parent = binding.getRoot();
+        float minX = -toolbar.getLeft();
+        float maxX = parent.getWidth() - toolbar.getRight();
+        float minY = -toolbar.getTop();
+        float maxY = parent.getHeight() - toolbar.getBottom();
+        toolbar.setTranslationX(Math.max(minX, Math.min(maxX, toolbar.getTranslationX())));
+        toolbar.setTranslationY(Math.max(minY, Math.min(maxY, toolbar.getTranslationY())));
     }
 
     @Override

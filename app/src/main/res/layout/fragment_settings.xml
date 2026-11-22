@@ -33,14 +33,18 @@
             style="@style/AppTheme.CardHeader"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/engine_label"
+            android:text="@string/card_video"
             android:layout_marginBottom="6dp" />
 
+        <!-- The engine choice is HIDDEN: Oxygen Not Included runs on the native engine only
+             (SettingsFragment, InstanceSettings.getEngine). The card stays, headed "Video", for the
+             native engine's one setting below. -->
         <RadioGroup
             android:id="@+id/rg_engine"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:visibility="gone">
 
             <RadioButton
                 android:id="@+id/rb_engine_box64_mono"
@@ -118,10 +122,13 @@
     </com.google.android.material.card.MaterialCardView>
 
     <!-- ============================ VIDEO (renderer + driver) ============================ -->
+    <!-- HIDDEN: the renderer and the Vulkan driver are the emulated engines' settings, and the game
+         runs on the native engine only. Ids kept for SettingsFragment. -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
+        android:visibility="gone"
         app:cardCornerRadius="14dp"
         app:cardElevation="2dp">
 
@@ -131,12 +138,24 @@
           android:orientation="vertical"
           android:padding="16dp">
 
+        <!-- The renderer and the Vulkan driver belong to the emulated engines; the native engine uses
+             neither. Folded to the header until tapped (SettingsFragment.setVideoOpen). -->
         <TextView
+            android:id="@+id/tv_video_header"
             style="@style/AppTheme.CardHeader"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/card_video"
-            android:layout_marginBottom="6dp" />
+            android:clickable="true"
+            android:focusable="true" />
+
+        <LinearLayout
+            android:id="@+id/body_video"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="vertical"
+            android:visibility="gone">
 
         <!-- Renderer chooser: Zink ZFA (GL on Vulkan) or MobileGlues (GL on the phone's GLES).
              GL4ES stays hidden. -->
@@ -224,6 +243,7 @@
             android:textAppearance="?attr/textAppearanceBodySmall"
             android:clickable="true"
             android:focusable="true" />
+        </LinearLayout>
       </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -267,11 +287,14 @@
     <!-- ============================ GRAPHICS ============================ -->
     <!-- Graphics profile: written into the game ONCE — on the first launch, or on the launch after
          a button press — and then left alone, so what the player changes in game survives. A
-         button greys out while the game's settings are exactly that profile. -->
+         button greys out while the game's settings are exactly that profile.
+         HIDDEN: the profiles were the previous game's quality settings and Oxygen Not Included has
+         none of them; the ids stay for SettingsFragment. -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
+        android:visibility="gone"
         app:cardCornerRadius="14dp"
         app:cardElevation="2dp">
 
@@ -401,11 +424,13 @@
 
     <!-- ============================ TEXTURE COMPRESSION ============================ -->
     <!-- MobileGlues' ETC2 and shader caches: collapsible to its header (tap), collapsed while the
-         native engine is chosen, which does not use any of it. -->
+         native engine is chosen, which does not use any of it.
+         HIDDEN with the emulated engines; ids kept for SettingsFragment. -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
+        android:visibility="gone"
         app:cardCornerRadius="14dp"
         app:cardElevation="2dp">
 
@@ -658,12 +683,15 @@
             android:alpha="0.7"
             android:text="@string/reverse_landscape_hint" />
 
+        <!-- Keep running in the background was for a hosted multiplayer world: hidden, this game
+             has none. The id stays for SettingsFragment. -->
         <Switch
             android:id="@+id/sw_keep_running_bg"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:textSize="14sp"
+            android:visibility="gone"
             android:text="@string/keep_running_bg_label" />
 
         <TextView
@@ -672,6 +700,7 @@
             android:layout_marginTop="4dp"
             android:textSize="12sp"
             android:alpha="0.7"
+            android:visibility="gone"
             android:text="@string/keep_running_bg_hint" />
       </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -748,12 +777,15 @@
               android:layout_marginTop="4dp"
               android:layout_marginBottom="4dp" />
 
+          <!-- Compatibility mode tunes box64, which the native engine does not use: hidden, the id
+               stays for SettingsFragment. -->
           <Switch
               android:id="@+id/sw_compat_mode"
               android:layout_width="match_parent"
               android:layout_height="wrap_content"
               android:layout_marginTop="16dp"
               android:textSize="14sp"
+              android:visibility="gone"
               android:text="@string/compat_mode_label" />
 
           <TextView
@@ -762,6 +794,7 @@
               android:layout_marginTop="2dp"
               android:textAppearance="?attr/textAppearanceBodySmall"
               android:alpha="0.7"
+              android:visibility="gone"
               android:text="@string/compat_mode_hint" />
 
           <!-- Hidden dev/diagnostic elements — kept so SettingsFragment.findViewById() still resolves

@@ -415,9 +415,43 @@ IL2MONO_API const void* il2cpp_method_get_return_type(const void* method)
 
 // Same convention on both sides: value-type `this` is passed unboxed (IL2CPP Runtime::Invoke /
 // ConvertArgs unbox it before the invoker; mono_runtime_invoke expects a pointer to the value).
+//
+// One engine message is kept from managed code. The Android player's video decoder wants the built-in
+// material Hidden/VideoDecodeAndroid, which only an Android build carries; with PC data the player
+// logs an error the moment a VideoPlayer is created (the main menu makes one). Oxygen Not Included
+// opens its crash screen for any logged error, so the game never got past the menu. The message goes
+// to logcat as before; only Application.CallLogCallback is not called for it. Videos stay black.
+static int is_missing_video_material_log(const void* method, void** params)
+{
+    static const char prefix[] = "Could not find material Hidden/VideoDecodeAndroid";
+    const char* name = p_mono_method_get_name((void*)method);
+    if (!name || name[0] != 'C' || strcmp(name, "CallLogCallback") || !params || !params[0])
+        return 0;
+    int length = p_mono_string_length(params[0]);
+    const uint16_t* chars = p_mono_string_chars(params[0]);
+    if (!chars || length < (int)sizeof(prefix) - 1)
+        return 0;
+    for (size_t i = 0; i < sizeof(prefix) - 1; i++)
+        if (chars[i] != (uint16_t)prefix[i])
+            return 0;
+    return 1;
+}
+
 IL2MONO_API void* il2cpp_runtime_invoke(const void* method, void* obj, void** params, void** exc)
 {
     FIRST_CALL();
+    if (is_missing_video_material_log(method, params))
+    {
+        static int reported;
+        if (!reported)
+        {
+            reported = 1;
+            LOGI("video: Hidden/VideoDecodeAndroid is missing (PC data); the error is kept from the game");
+        }
+        if (exc)
+            *exc = NULL;
+        return NULL;
+    }
     return p_mono_runtime_invoke((void*)method, obj, params, exc);
 }
 

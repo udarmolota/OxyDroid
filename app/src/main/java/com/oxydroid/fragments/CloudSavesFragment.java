@@ -51,7 +51,7 @@ import java.util.concurrent.CompletableFuture;
 public class CloudSavesFragment extends Fragment {
 
     /** RimWorld's Steam app id — the only game this launcher manages. */
-    private static final int APP_ID = com.oxydroid.SteamDownloadSpike.APP_ID;   // Valheim
+    private static final int APP_ID = com.oxydroid.SteamDownloadSpike.APP_ID;   // Oxygen Not Included
 
     private final Handler ui = new Handler(Looper.getMainLooper());
 
@@ -147,21 +147,17 @@ public class CloudSavesFragment extends Fragment {
         busy(true);
         log.setText("");
         if (pullDirection) {
-            final File temp = pullTempDir(gi);
+            // Oxygen Not Included: the colonies go straight into the game's local save_files folder
+            // (SteamCloudSpike.forPullColonies); nothing is replaced without a copy being kept.
+            File colonies = new File(new File(AppStorage.requireSingleton().getInstanceDir(gi.getName()),
+                    com.oxydroid.game.GameDescriptor.ONI.userDataDirectory()), "save_files");
             appendLog(getString(R.string.cloud_saves_log_connecting));
-            new Thread(SteamCloudSpike.forPull(u, p, APP_ID, temp, savesDirOf(gi), new Callbacks() {
-                @Override public void onDone(String message) {
-                    ui.post(() -> {
-                        appendLog("— " + message);
-                        // Connection is closed by now: place the files at leisure.
-                        placeAll(temp, savesDirOf(gi));
-                    });
-                }
-            }), "CloudSavesPull").start();
+            new Thread(SteamCloudSpike.forPullColonies(u, p, APP_ID, colonies, new Callbacks()),
+                    "CloudSavesPull").start();
         } else {
-            appendLog(getString(R.string.cloud_saves_log_connecting));
-            new Thread(SteamCloudSpike.forPush(u, p, APP_ID, gi.getName(), new Callbacks()),
-                    "CloudSavesPush").start();
+            // Sending to the cloud still follows the previous game's folders: not offered yet.
+            busy(false);
+            appendLog(getString(R.string.cloud_saves_push_not_yet));
         }
     }
 

@@ -219,7 +219,8 @@ public class InputControlsView extends View {
             // Editor only: show how much of the screen a floating stick's capture zone takes.
             if (isEditMode && controlElement.isFloating()) drawFloatZone(canvas, controlElement);
         }
-        if (!isEditMode && !mouseLocked && curX >= 0 && (physicalMouse || hasMouseElement())) drawCursor(canvas);
+        if (!isEditMode && !mouseLocked && !cursorHidden && curX >= 0 && (physicalMouse || hasMouseElement()))
+            drawCursor(canvas);
     }
 
     @Override
@@ -724,6 +725,16 @@ public class InputControlsView extends View {
     public void setPhysicalMouse(boolean present) {
         if (present == physicalMouse) return;
         physicalMouse = present;
+        invalidate();
+    }
+
+    private boolean cursorHidden;
+
+    /** The arrow is not drawn while hidden: the pointer still moves (a two-finger drag of the map
+     *  moves it with the fingers, and an arrow chasing them is only noise). */
+    public void setCursorHidden(boolean hidden) {
+        if (hidden == cursorHidden) return;
+        cursorHidden = hidden;
         invalidate();
     }
 

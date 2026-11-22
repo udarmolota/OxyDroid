@@ -79,16 +79,17 @@ public class TransferFragment extends Fragment {
         GameInstanceManager.requireSingleton().reload();
         instances.clear();
         instances.addAll(GameInstanceManager.requireSingleton().getInstances());
+        // Position 0 is a prompt, never an instance: with several instances a pre-selected one would
+        // let a tap on Import overwrite the wrong game's saves. The same rule as the cloud saves screen.
         List<String> names = new ArrayList<>();
-        if (instances.isEmpty()) names.add(getString(R.string.no_instances));
+        names.add(getString(instances.isEmpty() ? R.string.no_instances : R.string.choose_instance_prompt));
         for (GameInstance gi : instances) names.add(gi.getName());
         ArrayAdapter<String> a = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, names);
         a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spInstance.setAdapter(a);
-        // The instance played last is the likely one; the name stays in view at the top of the screen.
-        String last = LauncherPreferences.requireSingleton().getLastInstanceName();
-        for (int i = 0; i < instances.size(); i++)
-            if (instances.get(i).getName().equals(last)) spInstance.setSelection(i);
+        // With exactly one instance there is no wrong one to pick: it is selected up front. With more,
+        // the player chooses.
+        if (instances.size() == 1) spInstance.setSelection(1);
 
         v.findViewById(R.id.btn_transfer_saves_import).setOnClickListener(b -> startImport(SAVES));
         v.findViewById(R.id.btn_transfer_saves_export).setOnClickListener(b -> startExport(SAVES));
@@ -112,14 +113,16 @@ public class TransferFragment extends Fragment {
 
     @Nullable
     private GameInstance current() {
-        int i = spInstance == null ? -1 : spInstance.getSelectedItemPosition();
+        int i = spInstance == null ? -1 : spInstance.getSelectedItemPosition() - 1;   // 0 is the prompt
         return (i >= 0 && i < instances.size()) ? instances.get(i) : null;
     }
 
     @Nullable
     private GameInstance currentOrToast() {
         GameInstance gi = current();
-        if (gi == null) Toast.makeText(requireContext(), R.string.no_instances, Toast.LENGTH_SHORT).show();
+        if (gi == null)
+            Toast.makeText(requireContext(), instances.isEmpty() ? R.string.no_instances
+                    : R.string.choose_instance_prompt, Toast.LENGTH_SHORT).show();
         return gi;
     }
 

@@ -2,7 +2,7 @@
  * macho_unwind.c - turns a dylib's Apple compact unwind info into DWARF CFI the unwinder in
  * liboxydroid_macho_eh.so can use.
  *
- * The dylibs carry only __unwind_info (no __eh_frame). Each entry there is one 32-bit word per
+ * Most functions are described in __unwind_info only. Each entry there is one 32-bit word per
  * function: a mode (frame-based or frameless), which callee-saved register pairs the prologue
  * pushed, an optional personality index and an optional LSDA. That is enough to write, for every
  * function, one DWARF FDE saying where the CFA is and where each saved register lives, plus the
@@ -16,7 +16,7 @@
  * functions (leaves) get their CFA = sp + size; they cannot be mid-stack during a throw, so their
  * register bits are not translated.
  *
- * Anything this file does not understand - the DWARF escape mode, a third-level page kind, a
+ * Anything this file does not understand - a third-level page kind, a
  * personality index it cannot resolve - refuses the whole library. A wrong table would only show
  * up as a crash on an error path, which is the worst kind of bug to have shipped.
  */
@@ -282,8 +282,14 @@ static int uw_emit_function(uw_ctx_t* c, uint32_t func, uint32_t next_func, uint
     if (next_func <= func) return fail(c, "function offsets not increasing");
     if ((uint64_t)next_func > c->image_size) return fail(c, "function past the image");
     uint32_t mode = enc & UNWIND_ARM64_MODE_MASK;
-    if (mode == UNWIND_ARM64_MODE_DWARF) return fail(c, "compact unwind defers to DWARF (no __eh_frame here)");
-    if (mode != UNWIND_ARM64_MODE_FRAME && mode != UNWIND_ARM64_MODE_FRAMELESS) {
+    /* "See __eh_frame": the function's frame is too irregular for a compact encoding and the dylib
+     * carries a real DWARF FDE for it. Nothing to synthesise; the loader registers the dylib's own
+     * __eh_frame section with the EH runtime next to the table built here. */
+    if (mode == UNWIND_ARM64_MODE_DWARF) return 1;
+    /* Encoding 0: "no unwind information for this range" (SimDLL has one). The system unwinder stops
+     * at such a function too; it gets no entry, and a throw can never pass through it. */
+    if (enc == 0) return 1;
+    if (mode !=UNWIND_ARM64_MODE_FRAME && mode != UNWIND_ARM64_MODE_FRAMELESS) {
         snprintf(c->err, sizeof(c->err), "unknown compact unwind mode 0x%08x", enc);
         return 0;
     }

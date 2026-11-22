@@ -127,8 +127,9 @@ public class SettingsFragment extends Fragment {
         view.findViewById(R.id.tv_engine_box64_mono_hint).setVisibility(nativeMonoOffered ? View.VISIBLE : View.GONE);
         view.findViewById(R.id.rb_engine_native).setVisibility(nativeEngineOffered ? View.VISIBLE : View.GONE);
         view.findViewById(R.id.tv_engine_native_hint).setVisibility(nativeEngineOffered ? View.VISIBLE : View.GONE);
-        int engineChoices = (nativeMonoOffered ? 1 : 0) + (nativeEngineOffered ? 1 : 0);
-        view.findViewById(R.id.card_engine).setVisibility(engineChoices > 1 ? View.VISIBLE : View.GONE);
+        // Oxygen Not Included runs on the native engine only: the choice itself is hidden in the
+        // layout, and the card stays for the native engine's Vulkan compatibility setting.
+        view.findViewById(R.id.card_engine).setVisibility(nativeEngineOffered ? View.VISIBLE : View.GONE);
         int engine = inst.getEngine();
         if (engine == InstanceSettings.ENGINE_NATIVE && !nativeEngineOffered) engine = InstanceSettings.ENGINE_BOX64_MONO;
         rgEngine.check(engine == InstanceSettings.ENGINE_NATIVE ? R.id.rb_engine_native : R.id.rb_engine_box64_mono);
@@ -385,7 +386,7 @@ public class SettingsFragment extends Fragment {
         });
 
         // --- Render resolution (Video card): vertical radios, just the resolution text. Per-device
-        // presets from the ~540-row floor up to 72%. Lower = more FPS on weak GPUs. Applied at the next
+        // presets from the 648-row floor up to 72%. Lower = more FPS on weak GPUs. Applied at the next
         // launch.
         android.widget.RadioGroup rgRes = view.findViewById(R.id.rg_render_res);
         android.graphics.Rect bounds =
@@ -393,8 +394,8 @@ public class SettingsFragment extends Fragment {
         final int sLong  = Math.max(bounds.width(), bounds.height());   // landscape width
         final int sShort = Math.min(bounds.width(), bounds.height());   // landscape height = native render height
         final int MIN = LauncherPreferences.minRenderScalePercent(sLong, sShort);
-        // Up to 72% only (778 rows on a 1080p panel): 85% and native were too heavy for phones. The
-        // floor is the default, so a fresh install starts on the lightest option.
+        // Up to 72% only (778 rows on a 1080p panel), a limit inherited from ValDroid. The highest
+        // option is the default (LauncherPreferences.getRenderScalePercent).
         java.util.LinkedHashSet<Integer> pctSet = new java.util.LinkedHashSet<>();
         pctSet.add(MIN);
         for (int p : new int[]{ 60, LauncherPreferences.RENDER_SCALE_MAX_OFFERED }) if (p > MIN) pctSet.add(p);
@@ -415,14 +416,15 @@ public class SettingsFragment extends Fragment {
             rb.setText(W + "×" + H + " (" + getString(R.string.render_res_fullscreen) + ")");
             rb.setTag(p);
             rgRes.addView(rb);
-            if (!curFixed && p == nearestPct) rb.setChecked(true);
+            if (p == nearestPct) rb.setChecked(true);
         }
-        android.widget.RadioButton rbFixed = new android.widget.RadioButton(requireContext());
-        rbFixed.setId(View.generateViewId());
-        rbFixed.setText("1280×720 (" + getString(R.string.render_res_black_margins) + ")");
-        rbFixed.setTag(FIXED_TAG);
-        rgRes.addView(rbFixed);
-        if (curFixed) rbFixed.setChecked(true);
+        // The fixed 1280×720 mode with black margins is not offered for now: a picture that does not
+        // fill the screen needs every touch and cursor position converted to it, and that conversion
+        // has been a source of misplaced clicks. To bring it back, add its radio here again (tag
+        // FIXED_TAG, text "1280×720 (" + R.string.render_res_black_margins + ")"); the listener below
+        // and InstanceSettings still know the mode. An instance that had it stored goes back to its
+        // full-screen resolution.
+        if (curFixed) inst.setFixedResMode(com.oxydroid.InstanceSettings.FIXED_NONE);
 
         rgRes.setOnCheckedChangeListener((group, checkedId) -> {   // set after the initial checks → no spurious writes
             View rb = group.findViewById(checkedId);
@@ -525,7 +527,18 @@ public class SettingsFragment extends Fragment {
         view.findViewById(R.id.tv_texq_header).setOnClickListener(v ->
                 setTexqOpen(view, view.findViewById(R.id.body_texq).getVisibility() != View.VISIBLE));
 
+        // Video card (renderer, Vulkan driver): closed until its header is tapped.
+        setVideoOpen(view, false);
+        view.findViewById(R.id.tv_video_header).setOnClickListener(v ->
+                setVideoOpen(view, view.findViewById(R.id.body_video).getVisibility() != View.VISIBLE));
+
         applyEngineState(view, engine);
+    }
+
+    private void setVideoOpen(View view, boolean open) {
+        view.findViewById(R.id.body_video).setVisibility(open ? View.VISIBLE : View.GONE);
+        ((TextView) view.findViewById(R.id.tv_video_header)).setText(
+                getString(R.string.card_video) + (open ? " \u25BE" : " \u25B8"));
     }
 
     /**

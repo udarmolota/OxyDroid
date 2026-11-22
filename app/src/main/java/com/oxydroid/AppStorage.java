@@ -96,7 +96,7 @@ public class AppStorage {
     }
 
     /** Short, always-fits default instance name (stays well under the sun_path byte budget). */
-    public static final String DEFAULT_INSTANCE_NAME = "Valheim";
+    public static final String DEFAULT_INSTANCE_NAME = "ONI";
 
     /** "Valheim", or "Valheim-2"/"-3"/... — the first name with no existing instance directory.
      *  Shared by every screen that creates an instance (ZIP install and Steam download) so they
@@ -108,7 +108,7 @@ public class AppStorage {
             String n = DEFAULT_INSTANCE_NAME + "-" + i;
             if (!st.getInstanceDir(n).exists()) return n;
         }
-        return DEFAULT_INSTANCE_NAME;   // 1000 instances named Valheim* — practically unreachable
+        return DEFAULT_INSTANCE_NAME;   // 1000 instances named ONI* — practically unreachable
     }
 
     /**

@@ -59,7 +59,7 @@ public class NativeGameOverlay extends FrameLayout
         }
         if (context instanceof Activity) applyWindowSettings((Activity) context, instanceName);
 
-        InputSink.setBackend(new NativeInput());
+        InputSink.setBackend(new com.oxydroid.game.PlayerInput(context, this));
         controls = new InputControlsView(context);
         controls.setInstanceName(instanceName);   // before layout: the layout is read on the first size change
         controls.setRenderScale(1f);              // the cursor is sent as a fraction of the screen
@@ -239,18 +239,85 @@ public class NativeGameOverlay extends FrameLayout
 
     /** One wheel notch at the pinch focus, through the shared cursor as on the box64 engine. */
     private void pinchScroll(float x, float y, int notches) {
-        controls.moveCursorTo(x, y);
+        if (dragging) return;                    // a stray second finger does not zoom mid-drawing
+        if (!panning) controls.moveCursorTo(x, y);   // while panning the cursor is the pan's own
         InputSink.sendMouseScroll(0, notches);
     }
 
     /**
-     * Oxygen Not Included reads Unity's legacy Input Manager, and the Android player feeds that itself:
-     * a touch is the left mouse button at that point, a real mouse and a keyboard arrive as they are. So
-     * the overlay takes nothing and everything falls through to the player's view. The on-screen
-     * controls and gestures below (ValDroid's, which drove the Input System through the bridge) wait
-     * for a legacy-input layer of their own and are hidden meanwhile.
+     * A test switch. Oxygen Not Included reads Unity's legacy Input Manager, which the Android player
+     * fills from the events its view gets; the overlay normally takes every touch and hands the game a
+     * virtual mouse and keyboard through game.PlayerInput. With this on, the overlay takes nothing and
+     * the player sees the raw touches (a touch is then the left button, and nothing else exists).
      */
-    private static final boolean PLAYER_HANDLES_INPUT = true;
+    private static final boolean PLAYER_HANDLES_INPUT = false;
+
+    // One finger dragged over the bare game holds the left button: digging, building and every other
+    // area tool of the game is a left drag. The press is made where the finger first touched.
+    private boolean dragging;
+
+    private int dragPointerId = -1;
+
+    private void endDrag(float x, float y) {
+        if (!dragging) return;
+        dragging = false;
+        dragPointerId = -1;
+        controls.moveCursorTo(x, y);
+        InputSink.sendMouseButton(0, false);
+    }
+
+    // Two fingers moved together drag the map: the game pans its camera while the middle button is
+    // held, whatever tool is selected, so one finger keeps drawing with the tool and two move the
+    // view. The cursor follows the midpoint of the fingers by its changes only, so a finger landing
+    // or lifting (which makes the midpoint jump) does not jerk the camera.
+    private boolean panning;
+    private float panX, panY, panFocusX, panFocusY;
+    private float beforePanX = -1, beforePanY = -1;   // the cursor before the pan, put back after it
+
+    /** Midpoint of the fingers still on the screen (the one being lifted is left out). */
+    private void panFocus(android.view.MotionEvent e, float[] out) {
+        int skip = e.getActionMasked() == android.view.MotionEvent.ACTION_POINTER_UP ? e.getActionIndex() : -1;
+        float x = 0, y = 0;
+        int n = 0;
+        for (int i = 0; i < e.getPointerCount(); i++) {
+            if (i == skip) continue;
+            x += e.getX(i); y += e.getY(i); n++;
+        }
+        out[0] = n == 0 ? e.getX() : x / n;
+        out[1] = n == 0 ? e.getY() : y / n;
+    }
+
+    private final float[] panTmp = new float[2];
+
+    private void panTouch(android.view.MotionEvent e) {
+        int action = e.getActionMasked();
+        panFocus(e, panTmp);
+        if (!panning) {
+            panning = true;
+            // The arrow would chase the fingers across the screen: hidden for the pan, and afterwards
+            // the cursor returns to where it was.
+            beforePanX = controls.getCursorX(); beforePanY = controls.getCursorY();
+            controls.setCursorHidden(true);
+            panX = panTmp[0]; panY = panTmp[1];
+            controls.moveCursorTo(panX, panY);
+            InputSink.sendMouseButton(2, true);
+        } else if (action == android.view.MotionEvent.ACTION_MOVE) {
+            panX += panTmp[0] - panFocusX;
+            panY += panTmp[1] - panFocusY;
+            controls.moveCursorTo(panX, panY);
+        }
+        panFocusX = panTmp[0]; panFocusY = panTmp[1];
+        // The last-but-one finger lifting ends the pan; the remaining finger does nothing more.
+        if (action == android.view.MotionEvent.ACTION_POINTER_UP && e.getPointerCount() <= 2) endPan();
+    }
+
+    private void endPan() {
+        if (!panning) return;
+        panning = false;
+        InputSink.sendMouseButton(2, false);
+        if (beforePanX >= 0) controls.moveCursorTo(beforePanX, beforePanY);
+        controls.setCursorHidden(false);
+    }
 
     @Override
     public boolean onTouchEvent(android.view.MotionEvent e) {
@@ -258,9 +325,21 @@ public class NativeGameOverlay extends FrameLayout
         if (isMouse(e)) return mouseTouch(e);
         if (scaleDetector == null) scaleDetector = new android.view.ScaleGestureDetector(getContext(), new ScaleListener());
         scaleDetector.onTouchEvent(e);
-        if (e.getPointerCount() >= 2 || scaling) {   // pinch: never a tap, never a long press
+        if (e.getPointerCount() >= 2 || scaling) {   // two fingers: never a tap, never a long press
             ui.removeCallbacks(longPressRunnable);
             tapMoved = true;
+            if (dragging) {
+                // Already drawing with the tool: a second finger changes nothing, the drawing goes on
+                // under the finger that began it and ends when that finger lifts.
+                int i = e.findPointerIndex(dragPointerId);
+                int action = e.getActionMasked();
+                if (i < 0) endDrag(tapDownX, tapDownY);
+                else if (action == android.view.MotionEvent.ACTION_POINTER_UP && e.getActionIndex() == i)
+                    endDrag(e.getX(i), e.getY(i));
+                else controls.moveCursorTo(e.getX(i), e.getY(i));
+            } else if (e.getPointerCount() >= 2) {
+                panTouch(e);
+            }
             return true;
         }
         float d = getResources().getDisplayMetrics().density;
@@ -276,16 +355,33 @@ public class NativeGameOverlay extends FrameLayout
                         && Math.abs(e.getX() - tapDownX) + Math.abs(e.getY() - tapDownY) > 22 * d) {
                     tapMoved = true;                        // a drag: neither click
                     ui.removeCallbacks(longPressRunnable);
+                    if (!longPressFired) {
+                        dragging = true;
+                        dragPointerId = e.getPointerId(0);
+                        controls.moveCursorTo(tapDownX, tapDownY);
+                        InputSink.sendMouseButton(0, true);
+                    }
+                }
+                if (dragging) {
+                    // After a second finger came and went, the drawing finger may not be the only one
+                    // left: follow the one that began the drag, end the drag if it is gone.
+                    int i = e.findPointerIndex(dragPointerId);
+                    if (i < 0) endDrag(tapDownX, tapDownY);
+                    else controls.moveCursorTo(e.getX(i), e.getY(i));
                 }
                 return true;
             case android.view.MotionEvent.ACTION_UP:
                 ui.removeCallbacks(longPressRunnable);
-                if (gestureOwned && !tapMoved && !longPressFired)
+                endPan();
+                if (dragging) endDrag(e.getX(), e.getY());
+                else if (gestureOwned && !tapMoved && !longPressFired)
                     controls.tapAt(e.getX(), e.getY(), com.oxydroid.controls.GLFWBinding.MOUSE_BUTTON_LEFT);
                 gestureOwned = false;
                 return true;
             case android.view.MotionEvent.ACTION_CANCEL:
                 ui.removeCallbacks(longPressRunnable);
+                endPan();
+                endDrag(e.getX(), e.getY());
                 gestureOwned = false;
                 return true;
         }
