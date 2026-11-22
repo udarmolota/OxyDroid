@@ -1,0 +1,533 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OxyDroid</string>
+    <string name="launch">Launch</string>
+    <string name="stop">Stop</string>
+    <string name="install_instance">Install Instance (ZIP)…</string>
+    <string name="no_instances">No instances installed</string>
+    <string name="choose_instance_prompt">— Choose an instance —</string>
+    <string name="choose_instance_first">Choose an instance to install into</string>
+    <string name="choose_instance_needed">Choose an instance first</string>
+    <string name="incomplete_game_title">Incomplete game files</string>
+    <string name="incomplete_game_msg">This instance can\'t start — these game files are missing or incomplete:\n\n%1$s\n\nThis usually means a download didn\'t finish. Download the game again using the SAME instance name and it will continue where it stopped.</string>
+    <string name="delete_instance">Delete instance</string>
+    <string name="more_options">More options</string>
+    <string name="delete_instance_confirm">Delete instance \"%1$s\" and all its files? This cannot be undone.</string>
+    <string name="log">Log</string>
+    <string name="renderer">Renderer</string>
+    <string name="vulkan_driver">Vulkan driver</string>
+    <string name="vulkan_driver_hint">Pick the driver that matches your GPU — non-Snapdragon devices should choose the System driver. If not works try another one.</string>
+    <string name="driver_recommend">Recommended driver (detect GPU)</string>
+    <string name="upload_custom_driver">Upload your custom driver</string>
+    <string name="drag_pan_label">Drag the map with a finger to pan</string>
+    <string name="reverse_landscape_label">Rotate screen 180°</string>
+    <string name="nav_cloud_saves">Steam Cloud saves</string>
+    <string name="cloud_saves_title">Steam Cloud saves</string>
+    <string name="cloud_saves_hint">If you also play Valheim on a PC through Steam, your saves are synced to Steam Cloud — this pulls them onto the phone.\n\nSigning in is confirmed through the Steam Mobile app: you must have signed into it at least once and turned Steam Guard on there. When you tap the button, Steam sends an approval request to that app. The password goes straight to Steam and is never stored here.</string>
+    <string name="cloud_saves_user">Steam username</string>
+    <string name="cloud_saves_pass">Steam password</string>
+    <string name="cloud_saves_instance">Copy the saves into</string>
+    <string name="cloud_saves_pull">Get saves from Steam Cloud</string>
+    <string name="cloud_saves_push">Send saves to Steam Cloud</string>
+    <string name="cloud_saves_pull_note">Everything in your cloud is downloaded first, then copied into this instance. If a save of the same name is already here, you get to choose which one to keep.</string>
+    <string name="cloud_saves_push_note">Saves the cloud does not have yet are sent straight away. Anything that would replace a save already up there is listed first, so you can decide. Close the game before sending.</string>
+    <string name="cloud_saves_log_connecting">Connecting to Steam…</string>
+    <string name="cloud_saves_log_placed">Copied in: %1$s</string>
+    <string name="cloud_saves_log_kept">Kept the copy on this phone: %1$s</string>
+    <string name="cloud_saves_place_done">Done: %1$d copied in, %2$d left as they were.</string>
+    <string name="cloud_saves_migrated">Moved %1$d save(s) into the right folder.</string>
+    <string name="cloud_saves_clash_title">%1$s is already here</string>
+    <string name="cloud_saves_clash_msg">On this phone: %1$s
+In the cloud: %2$s
+
+%3$s</string>
+    <string name="cloud_saves_clash_cloud_newer">The cloud copy is newer.</string>
+    <string name="cloud_saves_clash_local_newer">The copy on this phone is newer.</string>
+    <string name="cloud_saves_clash_replace">Use the cloud one</string>
+    <string name="cloud_saves_clash_keep">Keep mine</string>
+    <string name="cloud_saves_clash_both">Keep both</string>
+    <string name="cloud_saves_clash_in_cloud">in the cloud: %1$s</string>
+    <string name="cloud_saves_clash_on_phone">on this phone: %1$s</string>
+    <string name="cloud_saves_from_cloud_suffix">(from cloud)</string>
+    <string name="cloud_saves_world_label">world %1$s (%2$d files)</string>
+    <string name="cloud_saves_world_clash_title">World %1$s is already here</string>
+    <string name="cloud_saves_world_clash_note">Using the cloud one moves this phone\'s world aside to %1$s — nothing is deleted.</string>
+    <string name="cloud_saves_log_world_placed">Copied in: world %1$s (%2$d files)</string>
+    <string name="cloud_saves_log_world_moved_aside">This phone\'s copy of %1$s was moved aside to %2$s</string>
+    <string name="cloud_saves_log_world_kept">Kept this phone\'s world: %1$s</string>
+    <string name="cloud_saves_log_world_failed">Could not install world %1$s — the phone\'s copy was left as it was.</string>
+    <string name="cloud_saves_log_world_restored">Put this phone\'s copy of %1$s back.</string>
+    <string name="cloud_saves_push_replace">Replace them</string>
+    <string name="cloud_saves_push_only_new">Only send new ones</string>
+    <string name="cloud_saves_dir_pull">From cloud</string>
+    <string name="cloud_saves_dir_push">To cloud</string>
+    <string name="cloud_saves_keepalive">Syncing saves with Steam — you can switch to Steam Mobile to approve</string>
+    <string name="cloud_saves_push_confirm_title">Send saves to the cloud?</string>
+    <string name="cloud_saves_push_confirm_replace">These already exist in the cloud and will be REPLACED by the phone\'s copy — your PC will load this version instead:\n\n• %1$s\n\nMake sure the game is closed on both devices.</string>
+    <string name="cloud_saves_no_instances">No instances yet</string>
+    <string name="cloud_saves_need_login">Enter your Steam username and password</string>
+    <string name="cloud_saves_code_title">Enter Steam Guard code</string>
+    <string name="cloud_saves_code_wrong">Code incorrect — try again</string>
+    <string name="cloud_saves_code">Steam Guard code</string>
+    <string name="cloud_saves_code_email">Code emailed to %1$s</string>
+    <string name="reverse_landscape_hint">Flips the game to the opposite landscape — still fixed, no free rotation. Turn on if your gamepad or cradle holds the phone the other way up.</string>
+    <string name="keep_running_bg_label">Keep running in the background</string>
+    <string name="keep_running_bg_hint">Off: the game pauses (picture, sound and world) while OxyDroid is not on screen — screen off, Home, another app — and continues when you return. Turn on only if you host a world for friends.</string>
+    <string name="keep_running_notice">Valheim is running in the background</string>
+    <string name="nav_multiplayer">Online &amp; achievements</string>
+    <string name="crossplay_label">Crossplay (Steam sign-in at launch)</string>
+    <string name="crossplay_hint">Experimental. Before each launch OxyDroid signs in to Steam (approve it in Steam Mobile) and gives the game a one-time pass for Valheim\'s crossplay. The password is not saved; the Steam connection closes a few minutes after the game starts.</string>
+    <string name="crossplay_native_only">Crossplay works on the native engine only: switch it on in this instance\'s settings.</string>
+    <string name="crossplay_servers_note">Only servers and worlds with crossplay on can be joined, by IP or by invite code. A server that is Steam-only (crossplay off) cannot be reached from the phone.</string>
+    <string name="crossplay_step_achievements">Sending achievements…</string>
+    <string name="card_steam_achievements">Steam achievements</string>
+    <string name="steam_achievements_label">Send achievements to Steam</string>
+    <string name="steam_achievements_hint">The game keeps the achievements you earn on the phone. With this on, OxyDroid signs in to Steam before each launch (approve it in Steam Mobile) and adds the new ones to your account. Achievements are only ever added, never removed. Native engine only.</string>
+    <string name="steam_achievements_sent">Steam: %1$d new achievements sent</string>
+    <string name="steam_achievements_failed">Could not send the achievements: %1$s</string>
+    <string name="steam_achievements_show">My achievements</string>
+    <string name="steam_achievements_title">My achievements</string>
+    <string name="steam_achievements_summary">Unlocked: %1$d of %2$d</string>
+    <string name="steam_achievements_updated">updated %1$s</string>
+    <string name="steam_achievements_pending">Waiting to be sent: %1$d</string>
+    <string name="steam_achievements_never">The list appears after the first Steam sign-in at launch.</string>
+    <string name="steam_achievements_waiting">waiting to be sent</string>
+    <string name="crossplay_signin_title">Sign in to Steam</string>
+    <string name="crossplay_signin_note">The password is used for this sign-in only and is not saved.</string>
+    <string name="crossplay_signin_go">Sign in and play</string>
+    <string name="crossplay_play_offline">Play without Steam</string>
+    <string name="crossplay_step_connect">Connecting to Steam…</string>
+    <string name="crossplay_step_approve">Approve the sign-in in the Steam Mobile app…</string>
+    <string name="crossplay_step_ticket">Getting the crossplay pass…</string>
+    <string name="crossplay_failed">Could not sign in to Steam: %1$s</string>
+    <string name="crossplay_keepalive">Steam session for crossplay</string>
+    <string name="compat_mode_label">Compatibility mode</string>
+    <string name="compat_mode_hint">Turn on if the game won\'t start (black screen / stuck on loading). A bit slower, but helps it launch on some devices.</string>
+    <string name="native_engine_preparing">Preparing the native engine…</string>
+    <string name="native_engine_failed">Native engine could not start: %1$s</string>
+    <string name="engine_label">Engine</string>
+    <string name="engine_box64_mono">box64 + native Mono</string>
+    <string name="engine_box64_mono_hint">The engine is emulated, the game\'s own code runs natively. Faster; mods work.</string>
+    <string name="engine_native">Native engine (experimental)</string>
+    <string name="engine_native_hint">Unity\'s own Android engine, nothing emulated. Fastest. Vulkan only; mods with x86 libraries won\'t load.</string>
+    <string name="engine_weak_gpu_note">For this phone\'s GPU the native engine needs the Minimal profile: press Apply next to Minimal in the Graphics card.</string>
+    <string name="vk_compat_label">Vulkan compatibility</string>
+    <string name="vk_compat_auto_on">Auto (on for this GPU)</string>
+    <string name="vk_compat_auto_off">Auto (off for this GPU)</string>
+    <string name="vk_compat_on">On</string>
+    <string name="vk_compat_off">Off</string>
+    <string name="vk_compat_hint">Turn it on if the picture freezes on the logo or in the menu while the game keeps running. The picture is the same; Unity builds each frame differently. Takes effect at the next launch.</string>
+    <string name="engine_native_renderer_note">The native engine always renders with Vulkan directly.</string>
+    <string name="engine_native_driver_note">The native engine uses the phone\'s own Vulkan driver.</string>
+    <string name="haptic_label">Vibrate on button press</string>
+    <string name="audio_label">Game sound</string>
+    <string name="show_fps_label">Show performance stats: FPS, CPU, GPU, memory, heat (top)</string>
+    <string name="fps_cap_label">Frame rate limit</string>
+    <string name="fps_cap_hint">A limit smooths out frame-rate swings and keeps the phone cooler, so it holds its speed longer. The number is picked to fit your screen.</string>
+    <string name="texq_label">Texture compression</string>
+    <string name="texq_hint">Shrinks textures to save memory and gain FPS — needed to load several DLC on weaker phones. It mainly affects vegetation and resources; pawns and animals are never touched. Low is a good balance; Ultra low is a bit faster but plants look blurry.</string>
+    <string name="texq_no">No</string>
+    <string name="texq_low">Low</string>
+    <string name="texq_ultra">Ultra low</string>
+    <string name="etc2_cache_size">Compressed texture cache: %1$s</string>
+    <string name="etc2_cache_empty">Compressed texture cache is empty</string>
+    <string name="etc2_cache_hint">Textures are compressed once and kept here, so later launches load faster. Clearing is safe — they are simply compressed again on the next launch.</string>
+    <string name="etc2_cache_clear">Clear</string>
+    <string name="etc2_cache_cleared">Texture cache cleared</string>
+    <string name="fps_cap_30">30 FPS</string>
+    <string name="fps_cap_60">60 FPS</string>
+    <string name="fps_cap_off">No limit</string>
+    <string name="render_res_label">Render resolution</string>
+    <string name="render_res_relative">Fullscreen</string>
+    <string name="render_res_fixed_169">Black margins 1280×720 — fastest</string>
+    <string name="render_res_fullscreen">fullscreen</string>
+    <string name="render_res_black_margins">black margins</string>
+    <string name="render_res_hint">Lower = more FPS on weak GPUs and a bigger UI. Native = sharpest.</string>
+    <string name="driver_recommend_result">GPU: %1$s → %2$s</string>
+    <string name="renderer_default_title">Renderer: MobileGlues</string>
+    <string name="renderer_default_msg">MobileGlues is selected: it gives the highest FPS. If the ground or textures look black, get game version 1.0.15 or newer — it doesn\'t have this problem. Until then, a Snapdragon (Adreno) phone can switch to Zink for now in the instance settings (the gear icon on the instance card); it is a bit slower. There is no fix for Mali yet.</string>
+    <string name="nav_import_mods">Import Mods (ZIP)…</string>
+    <string name="nav_updates">New versions (GitHub)</string>
+    <string name="nav_bug_report">Report a bug</string>
+    <string name="nav_wiki">Wiki</string>
+    <string name="wiki_more">More in the wiki</string>
+    <string name="launcher_empty_title">Getting started</string>
+    <string name="launcher_empty_quick_start">Quick start</string>
+    <string name="launcher_empty_steam">Download from Steam</string>
+    <string name="launcher_empty_guide">To start playing, create an instance — an installed copy of Valheim. Add your game files with the + at the top, or download the game straight from Steam with the button below: the instance is then created by itself.</string>
+    <!-- "What's new" dialog, shown once per version (LauncherFragment.maybeShowReleaseNotes), in all
+         four languages, cut from the release notes. Read with getText, so <b>/<i> are kept; keep it on
+         one line, because a line break inside a string resource turns into a leading space. -->
+    <string name="news_title">Valheim news</string>
+    <string name="release_notes_title" translatable="false">What\'s new in v%1$s</string>
+    <!-- Drawer footer icon labels (accessibility) -->
+    <string name="link_x">RimDroid on X</string>
+    <string name="link_reddit">OxyDroid on Reddit</string>
+    <string name="link_support">Support the developer</string>
+    <string name="link_soon">Coming soon</string>
+    <!-- Captions shown under each drawer-footer icon. Brand names stay untranslated. -->
+    <string name="nav_label_github" translatable="false">GitHub</string>
+    <string name="nav_label_x" translatable="false">X</string>
+    <string name="nav_label_reddit" translatable="false">Reddit</string>
+    <string name="nav_label_donate">Donate</string>
+    <string name="nav_label_zomdroid" translatable="false">Zomdroid</string>
+    <!-- Cross-promo dialog for the sibling launcher. -->
+    <string name="zomdroid_dialog_message">Zomdroid runs Project Zomboid on Android, the same way this launcher runs Valheim. Same author, same approach.\n\nhttps://github.com/udarmolota/Zomdroid/releases</string>
+    <string name="zomdroid_url" translatable="false">https://github.com/udarmolota/Zomdroid/releases</string>
+    <!-- Bug report email. Number = the tap date as ddMMyyyy, filled at runtime. -->
+    <string name="bug_report_email" translatable="false">210478@mail.ru</string>
+    <string name="bug_report_subject">OXYDROID REPORT %1$s</string>
+    <string name="bug_report_body">Hi, I have a new bug report.\n\nDescription: \n\n\n---\n%1$s</string>
+    <string name="bug_report_no_mail">No email app found on this device.</string>
+    <string name="bug_report_pick_instance">Which game is this report about?</string>
+    <string name="bug_report_intro">Something went wrong? Send us a report. It carries the game\'s logs, so we can see what happened.</string>
+    <string name="bug_report_group_email">Send by email</string>
+    <string name="bug_report_steps">1. Choose the game above.\n2. Tap Send by email.\n3. In the list that opens, pick your mail app (Gmail, Outlook…).\n4. Write a few words about what happened and send.</string>
+    <string name="bug_report_send_email">Send by email</string>
+    <string name="bug_report_pick_mail">Send with</string>
+    <string name="bug_report_no_email_title">No email app on this device?</string>
+    <string name="bug_report_no_email_text">Save the report to a file, then send it from any device to this address. Attach the file and write a few words about what happened.</string>
+    <string name="bug_report_copy">Copy</string>
+    <string name="bug_report_copied">Address copied</string>
+    <string name="bug_report_save_file">Save report to a file</string>
+    <string name="bug_report_saved">Report saved</string>
+    <string name="bug_report_save_failed">Could not save the report: %1$s</string>
+    <string name="bug_report_no_mail_use_file">No email app found on this device. Save the report to a file and send it from another device.</string>
+    <string name="bug_report_preparing">Preparing bug report…</string>
+    <!-- Support dialog (heart icon). ko-fi link is made clickable at runtime. -->
+    <string name="donate_title">Support development</string>
+    <string name="donate_message">Enjoying OxyDroid and want to support it?\n\nMade and maintained by: ko-fi.com/udarmolota\n\nEvery bit helps keep the work going. Thank you! ❤</string>
+    <!-- External links. url_x carries what url_reddit used to. -->
+    <string name="url_github_releases" translatable="false">https://github.com/udarmolota/OxyDroid/releases</string>
+    <string name="url_x" translatable="false">https://x.com/oxydroid</string>
+    <string name="url_reddit_sub" translatable="false">https://www.reddit.com/r/ValDr0id/</string>
+    <string name="on_screen_controls">On-screen controls</string>
+    <string name="edit_controls">Edit on-screen controls</string>
+    <string name="editor_bg_set">Background</string>
+    <string name="editor_bg_clear">No BG</string>
+    <string name="editor_add">Add</string>
+    <string name="editor_reset">Layouts</string>
+    <string name="editor_done">Done</string>
+    <string name="editor_delete">Delete element</string>
+    <string name="editor_layout_gamepad">Gamepad (default)</string>
+    <string name="editor_layout_vkbd">Keyboard and touchpad</string>
+    <string name="nav_launcher" translatable="false">OxyDroid</string>
+    <string name="nav_settings">Settings</string>
+    <string name="app_settings_theme">Theme</string>
+    <string name="app_settings_note">Game settings (renderer, driver, debug, render scale, controls) are per-instance — open them from a game card\'s gear icon.</string>
+    <string name="theme_system">Follow system</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="custom_driver_title">Custom Vulkan driver</string>
+    <string name="custom_driver_note">Import a Vulkan/Turnip driver (a raw .so or an AdrenoTools .zip). Then, in a game card\'s gear → Vulkan driver, pick \"Custom driver (imported)\". The driver is shared by all instances on this device.</string>
+    <string name="custom_driver_import">Import driver (.so / .zip)</string>
+    <string name="custom_driver_remove">Remove</string>
+    <string name="custom_driver_status_none">No custom driver imported.</string>
+    <string name="custom_driver_status_installed">Imported ✓ (%1$s)</string>
+    <string name="custom_driver_importing">Importing driver…</string>
+    <string name="custom_driver_imported">Custom driver imported (%1$s)</string>
+    <string name="custom_driver_import_failed">Import failed: %1$s</string>
+    <string name="custom_driver_removed">Custom driver removed</string>
+    <string name="nav_new_instance">Add game instance</string>
+    <string name="nav_download_game">Steam Downloads</string>
+    <string name="nav_install_content">Install mod / DLC (ZIP)</string>
+    <string name="nav_custom_driver">Custom Vulkan driver</string>
+    <string name="install_content_note">Pick a .zip (mod or DLC) from your phone, choose the instance and type, then Install.</string>
+    <string name="install_content_instance">Install into instance</string>
+    <string name="install_content_type">Type</string>
+    <string name="install_content_mod">MODS</string>
+    <string name="install_content_dlc">DLC</string>
+    <string name="install_content_pick">Choose ZIP file</string>
+    <string name="install_content_no_file">No file selected</string>
+    <string name="install_content_go">Install</string>
+
+    <!-- Download screen -->
+    <string name="download_game_title">Download Valheim from Steam</string>
+    <string name="download_instance_hint">Instance name (e.g. Valheim)</string>
+    <string name="download_user_hint">Steam username</string>
+    <string name="download_pass_hint">Steam password</string>
+    <string name="download_login_note">Your login is sent to Steam (the same way DepotDownloader works) and is NOT stored. Approve the sign-in in your Steam Mobile app, or enter the Steam Guard code when asked.</string>
+
+    <!-- GOG sign-in. Deliberately NOT the Steam wording: a WebView login cannot work without
+         leaving cookies in this app\'s store, so promising that nothing is kept would be false. -->
+    <!-- Temporary library probe: proves GogLibrary works against a real account. -->
+    <string name="new_instance_with_dlc">%1$s\n+ DLC: %2$d</string>
+    <string name="download_manifest_hint">Advanced: Manifest ID — blank = recommended 1.5</string>
+    <string name="download_start">Download</string>
+    <string name="download_tab_game">Game</string>
+    <string name="download_tab_mods">Mods</string>
+    <string name="download_install_content">Install a mod / DLC into an instance</string>
+    <string name="download_mods_note">Download Workshop mods by ID (the number in the workshop URL: …/sharedfiles/filedetails/?id=NUMBER). No Steam login needed. Several IDs can be space-separated. Each is saved as a .zip in /Download/OxyDroid.</string>
+    <string name="download_mods_hint">Workshop ID(s) — space-separated</string>
+    <string name="download_mods_hint_single">Workshop ID</string>
+    <string name="download_mods_start">Download mods</string>
+    <string name="download_mods_login_head">Direct download (no login)</string>
+    <string name="download_mods_browser_head">Download via browser (ggntw.com)</string>
+    <string name="download_mods_browser_note">Opens a third-party downloader — download the .zip there, then Install it into an instance. (Third-party service; use at your own discretion.)</string>
+    <string name="download_mods_browser_start">Get download link (browser)</string>
+    <string name="download_cancel">Cancel download</string>
+    <string name="download_cancel_confirm">Cancel the download in progress?</string>
+    <string name="gl4es_label">GL4ES (compatible, older GPUs)</string>
+    <string name="zink_zfa_label">Zink (Vulkan, Snapdragon only — slower, helps with black textures)</string>
+    <string name="mobileglues_label">MobileGlues (recommended, higher FPS)</string>
+    <string name="debug_mode">Debug mode (verbose log)</string>
+    <string name="env_vars_title">Advanced: extra launch variables</string>
+    <string name="env_vars_hint">KEY=VALUE pairs (space-separated), applied on launch and overriding the defaults. For diagnostics tests — leave empty unless you know what you\'re doing. </string>
+    <string name="env_vars_hint_example">e.g. BOX64_DYNAREC_ALIGNED_ATOMICS=1</string>
+
+    <!-- Settings cards -->
+    <string name="card_video">Video</string>
+    <string name="card_fps">Frame rate</string>
+    <string name="card_controls">Controls</string>
+    <string name="card_sound">Sound</string>
+    <string name="card_advanced">Advanced</string>
+    <string name="sound_generate">Install game sound</string>
+    <string name="sound_generate_note">Game sound is installed as a separate mod because of decoder issues. The toggle below turns that mod on or off. With sound on, the game takes a bit longer to load.</string>
+    <string name="sound_installing_title">Installing sound</string>
+    <string name="sound_generate_toast">This may take up to 2 minutes. You can keep using the app.</string>
+    <string name="sound_done">Sound pack ready! Turn on \"Game sound\" in Settings to use it.</string>
+    <string name="sound_failed">Sound pack generation failed. See Download/_fmod_spike_result.txt.</string>
+    <string name="env_section_header">Environment variables</string>
+    <string name="steam_spike_label">Steam login spike (QR)</string>
+    <string name="steam_dl_label">Steam download spike (Valheim)</string>
+    <string name="pick_zip">Pick ZIP file</string>
+    <string name="install">Install</string>
+    <string name="installing">Installing…</string>
+    <string name="instance_name_hint">Instance name</string>
+    <string name="selected_zip_hint">No file selected</string>
+    <string name="error_name_required">Name is required</string>
+    <string name="error_name_too_long">Name is too long (max %1$d characters)</string>
+    <string name="error_name_exists">An instance with this name already exists</string>
+    <string name="nav_manage_storage">Manage Storage</string>
+    <string name="clear">Clear</string>
+
+    <!-- Gamepad button remapper -->
+    <string name="gamepad_mapper_settings_btn">Gamepad mapping</string>
+    <string name="gamepad_mapper_title">Gamepad mapping</string>
+    <string name="gamepad_mapper_instructions">Fix a controller with swapped buttons, or triggers that move the camera. Tap Start, then press the physical button for each control shown. For LT and RT, press the trigger all the way and release it.</string>
+    <string name="gamepad_mapper_start">Start</string>
+    <string name="gamepad_mapper_reset">Reset to default</string>
+    <string name="gamepad_mapper_reset_done">Mapping reset to default</string>
+    <string name="gamepad_mapper_step">Press the button for:\n%1$s</string>
+    <string name="gamepad_mapper_done">Mapping saved</string>
+    <string name="gamepad_mapper_dup">Already assigned — press another button</string>
+    <string-array name="gamepad_mapper_labels">
+        <item>A</item>
+        <item>B</item>
+        <item>X</item>
+        <item>Y</item>
+        <item>LB (left bumper)</item>
+        <item>RB (right bumper)</item>
+        <item>Select / Back</item>
+        <item>Start / Menu</item>
+        <item>L3 (left stick press)</item>
+        <item>R3 (right stick press)</item>
+        <item>LT (left trigger)</item>
+        <item>RT (right trigger)</item>
+    </string-array>
+    <string name="gfx_preset_label">Graphics</string>
+    <string name="gfx_preset_keep">Don&#8217;t touch</string>
+    <string name="gfx_preset_low">Low</string>
+    <string name="gfx_preset_ultra">Very low</string>
+    <string name="gfx_preset_minimal">Minimal</string>
+    <string name="gfx_preset_minimal_hint">For weak GPUs</string>
+    <string name="gfx_preset_hint">Most FPS: Minimal on the native engine, Very low on the box64 engine. A new game starts on it. Apply sets a profile again at the next launch; grey means it is already set.</string>
+    <string name="hud_scale_label">In-game interface size</string>
+    <string name="hud_scale_default">As in the game</string>
+    <string name="hud_scale_hint">Makes the bars, hotbar, minimap, messages, chat and texts bigger than the game\u2019s own interface scale allows (Settings \u2192 Accessibility, up to 115%). Menus and inventory keep the game\u2019s size. Takes effect at the next launch.</string>
+    <string name="release_notes_body" translatable="false"><b>– Thunderstore mods in the launcher</b>\nThe Mods button at the bottom: search, sort, categories and each mod\'s page. Queue the mods you want and install them with everything they need into the instance you choose. The catalog downloads on Wi-Fi by itself and asks first on mobile data.\n\n<b>– Bottom bar</b>\nHome, Game, Mods, Import and Projects are one tap away.\n\n<b>– Import / export, one screen</b>\nSaves, mods, game settings and on-screen controls of an instance, all in one place.\n\n<b>– Copy mods to another instance</b>\nMods → Copy to…: pick the mods and the instance. Their settings come along.\n\n<b>– Projects</b>\nMy other launchers, with their latest versions.\n\n<b>– Fixes</b>\nBluetooth keyboards with arrow keys type in the game again (they counted as a gamepad). Mods that keep their files in a folder of their own, such as OdinShip, now load: install them again.\n\n<b>– Genuine copy check</b>\nA copy not signed by me says so. Download OxyDroid only from GitHub.\n\n<b>– Console works</b>\nTurn it on in the game\'s settings, open it with L1 + L2 + Start on a gamepad or F5 on a keyboard, and type with OxyDroid\'s keyboard button.\n\n<b>– Tip: keyboard covers the game?</b>\nSwitch your keyboard app to its one-handed or floating mode (in Gboard: the keyboard\'s menu). It gets smaller and the game stays in view.</string>
+    <string name="instance_downloading">downloading, wait until it finishes</string>
+    <string name="instance_incomplete">not finished</string>
+    <string name="instance_incomplete_hint">The download stopped before it finished. Open side menu → %1$s and download again with the same instance name — it continues where it stopped.</string>
+    <string name="download_backup_note">After the download the game is packed into a backup archive in the Downloads folder. That step runs after the progress bar reaches 100%, takes a few minutes for several GB, and needs the app open — please be patient.</string>
+    <string name="gfx_preset_apply">Apply</string>
+    <string name="gfx_preset_pending">%1$s will be applied on the next launch</string>
+    <string name="etc2_cache_header_collapsed">Compressed texture cache ▸</string>
+    <string name="etc2_cache_header_expanded">Compressed texture cache ▾</string>
+    <string name="etc2_label">Enable ETC2 compression</string>
+    <string name="etc2_hint">Compresses textures into a format the phone\'s GPU reads natively, so they take about four times less memory. On weaker phones and on Mali that is the difference between running and running out of memory. Works on MobileGlues. Large textures are also always scaled down.</string>
+    <string name="install_windows_build">This is the Windows version of Valheim, but OxyDroid runs only the Linux version (the one with valheim.x86_64). If you own the game on Steam, the app downloads the right version for you: side menu → %1$s.</string>
+    <string name="install_zip_damaged">Damaged archive. Download it again or make a new one.</string>
+    <string name="install_progress_title">Installing the game</string>
+    <string name="install_phase_copy">Copying the archive</string>
+    <string name="install_phase_extract">Extracting the game</string>
+    <string name="install_phase_setup">Setting up</string>
+    <string name="install_eta_minutes">about %1$d min left</string>
+    <string name="install_eta_under_minute">less than a minute left</string>
+    <string name="install_failed_title">Installation failed</string>
+    <string name="hud_label">In-game display</string>
+    <string name="hud_off">Off</string>
+    <string name="hud_fps">FPS</string>
+    <string name="hud_full">Full info</string>
+    <string name="hud_hint">Full info shows a bar at the top: GPU and CPU load, memory, power draw, temperature and an FPS graph. Handy to see what slows the game down.</string>
+    <string name="fps_mode_eco">Economy (~30)</string>
+    <string name="fps_mode_balanced">Balanced (~40)</string>
+    <string name="fps_mode_smooth">Smooth (~60)</string>
+    <string name="fps_mode_resolved">On this screen: %1$d FPS at %2$d Hz</string>
+    <string name="fps_mode_resolved_fallback">On this screen: %1$d FPS at %2$d Hz. It has no even value near 40.</string>
+    <string name="fps_mode_resolved_off">Screen up to %1$d Hz</string>
+    <!-- Mods (BepInEx) screen -->
+    <string name="nav_mods">Mods</string>
+    <string name="nav_icon_packs">Button icons</string>
+    <string name="nav_controls_transfer">Import / export controls</string>
+    <string name="nav_saves_transfer">Import / export saves</string>
+    <string name="nav_settings_transfer">Import / export settings</string>
+    <string name="saves_transfer_import_title">Import saves</string>
+    <string name="saves_transfer_import_hint">A saves zip exported from OxyDroid (worlds and characters). Worlds and characters with the same names in this instance are replaced.</string>
+    <string name="saves_transfer_import_confirm">Import %1$s into the saves of %2$s? Worlds and characters with the same names are replaced.</string>
+    <string name="saves_transfer_export_title">Export saves</string>
+    <string name="saves_transfer_export_hint">Saves this instance\'s worlds and characters as a zip, to back them up or to move them to another device.</string>
+    <string name="settings_transfer_import_title">Import settings</string>
+    <string name="settings_transfer_import_hint">A settings zip exported from OxyDroid. It replaces this instance\'s game settings.</string>
+    <string name="settings_transfer_import_confirm">Import %1$s into the game settings of %2$s? Its current settings are replaced.</string>
+    <string name="settings_transfer_export_title">Export settings</string>
+    <string name="settings_transfer_export_hint">Saves this instance\'s game settings (graphics, sound, key bindings) as a zip.</string>
+    <string name="transfer_exported">Exported %1$s (%2$d KB)</string>
+    <string name="transfer_export_failed">Export failed: %1$s</string>
+    <string name="transfer_imported">Restored %1$s → %2$s</string>
+    <string name="transfer_import_failed">Import failed: %1$s</string>
+    <string name="controls_transfer_import_title">Import a layout</string>
+    <string name="controls_transfer_import_hint">A controls zip (controls.json and its icons) or a controls .json. It replaces this instance\'s on-screen controls.</string>
+    <string name="controls_transfer_import">Import…</string>
+    <string name="controls_transfer_import_confirm">Replace the on-screen controls of %1$s with %2$s?</string>
+    <string name="controls_transfer_export_title">Export the layout</string>
+    <string name="controls_transfer_export_hint">Saves this instance\'s on-screen controls and their icons as a zip, to keep or to share.</string>
+    <string name="controls_transfer_export">Export…</string>
+    <string name="icon_packs_title">Icon packs</string>
+    <string name="icon_packs_note">Pictures for all on-screen buttons at once, as a set, instead of one by one. Pick the instance and press Apply next to a pack; buttons the pack has no picture for keep their text.</string>
+    <string name="icon_packs_howto">How to make a pack yourself</string>
+    <string name="icon_packs_format">A set of PNG pictures, square, 256 to 512 pixels, on a transparent background. The colour does not matter: a button paints the picture its own colour (to keep the pictures\u2019 own colours, add a pack.json with \"tint\": false). The file names matter, they say which button gets which picture: %1$s. Any other picture in the zip is imported too and can be put on a button by hand in the controls editor. Zip the files and press Import.</string>
+    <string name="icon_packs_instance">Instance</string>
+    <string name="icon_packs_apply">Apply</string>
+    <string name="icon_packs_delete">Delete</string>
+    <string name="icon_packs_import">Import a pack (zip)</string>
+    <string name="icon_packs_count">%1$d pictures</string>
+    <string name="icon_packs_builtin">built in</string>
+    <string name="icon_packs_applied">%1$d buttons of %2$s got icons</string>
+    <string name="icon_packs_applied_none">No button of this layout matches a picture of the pack</string>
+    <string name="icon_packs_apply_failed">Could not change the layout</string>
+    <string name="icon_packs_apply_confirm">Put the pack «%1$s» on the layout of %2$s? Buttons it has a picture for get that picture instead of their current icon or text.</string>
+    <string name="icon_packs_delete_confirm">Delete the pack «%1$s»? Buttons that already show its pictures keep them.</string>
+    <string name="icon_packs_imported">Pack «%1$s» imported: %2$d pictures</string>
+    <string name="icon_packs_import_failed">Could not import the pack: %1$s</string>
+    <string name="control_element_icon_from_pack">From a pack…</string>
+    <string name="mod_support_label">Mod support (BepInEx)</string>
+    <string name="mod_support_hint">Loads BepInEx when the game starts, and with it the mods switched on below. Mods only work with Native ARM64 Mono.</string>
+    <string name="mods_pick_zip">Choose mod file (zip)</string>
+    <string name="mods_install">Install</string>
+    <string name="mods_installed_header">Installed mods</string>
+    <string name="mods_off_note">Mod support is off: these mods are not loaded.</string>
+    <string name="mods_empty">No mods installed yet.</string>
+    <string name="mod_switch_failed">Could not switch this mod</string>
+    <string name="mod_delete_title">Delete %1$s?</string>
+    <string name="mod_delete_message">The mod is removed from this instance, and any game files it replaced are put back.</string>
+    <string name="mod_delete_confirm">Delete</string>
+    <string name="mod_installed">Installed: %1$s</string>
+    <string name="mod_install_failed">Could not install the mod</string>
+    <string name="mod_author">by %1$s</string>
+    <string name="mods_enable_all">Enable all</string>
+    <string name="mods_disable_all">Disable all</string>
+    <string name="mods_enable_all_confirm">Switch on all %1$d mods?</string>
+    <string name="mods_disable_all_confirm">Switch off all %1$d mods?</string>
+    <string name="mods_export">Export…</string>
+    <string name="mods_export_title">Mods to export</string>
+    <string name="mods_export_all">All</string>
+    <string name="mods_export_go">Export</string>
+    <string name="mods_export_none">Pick at least one mod</string>
+    <string name="mods_exported">Exported %1$d mods. The zip installs back with Install, all of them at once.</string>
+    <string name="mods_export_failed">Could not export the mods: %1$s</string>
+    <string name="mods_copy">Copy to…</string>
+    <string name="mods_copy_title">Mods to copy</string>
+    <string name="mods_copy_next">Next</string>
+    <string name="mods_copy_target">Copy %1$d mods to:</string>
+    <string name="mods_copy_no_target">There is no other instance to copy to.</string>
+    <string name="mods_copy_confirm">Copy %1$d mods to %2$s? Mods it already has stay as they are; their settings come along where it has none.</string>
+    <string name="mods_copy_go">Copy</string>
+    <string name="mods_copy_running">Copying mods to %1$s</string>
+    <string name="mods_copy_done">Copied: %1$d.</string>
+    <string name="mods_copy_done_short">Mods copied: %1$d</string>
+    <string name="mods_copy_already">Already there, left as they were:</string>
+    <string name="mods_copy_failed">Could not copy:</string>
+    <string name="native_mono_fallback_title">Native ARM64 Mono did not load</string>
+    <string name="native_mono_fallback_message">In the last launch of %1$s the native ARM64 Mono could not be loaded, so the game ran on the slower emulated Mono (about half the frame rate).\n\nReason: %2$s\n\nPlease send a report with Report a bug in the menu.</string>
+    <string name="mods_install_header">Install a mod</string>
+    <string name="shader_cache_label">Shader cache</string>
+    <string name="shader_cache_hint">Keeps compiled shaders on the phone, so a new enemy or effect stutters only the very first time you see it, not in every session. Works on MobileGlues. Turn it off if something renders wrong. Off by default on Mali GPUs: there it can turn the water black.</string>
+    <!-- Thunderstore screen (ThunderstoreFragment) -->
+    <string name="ts_menu">Thunderstore mods</string>
+    <string name="ts_open_a_mod">Tap ↓ on a mod to queue it, or the mod to see its page.</string>
+    <string name="ts_add_to_queue">Add to queue</string>
+    <string name="ts_remove_from_queue">Remove</string>
+    <string name="ts_added">Added to queue: %1$s</string>
+    <string name="ts_install">Install</string>
+    <string name="ts_install_n">Install (%1$d)</string>
+    <string name="ts_choose_instance">Install into which instance?</string>
+    <string name="ts_resolving">Checking what these mods need…</string>
+    <string name="ts_error_resolve">Could not get the mods from Thunderstore: %1$s</string>
+    <string name="ts_confirm_title">Install %1$d mod(s)?</string>
+    <string name="ts_also_needed">Also needed:</string>
+    <string name="ts_confirm_note">Into instance “%1$s”. Downloaded from Thunderstore, no sign-in needed. BepInEx is built into OxyDroid and is not downloaded.</string>
+    <string name="ts_clear_queue">Clear queue</string>
+    <string name="ts_installing">Installing %1$d of %2$d: %3$s</string>
+    <string name="ts_failed_line">✗ %1$s: %2$s</string>
+    <string name="ts_done_title">Mods installed</string>
+    <string name="ts_done_some">Some mods were not installed</string>
+    <string name="ts_mods_off">Mods are off for this instance: turn them on in Mods.</string>
+    <string name="ts_text_smaller">Smaller text</string>
+    <string name="ts_text_larger">Larger text</string>
+    <string name="ts_total_size">To download: %1$s</string>
+    <string name="ts_card_meta">%1$s · ↓ %2$s · %3$s</string>
+    <string name="ts_nothing_found">No mods found.</string>
+    <string name="ts_load">Download</string>
+    <string name="ts_mobile_message">You are not on Wi-Fi. The mod catalog is about 15 MB. It is downloaded once; later only the changes are fetched, and only on Wi-Fi.</string>
+    <string name="ts_mobile_title">Download the catalog over mobile data?</string>
+    <string name="ts_load_catalog">Download</string>
+    <string name="ts_not_loaded">The mod catalog is not downloaded yet.</string>
+    <string name="ts_retry">Retry</string>
+    <string name="ts_catalog_failed">Could not load the mod catalog: %1$s</string>
+    <string name="ts_loading_catalog">Downloading the mod catalog… %1$d / %2$d</string>
+    <string name="ts_reading_catalog">Opening the mod catalog…</string>
+    <string name="ts_all_categories">All categories</string>
+    <string name="ts_sort_name">By name</string>
+    <string name="ts_sort_rating">Top rated</string>
+    <string name="ts_sort_updated">Recently updated</string>
+    <string name="ts_sort_popular">Most downloaded</string>
+    <string name="ts_search_hint">Search mods</string>
+    <!-- Bottom bar, Import / export and Projects screens (2026-11, as in Zomdroid and RimDroid) -->
+    <string name="bottom_nav_home">Home</string>
+    <string name="bottom_nav_game">Game</string>
+    <string name="bottom_nav_mods">Mods</string>
+    <string name="bottom_nav_transfer">Import</string>
+    <string name="bottom_nav_projects">Projects</string>
+    <string name="transfer_title">Import / export</string>
+    <string name="transfer_instance">Instance</string>
+    <string name="transfer_import">Import</string>
+    <string name="transfer_export">Export</string>
+    <string name="transfer_saves">Saves</string>
+    <string name="transfer_saves_hint">A zip of this instance\'s worlds and characters: to keep, or to move to another instance or phone. Worlds and characters with the same names are replaced on import. PC saves zipped from worlds_local and characters_local import too.</string>
+    <string name="transfer_mods">Mods</string>
+    <string name="transfer_mods_hint">Import: one or more mod .zip files (Thunderstore or Nexus). Export: every mod of this instance in one .zip, which installs whole here or on another phone.</string>
+    <string name="transfer_mods_installing">Installing mods…</string>
+    <string name="transfer_mods_imported">Mods installed: %1$d</string>
+    <string name="transfer_mods_none">This instance has no mods.</string>
+    <string name="transfer_settings">Game settings</string>
+    <string name="transfer_settings_hint">Graphics, sound and key bindings. Import replaces the instance\'s current ones. Phone to phone only: the PC version keeps its settings elsewhere.</string>
+    <string name="transfer_controls">On-screen controls</string>
+    <string name="transfer_controls_hint">The instance\'s controls layout with its icons, as a .zip. Import replaces the instance\'s layout; a bare controls .json is accepted too.</string>
+    <string name="transfer_device">For the whole phone</string>
+    <string name="transfer_device_hint">The custom Vulkan driver and the button icon packs belong to the phone, not to an instance.</string>
+    <string name="transfer_driver_button">Custom driver</string>
+    <string name="transfer_icons_button">Icons</string>
+    <string name="projects_title">Other projects</string>
+    <string name="projects_reddit_title" translatable="false">r/UdarMolotaDev</string>
+    <string name="projects_reddit_hint">News of all my projects</string>
+    <string name="projects_download">Download</string>
+    <string name="projects_page">Page</string>
+    <string name="projects_latest_version">Latest version: %1$s</string>
+    <string name="projects_here">You are here</string>
+    <!-- A copy not signed with the release key (LauncherActivity.maybeWarnForeignSignature) -->
+    <string name="signature_warning_title">This copy is not from the author</string>
+    <string name="signature_warning_message">It is signed with a different key, so it may have been modified. The original OxyDroid is on GitHub. The game still starts as usual.</string>
+    <string name="signature_warning_github">Open GitHub</string>
+    <string name="signature_warning_dont_show">Don\'t show again</string>
+</resources>

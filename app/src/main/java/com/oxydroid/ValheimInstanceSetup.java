@@ -1,0 +1,381 @@
+package com.oxydroid;
+
+import android.util.Log;
+
+import com.oxydroid.game.GameDescriptor;
+
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.function.Consumer;
+
+/**
+ * Post-install setup for Valheim instances, applied on install and re-applied (idempotently) for
+ * existing instances at app start. Valheim refuses to run without a successful SteamAPI_Init(): with
+ * no Steam client the Valve libsteam_api.so fails Init and FejdStartup quits. The instance therefore
+ * gets the Goldberg Steam emulator (gbe_fork, LGPL-3.0) in place of Valve's library, configured for
+ * offline single-player, plus a PlayerPrefs flag that stops the PlayFab auto-login from hammering the
+ * network on every start. The emulator is downloaded from its GitHub release (pinned tag + SHA-256),
+ * never bundled in the APK.
+ */
+public final class ValheimInstanceSetup {
+    private static final String TAG = "OxyDroid/ValheimSetup";
+
+    // gbe_fork release the shim is taken from. Bump both together.
+    private static final String GBE_TAG = "release-2026_09_16_2";
+    private static final String GBE_URL =
+            "https://github.com/Detanup01/gbe_fork/releases/download/" + GBE_TAG + "/emu-linux-release.tar.bz2";
+    private static final String GBE_ENTRY = "release/regular/x64/libsteam_api.so";
+    private static final String GBE_SHA256 =
+            "874817c98a2f6adbfbb78576ed56ae2bf9acf83379a0eb0843b73ca6d7e53b3c";
+
+    private static final String STEAM_LIB = "libsteam_api.so";
+    /** Valve's original, kept OUTSIDE Plugins/: Unity dlopens every .so in that folder. */
+    private static final String STEAM_LIB_BACKUP = "libsteam_api.so.valve";
+    private static final String SHIM_CACHE_DIR = "steam_shim";
+
+    private ValheimInstanceSetup() {}
+
+    /**
+     * Full setup for one instance. Never throws: a missing shim is reported through {@code progress}
+     * and the instance is left playable-once-fixed rather than half-installed.
+     * @return null on success, otherwise a warning for the user
+     */
+    public static String apply(File instanceDir, Consumer<String> progress) {
+        String warning = null;
+        try {
+            installSteamShim(instanceDir, progress);
+        } catch (Exception e) {
+            Log.w(TAG, "Steam shim install failed", e);
+            warning = "Steam shim not installed (" + e.getMessage()
+                    + "). Valheim quits at startup without it; reopen the app online to retry.";
+        }
+        try {
+            writeSteamSettings(instanceDir);
+        } catch (IOException e) {
+            Log.w(TAG, "steam_settings write failed", e);
+        }
+        try {
+            setPlayerPrefInt(instanceDir, "ShouldTryAutoLogin", 0);
+        } catch (IOException e) {
+            Log.w(TAG, "PlayerPrefs write failed", e);
+        }
+        return warning;
+    }
+
+    /** Re-apply to every installed Valheim instance (app start, off the UI thread). */
+    public static void reconcileExistingInstances(File instancesDir) {
+        File[] dirs = instancesDir.listFiles(File::isDirectory);
+        if (dirs == null) return;
+        for (File dir : dirs) {
+            if (!new File(dir, GameDescriptor.ONI.executable()).isFile()) continue;
+            String warning = apply(dir, msg -> Log.i(TAG, dir.getName() + ": " + msg));
+            if (warning != null) Log.w(TAG, dir.getName() + ": " + warning);
+        }
+    }
+
+    // --- Steam shim ---------------------------------------------------------------------------
+
+    private static void installSteamShim(File instanceDir, Consumer<String> progress) throws Exception {
+        File plugins = new File(instanceDir, GameDescriptor.ONI.dataDirectory() + "/Plugins");
+        File target = new File(plugins, STEAM_LIB);
+        File shim = ensureShimCached(progress);
+        if (target.isFile() && sha256(target).equals(GBE_SHA256)) return;   // already in place
+
+        // Keep Valve's library once, outside Plugins/. A stray backup inside Plugins/ would be
+        // loaded by Unity as a second copy of the same library.
+        File backup = new File(instanceDir, STEAM_LIB_BACKUP);
+        if (target.isFile() && !backup.isFile()) copy(target, backup);
+        File stale = new File(plugins, "libsteam_api.so.rdorig");
+        if (stale.isFile()) { if (!backup.isFile()) copy(stale, backup); stale.delete(); }
+
+        plugins.mkdirs();
+        copy(shim, target);
+        Log.i(TAG, "Steam shim installed into " + target);
+    }
+
+    /** Download the gbe_fork release once and keep only the x64 libsteam_api.so under files/. */
+    private static File ensureShimCached(Consumer<String> progress) throws Exception {
+        File dir = new File(AppStorage.requireSingleton().getHomePath(), SHIM_CACHE_DIR);
+        File cached = new File(dir, STEAM_LIB);
+        if (cached.isFile() && sha256(cached).equals(GBE_SHA256)) return cached;
+        dir.mkdirs();
+        progress.accept("Downloading Steam shim (gbe_fork " + GBE_TAG + ")...");
+        File tmp = new File(dir, STEAM_LIB + ".part");
+        HttpURLConnection c = (HttpURLConnection) new URL(GBE_URL).openConnection();
+        c.setConnectTimeout(15000);
+        c.setReadTimeout(60000);
+        c.setInstanceFollowRedirects(true);
+        int code = c.getResponseCode();
+        if (code != 200) throw new IOException("HTTP " + code + " from GitHub");
+        boolean found = false;
+        try (InputStream raw = new BufferedInputStream(c.getInputStream(), 1 << 16);
+             BZip2CompressorInputStream bz = new BZip2CompressorInputStream(raw);
+             TarArchiveInputStream tar = new TarArchiveInputStream(new BufferedInputStream(bz, 1 << 20))) {
+            TarArchiveEntry entry;
+            while ((entry = tar.getNextEntry()) != null) {
+                if (entry.isDirectory() || !entry.getName().endsWith(GBE_ENTRY)) continue;
+                try (FileOutputStream out = new FileOutputStream(tmp)) {
+                    byte[] buf = new byte[1 << 16];
+                    int n;
+                    while ((n = tar.read(buf)) != -1) out.write(buf, 0, n);
+                }
+                found = true;
+                break;
+            }
+        } finally {
+            c.disconnect();
+        }
+        if (!found) throw new IOException(GBE_ENTRY + " not in the release archive");
+        String got = sha256(tmp);
+        if (!got.equals(GBE_SHA256)) {
+            tmp.delete();
+            throw new IOException("Steam shim checksum mismatch: " + got);
+        }
+        if (!tmp.renameTo(cached)) throw new IOException("cannot move " + tmp + " into place");
+        return cached;
+    }
+
+    // --- steam_settings ----------------------------------------------------------------------
+
+    private static void writeSteamSettings(File instanceDir) throws IOException {
+        File dir = new File(instanceDir, GameDescriptor.ONI.dataDirectory() + "/Plugins/steam_settings");
+        dir.mkdirs();
+        writeIfMissing(new File(dir, "steam_appid.txt"), GameDescriptor.ONI.steamAppId() + "\n");
+        // No sockets, no LAN broadcast, Steam "offline": the game is single-player here. steam_deck makes
+        // the emulator answer IsSteamRunningOnSteamDeck() = true, which is what Valheim keys its Steam
+        // Deck platform config on (the ARM64 stub for native Mono answers the same). Added to an
+        // existing ini too, since instances set up before this key existed keep their file.
+        File mainIni = new File(dir, "configs.main.ini");
+        writeIfMissing(mainIni,
+                "[main::connectivity]\ndisable_networking=1\ndisable_lan_only=1\noffline=1\n");
+        String ini = new String(java.nio.file.Files.readAllBytes(mainIni.toPath()), StandardCharsets.UTF_8);
+        if (!ini.contains("steam_deck=")) {
+            java.nio.file.Files.write(mainIni.toPath(),
+                    (ini + (ini.endsWith("\n") ? "" : "\n") + "[main::general]\nsteam_deck=1\n")
+                            .getBytes(StandardCharsets.UTF_8));
+        }
+        writeIfMissing(new File(dir, "configs.user.ini"),
+                "[user::general]\naccount_name=Viking\nlanguage=english\n");
+    }
+
+    // --- PlayerPrefs -------------------------------------------------------------------------
+
+    /**
+     * Write a graphics preset into the game's own settings, before it starts.
+     *
+     * The values come from a device run that held 40-55 FPS on an S25 (they are the keys Valheim
+     * stores in PlayerPrefs; the launcher's own render scale stays in charge of the window size).
+     * What matters under emulation is the number of draw calls and scene traversals, not fill rate:
+     * tessellation alone cost 15 FPS, and shadows traverse the whole scene a second time. So both
+     * presets kill those, and LOW keeps the effects that only cost the GPU, which has headroom
+     * (antialiasing, bloom, sun shafts, soft particles). ULTRA drops those too and renders the 3D
+     * scene at 360 lines instead of 480.
+     */
+    private static final String[] GFX_COMMON = {
+            // "Custom" quality mode, and it has to be written with the profile. Without the key,
+            // Valheim treats the start as its first one, picks its own default mode (Medium) and
+            // overwrites every individual key with that mode's values — seen on a fresh tablet
+            // 2026-09-21: our Very low written at 16:08, the game came up on Medium. 100 is what
+            // the game itself writes once the player edits settings by hand.
+            "GraphicsQualityMode=100",
+            // off in both presets: each of these multiplies the work the emulated engine does
+            "Tesselation=0", "ShadowQuality=0", "DistantShadows=0", "PointLightShadows=0",
+            "SSAO_2=0", "MotionBlur=0", "DOF=0", "ClothQuality=0", "Lights=0", "SimulationDistance=0",
+            // no waiting on the panel, no frame cap, and skip the intro film (it stutters badly here)
+            "VSync=0", "FPSLimit=361", "SkipIntroCinematic=1",
+    };
+    private static final String[] GFX_LOW = {
+            "AntiAliasing=1", "Bloom=1", "ChromaticAberration=1", "SunShafts=1", "SoftPart=1",
+            "PointLights=1", "ClutterQuality=1", "LodBias=1", "Target3DResolutionVertical=480",
+    };
+    private static final String[] GFX_ULTRA = {
+            "AntiAliasing=0", "Bloom=0", "ChromaticAberration=0", "SunShafts=0", "SoftPart=0",
+            "PointLights=0", "ClutterQuality=0", "LodBias=0", "Target3DResolutionVertical=360",
+    };
+    // Very low with fewer pixels, scaled up pixelated (UpscalingAlgorithm: 0 Bilinear, 1 NearestNeighbor),
+    // for weak GPUs: what took a Mali-G57 to its 30 fps cap in the native engine (2026-10-06).
+    private static final String[] GFX_MINIMAL = {
+            "AntiAliasing=0", "Bloom=0", "ChromaticAberration=0", "SunShafts=0", "SoftPart=0",
+            "PointLights=0", "ClutterQuality=0", "LodBias=0", "Target3DResolutionVertical=270",
+            "UpscalingAlgorithm=1",
+    };
+    // Written with Very low and Low, not compared: puts back smooth scaling after Minimal, while
+    // settings that never had the key still read as their profile.
+    private static final String[] GFX_SMOOTH_SCALING = { "UpscalingAlgorithm=0" };
+
+    // Not graphics quality: frame pacing and the intro film. The game can change them for its own
+    // reasons, and that must not make "Very low" read as "custom" in the launcher.
+    private static final java.util.Set<String> GFX_NOT_QUALITY =
+            new java.util.HashSet<>(java.util.Arrays.asList("VSync", "FPSLimit", "SkipIntroCinematic"));
+
+    /**
+     * Which of our profiles the game's settings currently are, for the launcher's buttons: GFX_ULTRA
+     * or GFX_LOW when every quality key matches that profile exactly, GFX_KEEP when the player has
+     * changed something, -1 when the game has not written its settings file yet. Reads the file
+     * Unity actually loads under box64 (unknown/unknown — see setPlayerPrefInt).
+     */
+    public static int detectGraphicsPreset(File instanceDir) {
+        File f = new File(instanceDir, "unity3d/unknown/unknown/prefs");
+        if (!f.isFile()) return -1;
+        java.util.Map<String, Integer> have = new java.util.HashMap<>();
+        try {
+            String xml = new String(java.nio.file.Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8);
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("<pref\\s+name=\"([^\"]+)\"\\s+type=\"int\"\\s*>\\s*(-?\\d+)\\s*</pref>")
+                    .matcher(xml);
+            while (m.find()) have.put(m.group(1), Integer.parseInt(m.group(2)));
+        } catch (Exception e) {
+            Log.w(TAG, "graphics preset detect: " + e);
+            return GFX_KEEP_RESULT;
+        }
+        return detectGraphicsPreset(have);
+    }
+
+    /** The same for settings already read (the native engine's, see ValheimPrefsSync). */
+    public static int detectGraphicsPreset(java.util.Map<String, Integer> have) {
+        if (profileMatches(have, GFX_MINIMAL)) return com.oxydroid.InstanceSettings.GFX_MINIMAL;
+        if (profileMatches(have, GFX_ULTRA)) return com.oxydroid.InstanceSettings.GFX_ULTRA;
+        if (profileMatches(have, GFX_LOW))   return com.oxydroid.InstanceSettings.GFX_LOW;
+        return GFX_KEEP_RESULT;
+    }
+
+    private static final int GFX_KEEP_RESULT = com.oxydroid.InstanceSettings.GFX_KEEP;
+
+    /**
+     * Whether the game has ever saved its graphics settings in this instance. Not the same as
+     * "the settings file exists": our own install step creates that file before the first launch
+     * (ShouldTryAutoLogin, see apply()), which made every new instance look already played and
+     * skip the first-launch profile. GraphicsQualityMode is written only by the game — or by us
+     * together with a profile — so its presence is the real "settings were set" signal.
+     */
+    public static boolean hasGameGraphicsSettings(File instanceDir) {
+        File f = new File(instanceDir, "unity3d/unknown/unknown/prefs");
+        if (!f.isFile()) return false;
+        try {
+            String xml = new String(java.nio.file.Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8);
+            return xml.contains("name=\"GraphicsQualityMode\"");
+        } catch (IOException e) {
+            return true;   // unreadable: do not risk overwriting someone's settings
+        }
+    }
+
+    private static boolean profileMatches(java.util.Map<String, Integer> have, String[] tier) {
+        for (String[] set : new String[][]{ GFX_COMMON, tier }) {
+            for (String kv : set) {
+                int eq = kv.indexOf('=');
+                String key = kv.substring(0, eq);
+                if (GFX_NOT_QUALITY.contains(key)) continue;
+                Integer v = have.get(key);
+                if (v == null || v != Integer.parseInt(kv.substring(eq + 1))) return false;
+            }
+        }
+        return true;
+    }
+
+    /** Applies {@link com.oxydroid.InstanceSettings#getGraphicsPending()}; KEEP writes nothing. */
+    public static void applyGraphicsPreset(File instanceDir, int preset) {
+        String[] tier, extra;
+        String name;
+        switch (preset) {
+            case com.oxydroid.InstanceSettings.GFX_LOW:
+                tier = GFX_LOW; extra = GFX_SMOOTH_SCALING; name = "LOW"; break;
+            case com.oxydroid.InstanceSettings.GFX_ULTRA:
+                tier = GFX_ULTRA; extra = GFX_SMOOTH_SCALING; name = "ULTRA"; break;
+            case com.oxydroid.InstanceSettings.GFX_MINIMAL:
+                tier = GFX_MINIMAL; extra = new String[0]; name = "MINIMAL"; break;
+            default:
+                return;
+        }
+        int written = 0;
+        for (String[] set : new String[][]{ GFX_COMMON, tier, extra }) {
+            for (String kv : set) {
+                int eq = kv.indexOf('=');
+                try {
+                    setPlayerPrefInt(instanceDir, kv.substring(0, eq), Integer.parseInt(kv.substring(eq + 1)));
+                    written++;
+                } catch (Exception e) {
+                    Log.w(TAG, "graphics preset: " + kv + " failed: " + e);
+                }
+            }
+        }
+        Log.i(TAG, "graphics preset " + name + ": " + written + " settings written");
+    }
+
+    /**
+     * Unity's Linux PlayerPrefs live in {@code $XDG_CONFIG_HOME/unity3d/<Company>/<Product>/prefs}
+     * (the launcher points XDG_CONFIG_HOME at the instance) as a small XML file. Under box64 Unity 6
+     * resolves company/product as "unknown/unknown" (seen on device: Screenmanager keys land there),
+     * so both that path and the nominal IronGate/Valheim one are written. Set one int key, creating
+     * the file if the game has not written one yet.
+     */
+    static void setPlayerPrefInt(File instanceDir, String key, int value) throws IOException {
+        writePlayerPrefInt(new File(instanceDir, "unity3d/unknown/unknown/prefs"), key, value);
+        writePlayerPrefInt(new File(instanceDir, GameDescriptor.ONI.userDataDirectory() + "/prefs"), key, value);
+    }
+
+    private static void writePlayerPrefInt(File prefs, String key, int value) throws IOException {
+        String entry = "\t<pref name=\"" + key + "\" type=\"int\">" + value + "</pref>\n";
+        String xml;
+        if (prefs.isFile()) {
+            xml = new String(java.nio.file.Files.readAllBytes(prefs.toPath()), StandardCharsets.UTF_8);
+            String existing = "<pref name=\"" + key + "\" type=\"int\">" + value + "</pref>";
+            if (xml.contains(existing)) return;
+            String replaced = xml.replaceAll("[ \\t]*<pref name=\"" + key + "\" type=\"int\">[^<]*</pref>\\n?", "");
+            int end = replaced.lastIndexOf("</unity_prefs>");
+            if (end < 0) throw new IOException("unexpected prefs format in " + prefs);
+            xml = replaced.substring(0, end) + entry + replaced.substring(end);
+        } else {
+            prefs.getParentFile().mkdirs();
+            xml = "<unity_prefs version_major=\"1\" version_minor=\"1\">\n" + entry + "</unity_prefs>\n";
+        }
+        try (FileOutputStream out = new FileOutputStream(prefs)) {
+            out.write(xml.getBytes(StandardCharsets.UTF_8));
+        }
+        Log.i(TAG, "PlayerPrefs " + key + "=" + value + " (" + prefs + ")");
+    }
+
+    // --- helpers -----------------------------------------------------------------------------
+
+    private static void writeIfMissing(File f, String content) throws IOException {
+        if (f.isFile()) return;
+        try (FileOutputStream out = new FileOutputStream(f)) {
+            out.write(content.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
+    private static void copy(File src, File dst) throws IOException {
+        try (InputStream in = new FileInputStream(src); FileOutputStream out = new FileOutputStream(dst)) {
+            byte[] buf = new byte[1 << 16];
+            int n;
+            while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+        }
+    }
+
+    private static String sha256(File f) throws IOException {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            try (InputStream in = new FileInputStream(f)) {
+                byte[] buf = new byte[1 << 16];
+                int n;
+                while ((n = in.read(buf)) != -1) md.update(buf, 0, n);
+            }
+            StringBuilder sb = new StringBuilder();
+            for (byte b : md.digest()) sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IOException(e);
+        }
+    }
+}

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wiki</title>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            body {
+                color: #E2E2E9;
+            }
+
+            a {
+                color: #8AB4F8;
+            }
+        }
+
+        details > summary {
+            font-style: italic;
+        }
+
+        p + details,
+        div + details,
+        body > details {
+            margin-top: 1em;
+        }
+
+        .details-content {
+            padding-top: 0.5em;
+        }
+
+        code {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        li {
+            margin-bottom: 0.3em;
+        }
+    </style>
+</head>
+<body>
+<ul>
+    <li><a href="#quick-start">Começo rápido</a></li>
+    <li>
+        <a href="#get-game">Como obter o jogo</a>
+        <ol>
+            <li><a href="#steam-in-app">Da Steam, no app</a></li>
+            <li><a href="#zip-archive">De um arquivo .zip</a></li>
+        </ol>
+    </li>
+    <li><a href="#picture">Imagem e quadros</a></li>
+    <li><a href="#controls">Controles</a></li>
+    <li><a href="#saves">Saves</a></li>
+    <li><a href="#engine">Motor</a></li>
+    <li><a href="#renderers">Drivers gráficos</a></li>
+    <li><a href="#mods">Mods</a></li>
+    <li><a href="#online">Online e conquistas</a></li>
+    <li><a href="#compat-mode">Configurações avançadas</a></li>
+    <li><a href="#performance">Tirando o máximo de desempenho</a></li>
+    <li><a href="#known-issues">Problemas conhecidos</a></li>
+    <li><a href="#report">Relatar um problema</a></li>
+</ul>
+
+<hr>
+
+<section id="quick-start">
+    <h2>Começo rápido</h2>
+    <p>
+        O OxyDroid é um launcher: ele roda <b>a sua própria cópia</b> de Valheim no Android. O jogo
+        em si não vem junto.
+    </p>
+    <ol>
+        <li>Você precisa da <b>sua própria cópia</b> de Valheim — comprada na <b>Steam</b>, por
+            exemplo. O OxyDroid roda a versão <b>Linux</b> do jogo.</li>
+        <li>Coloque o jogo no app: toque em <b>Jogo</b> na barra inferior (Downloads da Steam). O jogo
+            é baixado direto para uma instância pronta. A outra forma é
+            <a href="#zip-archive">um arquivo .zip</a> preparado num PC.</li>
+        <li>Uma <b>instância</b> é uma cópia instalada do jogo. Ela tem seu próprio cartão na tela
+            principal e suas configurações atrás do <b>ícone de engrenagem</b>.</li>
+        <li>Ao criar uma instância, o OxyDroid detecta a GPU do telefone e escolhe um driver gráfico
+            adequado.</li>
+        <li>Toque no botão <b>▶</b> do cartão. O primeiro início demora mais porque o jogo prepara
+            seus arquivos. Não aperte Voltar enquanto carrega.</li>
+    </ol>
+    <p>
+        São necessários Android 11 ou mais novo, um telefone de 64 bits com GPU <b>Adreno</b>
+        (Snapdragon) e pelo menos <b>8 GB de RAM</b>, além de cerca de 8 GB livres. Outras GPUs não
+        foram testadas.
+    </p>
+    <p>O <b>?</b> no topo de cada tela abre esta página na parte sobre aquela tela.</p>
+    <p>Deu algo errado? Veja <a href="#report">Relatar um problema</a>.</p>
+</section>
+
+<hr>
+
+<section id="get-game">
+    <h2>Como obter o jogo</h2>
+    <p>
+        O OxyDroid precisa da <b>versão Linux</b> de Valheim. O download dentro do app pega da conta
+        Steam que tem o jogo; a outra forma é um arquivo que você mesmo prepara.
+    </p>
+    <p>
+        Se você tem o jogo na Steam, é o jeito mais prático: ele baixa dentro do app, atualiza pelo
+        telefone sem PC, e os saves passam pelo <b>Steam Cloud</b>, compartilhados com o PC — dá
+        para continuar no telefone um mundo do PC e vice-versa.
+    </p>
+
+    <section id="steam-in-app">
+        <h3>1. Da Steam, no app</h3>
+        <ol>
+            <li>Toque em <b>Jogo</b> na barra inferior (Downloads da Steam), aba <b>Jogo</b>.</li>
+            <li>Digite um nome para a nova instância.</li>
+            <li>Entre com a sua conta Steam. O login vai só para a Steam e não é guardado aqui.
+                Aprove o login no app Steam Mobile ou digite o código do Steam Guard.</li>
+            <li>Toque em <b>Baixar</b>. A build pública mais recente vai direto para uma instância
+                nova: são cerca de 4 GB, melhor no Wi-Fi. Dá para usar outros apps enquanto
+                isso.</li>
+            <li>Se o download parar, inicie de novo com o <b>mesmo nome de instância</b> e ele
+                continua de onde parou.</li>
+            <li>Quando a barra chega a 100%, o app empacota o jogo num <b>arquivo de backup</b> na
+                pasta Downloads. Para vários GB são mais alguns minutos e o app precisa ficar
+                aberto: parece que nada acontece, mas está trabalhando. Depois dá para apagar o
+                arquivo se precisar de espaço.</li>
+        </ol>
+        <p>
+            Para pegar uma build específica em vez da mais recente, digite o <b>Manifest ID</b> dela
+            no campo avançado (os IDs estão no SteamDB). Caso contrário, deixe vazio.
+        </p>
+        <p>
+            <b>Atualizar o jogo.</b> Quando sair uma versão nova na Steam, inicie o download de novo
+            com o <b>mesmo nome de instância</b>: a versão nova é baixada, e seus saves e
+            configurações ficam onde estão. Por enquanto isso baixa o jogo inteiro de novo, uns
+            4 GB.
+        </p>
+    </section>
+
+    <section id="zip-archive">
+        <h3>2. De um arquivo .zip</h3>
+        <p>
+            Abra o menu lateral e toque em <b>Adicionar instância</b>, ou no <b>+</b> no topo da
+            tela principal. Digite um nome, toque em <b>Escolher arquivo ZIP</b>, selecione o
+            arquivo e toque em <b>Instalar</b>.
+        </p>
+        <ul>
+            <li>O .zip precisa conter a versão <b>Linux</b> de Valheim — aquela com o arquivo
+                <code>valheim.x86_64</code>. Uma pasta em volta não atrapalha, o OxyDroid
+                encontra.</li>
+            <li>A versão de <b>Windows</b> (a que tem <code>valheim.exe</code>) não roda: precisa ser a
+                versão Linux.</li>
+            <li>Deixe a internet ligada durante a instalação: o launcher baixa uma pequena
+                biblioteca para o jogo.</li>
+            <li>Num PC dá para montar esse arquivo com o
+                <a href="https://github.com/SteamRE/DepotDownloader" target="_blank">DepotDownloader</a>:
+                <code>DepotDownloader -app 892970 -depot 892971 -os linux</code>, e depois compactar
+                o resultado.</li>
+            <li>Use um nome curto: letras latinas e números, até 40 caracteres.</li>
+            <li><b>O arquivo não aparece em "Downloads"?</b> Essa seção mostra só os arquivos que o
+                sistema conhece, e os que foram colocados por fora dele (via adb, Termux ou alguns
+                gerenciadores de arquivos) podem faltar. No seletor, abra <b>Armazenamento interno
+                → Download</b>: ali a pasta é lida direto do disco. Se essa opção não aparecer,
+                ative no menu do seletor: <b>Mostrar armazenamento interno</b>.</li>
+        </ul>
+    </section>
+</section>
+
+<hr>
+
+<section id="picture">
+    <h2>Imagem e quadros</h2>
+    <p>Tudo isto fica nas configurações da instância (ícone de engrenagem).</p>
+    <ul>
+        <li><b>Resolução de renderização</b> (cartão próprio) define o tamanho da imagem do jogo.
+            As opções aparecem em pixels para a sua tela; uma menor dá mais FPS e uma interface
+            maior. <b>Bordas pretas 1280×720</b> mantém uma imagem clássica 16:9 com faixas nas
+            laterais.</li>
+        <li><b>Gráficos</b>: o perfil com mais FPS é <b>Mínima</b> no motor nativo e <b>Muito
+            baixa</b> no motor box64, e um jogo novo começa nele. <b>Muito baixa</b> não tem
+            tesselação, sombras nem distância de desenho extra; <b>Baixa</b> mantém antialiasing,
+            bloom e raios de sol; <b>Mínima</b>, para GPUs fracas, também baixa a imagem 3D
+            (pixelada) e, no motor nativo, deixa as texturas 4 vezes menores e tira as sombras.
+            Depois você pode ajustar os gráficos nas configurações do próprio jogo; o launcher não
+            mexe mais neles. <b>Aplicar</b> coloca um perfil de novo na próxima inicialização; botão
+            cinza significa que ele já está aplicado.</li>
+        <li>As texturas são <b>reduzidas automaticamente</b>: as maiores encolhem para economizar
+            memória de vídeo. Não há nada para configurar.</li>
+        <li><b>Cache de shaders</b> (cartão <b>Compressão de texturas</b>, ligado por padrão) guarda
+            os shaders compilados no celular, então um inimigo ou efeito novo só engasga na primeira
+            vez que você o vê, não em toda sessão. Desligue se algo for desenhado errado. Ele é do
+            MobileGlues, assim como <b>Ativar compressão ETC2</b> ao lado.</li>
+        <li><b>Na tela durante o jogo</b> (cartão <b>Fluidez</b>): <b>Desligado</b>, <b>FPS</b> (os
+            quadros no canto superior esquerdo) ou <b>Info completa</b> (uma barra no topo com os
+            quadros e um gráfico, a carga de GPU e CPU, a memória e a temperatura).</li>
+        <li><b>Limite de FPS</b> (cartão <b>Fluidez</b>): <b>Sem limite</b>, <b>Econômico
+            (~30)</b>, <b>Equilibrado (~40)</b> ou <b>Fluido (~60)</b>. O número exato é escolhido
+            conforme a sua tela e aparece embaixo. Um ritmo estável parece mais suave que um que
+            oscila, e o celular esquenta menos e mantém a velocidade por mais tempo.</li>
+    </ul>
+    <p>
+        Mude a resolução no <b>launcher</b>, não no jogo: o launcher inicia o Valheim no tamanho
+        escolhido, então a lista de resoluções do jogo não tem efeito (e mostra
+        <code>0x0</code>). Estas configurações valem para qualquer <a href="#engine">motor</a>.
+    </p>
+</section>
+
+<hr>
+
+<section id="controls">
+    <h2>Controles</h2>
+
+    <h3>Controles na tela</h3>
+    <p>
+        Uma instância nova começa com o layout de <b>gamepad</b>. Ele comanda um controle virtual de
+        Xbox, então, para o jogo, você está segurando um controle de verdade, com os ícones de botão
+        do próprio jogo. A interface de controle do Valheim cuida do inventário, da construção e dos
+        menus com botões, e você nunca precisa mirar um cursor em casinhas pequenas na tela do
+        telefone.
+    </p>
+    <ul>
+        <li>O layout <b>Gamepad</b>: <b>dois analógicos</b>, um <b>direcional</b>, <b>A/B/X/Y</b>,
+            <b>LB/RB</b>, <b>LT/RT</b>, <b>Back</b> e <b>Start</b>, e os cliques dos analógicos
+            <b>L3</b> e <b>R3</b>.</li>
+        <li>O segundo layout incluído, <b>Teclado e touchpad</b>, fica em <b>Layouts</b> no editor.
+            Com ele se joga com teclas e mouse: um <b>analógico WASD</b> para andar, um
+            <b>analógico de mouse</b> para a câmera e o cursor, <b>ATK/R</b> (clique esquerdo:
+            atacar), <b>BLK/L</b> (clique direito: bloquear), <b>ALT</b> (clique do meio: ataque
+            secundário), <b>JUMP</b>, <b>RUN</b> (Shift; fica ligado até você tocar de novo),
+            <b>CROUCH</b> (Ctrl), <b>USE/E</b>, <b>R</b>, <b>F</b>, <b>AUTO</b> (Q, corrida
+            automática), <b>Esc</b>, <b>INV</b> (Tab), <b>MAP</b> (M) e as teclas da barra rápida
+            <b>1</b>–<b>8</b>.</li>
+        <li>Os dois layouts têm <b>V</b>, que esconde e mostra os controles, e <b>KB</b>, que abre o
+            teclado do Android para digitar.</li>
+        <li>Elementos de teclado e de controle podem conviver no mesmo layout: o jogo aceita os dois
+            ao mesmo tempo.</li>
+    </ul>
+
+    <h3>Câmera e cursor</h3>
+    <ul>
+        <li>Durante o jogo, o <b>touchpad</b> e o <b>analógico de mouse</b> giram a câmera o quanto o
+            seu dedo se move, e param assim que ele para. Nos menus e no inventário eles movem o
+            cursor.</li>
+        <li>Um toque no touchpad é um clique esquerdo. Dá para desligar isso nas configurações do
+            touchpad (<b>Toque = clique esquerdo</b>), para que um toque sem querer não clique em
+            nada.</li>
+        <li>Um <b>mouse</b> físico também serve para olhar em volta: durante o jogo o app captura o
+            mouse, então a câmera gira livremente em vez de parar na borda da tela.</li>
+    </ul>
+
+    <h3>Tipos de elemento</h3>
+    <ul>
+        <li><b>Botão</b>, retangular ou redondo. Estilos: <b>Contorno</b>, <b>Preenchido</b> e
+            <b>Vidro</b>. Ele pode mostrar uma imagem sua (um PNG) no lugar do texto, com <b>Manter
+            cores originais</b> se a imagem não deve ser tingida. <b>Alternar</b> deixa o botão
+            travado: um toque segura a tecla e o próximo solta. Coloque várias teclas num botão para
+            fazer uma combinação.</li>
+        <li><b>Direcional</b>.</li>
+        <li><b>Analógico</b>: um analógico de controle, ou quatro teclas à sua escolha.</li>
+        <li><b>Analógico WASD</b>: aperta W, A, S e D.</li>
+        <li><b>Analógico de mouse</b> e <b>touchpad</b>: a câmera e o cursor.</li>
+        <li><b>Barra de rolagem</b>: a roda do mouse.</li>
+        <li><b>Menu radial</b>: ponha o dedo no centro e deslize para um dos quatro setores; cada
+            setor tem a sua ação.</li>
+    </ul>
+
+    <h3>Editor de controles</h3>
+    <p>
+        Nas configurações da instância (engrenagem), cartão <b>Controles</b>, toque em <b>Editar
+        controles na tela</b>.
+    </p>
+    <ul>
+        <li><b>Toque num elemento</b> para abrir as configurações dele: tamanho, opacidade
+            (<b>Para todos</b> aplica a todos os elementos), sensibilidade, texto, alternar, estilo,
+            imagem, os atalhos (dá para adicionar e remover), o tipo de entrada e <b>Excluir
+            item</b>.</li>
+        <li><b>Arraste</b> um elemento para movê-lo.</li>
+        <li><b>Toque e segure num espaço vazio</b>, ou toque em <b>Adicionar</b>, para adicionar um
+            elemento.</li>
+        <li><b>Layouts</b> carrega um dos dois layouts incluídos no lugar do atual.</li>
+        <li><b>Fundo</b> coloca uma imagem atrás do layout — uma captura de tela do jogo, por
+            exemplo — para posicionar os botões em cima dela. <b>Sem fundo</b> tira a imagem. O
+            fundo é só para o editor; o jogo nunca o mostra.</li>
+        <li><b>Grade</b>: enquanto está ligada, o elemento se encaixa na grade quando você o
+            solta.</li>
+        <li><b>Concluir</b> fecha o editor. As mudanças são salvas automaticamente.</li>
+    </ul>
+
+    <h3>Salvar e compartilhar layouts</h3>
+    <ul>
+        <li>Cada instância guarda o próprio layout.</li>
+        <li><b>Importar / exportar</b> (o botão <b>Importar</b> da barra inferior), cartão
+            <b>Controles na tela</b>, salva e carrega um layout como .zip, com as imagens dentro.</li>
+        <li>Layouts de versões anteriores do OxyDroid não podem ser importados: monte um novo no
+            editor.</li>
+    </ul>
+
+    <h3>Controle físico, mouse e teclado</h3>
+    <ul>
+        <li>Um <b>controle</b> físico funciona e alimenta o mesmo controle virtual. Enquanto ele
+            estiver conectado, os elementos de controle na tela ficam escondidos; os botões de apoio
+            de teclado e mouse continuam.</li>
+        <li><b>Mouse e teclado</b> físicos também funcionam. O Shift continua pressionado enquanto
+            você aperta e solta outras teclas, então a corrida não é mais interrompida; Backspace,
+            Delete e as setas se repetem quando seguradas; as teclas do teclado numérico, incluindo
+            o Enter dele, funcionam.</li>
+        <li>Qualquer tecla pode ir para um botão na tela, incluindo Backspace, vírgula, ponto, Ctrl,
+            Alt e Shift direito.</li>
+        <li>O gesto ou botão <b>Voltar</b> do Android funciona como <b>Esc</b>: abre o menu do
+            Valheim em vez de fechar o jogo.</li>
+        <li>O jogo sempre roda na horizontal. <b>Girar a imagem (180°)</b> a vira para suportes
+            ou controles que seguram o telefone ao contrário. Vale a partir do próximo início.</li>
+    </ul>
+</section>
+
+<hr>
+
+<section id="saves">
+    <h2>Saves</h2>
+    <p>
+        Valheim guarda um mundo em dois arquivos (<code>.fwl</code> e <code>.db</code>) e um
+        personagem em um (<code>.fch</code>).
+    </p>
+    <ul>
+        <li><b>Importar / exportar</b> (o botão <b>Importar</b> da barra inferior) tira e coloca os
+            saves de uma instância como um .zip: para backup ou para levar a outra instância ou
+            telefone. A mesma tela faz os mods, as configurações do jogo e os controles na tela.</li>
+        <li><b>Saves na Steam Cloud</b>: se você também joga Valheim no PC pela Steam, isso traz
+            seus mundos e personagens da nuvem para o telefone e manda os do telefone de volta. O
+            login é aprovado no app Steam Mobile, então o Steam Guard precisa estar ligado. Quando o
+            mesmo nome existe dos dois lados, você escolhe qual manter. Feche o jogo antes de
+            enviar.</li>
+        <li>A nuvem do Valheim funciona <b>por mundo e por personagem</b>: no PC, cada save precisa
+            ser movido para a nuvem no menu do próprio jogo. Um save que nunca foi movido não está
+            na nuvem, e a lista vai parecer vazia.</li>
+    </ul>
+</section>
+
+<hr>
+
+<section id="engine">
+    <h2>Motor</h2>
+    <p>
+        Nas configurações da instância (ícone de engrenagem), o primeiro cartão, <b>Motor</b>. Ele
+        decide como o jogo roda e, com isso, quais das outras configurações valem.
+    </p>
+    <ul>
+        <li><b>box64 + Mono nativo</b> — o motor Unity é emulado, mas o código do próprio jogo (tudo
+            o que é escrito em C#) roda direto no processador do celular. Bem mais rápido em lugares
+            carregados; os mods funcionam.</li>
+        <li><b>Motor nativo (experimental)</b> — nada é emulado: o próprio motor Android da Unity roda
+            o jogo. O mais rápido, e a imagem fica mais nítida porque as texturas não são
+            recomprimidas no caminho. Só aparece nas versões que o incluem.</li>
+    </ul>
+    <p>
+        Uma instância nova começa no motor nativo. Instâncias de versões anteriores continuam com o
+        que usavam. Os
+        saves, as configurações do próprio jogo, os controles na tela e os mods são os mesmos nos
+        três, então dá para trocar quando quiser sem perder nada.
+    </p>
+    <h3>Motor nativo</h3>
+    <p>
+        Na maioria dos celulares é a melhor escolha: o jogo carrega mais rápido, os quadros são
+        mais altos e estáveis, e a bateria dura mais do que no motor box64.
+    </p>
+    <ul>
+        <li>Sempre renderiza com <b>Vulkan</b>, no driver do próprio celular. Enquanto ele está
+            escolhido, o renderizador e o driver Vulkan (cartão <b>Vídeo</b>), os caches de shaders
+            e ETC2 e o modo de compatibilidade ficam cinza: não valem para ele.</li>
+        <li>A resolução, o modo de quadros, o painel de desempenho, o giro da imagem e os controles
+            na tela funcionam como sempre. As texturas são sempre reduzidas um nível (dois na
+            <b>Mínima</b>).</li>
+        <li>O primeiro início depois de instalar ou atualizar o OxyDroid demora alguns segundos a
+            mais: o launcher prepara os dados do jogo para ele (cerca de 100 MB).</li>
+        <li>Os mods funcionam, menos as partes de um mod que trazem suas próprias bibliotecas x86
+            (arquivos .so): sem emulação elas não carregam.</li>
+        <li>Aqui o limite é a <b>GPU</b>, não o processador. Se os quadros caírem em cenas pesadas,
+            desligue primeiro no jogo o SSAO, as sombras de luzes pontuais e os raios de sol.</li>
+        <li>Funciona em GPUs Snapdragon (Adreno) e Mali. Se a imagem congelar no logo ou no menu
+            enquanto o jogo continua, coloque <b>Compatibilidade Vulkan</b> (cartão <b>Motor</b>) em
+            <b>Ligada</b>: alguns drivers Mali perdem a GPU sem ela.</li>
+    </ul>
+</section>
+
+<hr>
+
+<section id="renderers">
+    <h2>Drivers gráficos</h2>
+    <p>
+        O renderizador é escolhido nas configurações da instância (engrenagem), cartão
+        <b>Vídeo</b>. São dois.
+    </p>
+    <p>
+        Estas configurações valem para o motor com box64. O <a href="#engine">motor
+        nativo</a> sempre renderiza com Vulkan, no driver do próprio celular.
+    </p>
+    <ul>
+        <li><b>MobileGlues</b> — o padrão. O jogo roda em OpenGL, e o MobileGlues traduz isso para
+            os gráficos do telefone em tempo real. O Vulkan não participa: quem trabalha é o driver
+            próprio da sua GPU. Em Snapdragon isso dá cerca do dobro dos quadros do caminho Vulkan,
+            e um nível de ajustes acima. Em GPUs Mali é a única opção que funciona, porque não
+            existe driver Vulkan aberto para elas.</li>
+        <li><b>Zink ZFA</b> — o jogo roda direto em <b>Vulkan</b>. Mais lento, mas é a reserva para
+            quando o MobileGlues desenha errado ou não inicia.</li>
+    </ul>
+    <p>
+        As configurações abaixo pertencem ao <b>Zink ZFA</b> — elas escolhem o driver Vulkan. No
+        MobileGlues não mudam nada.
+    </p>
+    <ul>
+        <li>Ao criar uma instância, o OxyDroid escolhe um driver para a sua GPU, e <b>Driver
+            recomendado (detectar GPU)</b> faz isso de novo. Se a imagem sair errada ou ficar preta,
+            tente outro.</li>
+        <li><b>Turnip</b>: driver de código aberto para GPUs Snapdragon (Adreno), compilado para a
+            geração indicada na lista (6xx, 7xx, 8xx, 830/840). Foi com ele que Valheim foi posto
+            para rodar.</li>
+        <li><b>Sistema (driver do telefone)</b>: o driver do próprio telefone. É a única opção em
+            telefones sem GPU Adreno, e Valheim não foi testado neles.</li>
+        <li><b>Driver próprio (importado)</b>: o seu. Importe no menu lateral, <b>Driver Vulkan
+            próprio</b> (um arquivo .so ou um .zip do AdrenoTools), e ele fica disponível para todas
+            as instâncias.</li>
+    </ul>
+</section>
+
+<hr>
+
+<section id="mods">
+    <h2>Mods</h2>
+    <p>
+        Os mods são instalados por instância: abra o menu lateral e toque em <b>Mods</b>.
+    </p>
+    <ul>
+        <li>Escolha a instância no topo e ligue <b>Suporte a mods (BepInEx)</b>: ele carrega o
+            BepInEx quando o jogo inicia e, junto, os mods ligados abaixo.</li>
+        <li>Os mods funcionam com <b>box64 + Mono nativo</b> e com o <b>motor nativo</b> (veja <a href="#engine">Motor</a>).</li>
+        <li>Para instalar um mod, toque em <b>Escolher arquivo do mod (zip)</b>, selecione o .zip e
+            toque em <b>Instalar</b>.</li>
+        <li>Cada mod instalado tem a sua chave para ligar ou desligar.</li>
+        <li>Para excluir um mod, toque na <b>lixeira</b> da linha dele e confirme. Os arquivos do
+            jogo que o mod substituiu voltam ao lugar.</li>
+    </ul>
+</section>
+
+<hr>
+
+<section id="online">
+    <h2>Online e conquistas</h2>
+    <p>
+        Menu lateral → <b>Online e conquistas</b>, e escolha a instância no topo. Os dois precisam do
+        <a href="#engine">motor nativo</a>, do Valheim comprado na Steam e do app <b>Steam Mobile</b> com o
+        <b>Steam Guard</b> ativado: antes de o jogo começar, o OxyDroid entra na Steam e você aprova no
+        Steam Mobile. A senha só é usada nesse login e nunca é salva.
+    </p>
+
+    <h3>Crossplay</h3>
+    <ul>
+        <li>Ative o <b>Crossplay</b>. O jogo entra sozinho no crossplay do Valheim e você joga online
+            como no PC.</li>
+        <li>Só é possível entrar em <b>servidores e mundos com o crossplay ativado</b>: pela lista de
+            servidores ou pelo código de convite de 6 dígitos. Um servidor só da Steam (sem
+            crossplay) não é acessível pelo celular; o dono ativa o crossplay no painel da hospedagem ou
+            com <code>-crossplay</code>.</li>
+        <li><b>Hospedar pelo celular:</b> Iniciar → seu mundo → marque <b>Servidor público</b> e
+            <b>Crossplay</b>, defina uma senha (5 caracteres ou mais) e passe aos amigos o código de
+            convite que o jogo mostra.</li>
+        <li>Não é preciso configurar o roteador: a conexão passa pelos servidores da Microsoft, no Wi-Fi
+            ou nos dados móveis.</li>
+    </ul>
+
+    <h3>Conquistas da Steam</h3>
+    <ul>
+        <li>O jogo guarda no celular as conquistas que você ganha. Ative <b>Enviar conquistas para a
+            Steam</b> e, a cada início, o login adiciona as novas à sua conta. Elas só são adicionadas,
+            nunca removidas.</li>
+        <li>Sem crossplay, o login é só para as conquistas e termina em poucos segundos.</li>
+        <li><b>Minhas conquistas</b> mostra todas: desbloqueadas (com a data), aguardando envio e
+            bloqueadas. A lista é atualizada a cada login.</li>
+        <li>As horas de jogo na Steam ainda não são contadas.</li>
+    </ul>
+</section>
+
+<hr>
+
+<section id="compat-mode">
+    <h2>Configurações avançadas</h2>
+    <p>
+        Nas configurações da instância, cartão <b>Avançado</b> (toque no título para abrir).
+    </p>
+    <ul>
+        <li><b>Modo de compatibilidade</b>: ligue se o jogo não iniciar — tela preta ou travado no
+            carregamento. Com ele o jogo fica um pouco mais lento, então deixe desligado quando não
+            precisar.</li>
+        <li><b>Modo de depuração</b> escreve um log mais detalhado.</li>
+        <li><b>Variáveis de ambiente</b> é um campo para ajustes de inicialização que podemos pedir
+            para testar. Deixe vazio a não ser que esteja testando algo.</li>
+    </ul>
+</section>
+
+<hr>
+
+<section id="performance">
+    <h2>Tirando o máximo de desempenho</h2>
+    <p>
+        O motor Unity inteiro é emulado, então o limite é o <b>processador</b>, não a GPU. Tudo que
+        acrescenta objetos ou passadas a um quadro — sombras, tesselação, distância de desenho,
+        vegetação — custa muito mais do que resolução ou tamanho de textura.
+    </p>
+    <p>
+        Isto vale para o motor com box64. Com o <a href="#engine">motor nativo</a> nada é
+        emulado e o limite passa a ser a GPU: reduza primeiro os efeitos pesados (SSAO, sombras de
+        luzes pontuais, raios de sol).
+    </p>
+    <ul>
+        <li>Confira primeiro o <b>perfil de desempenho</b> do telefone. Na Samsung, um perfil como
+            <i>Leve</i> nas configurações de bateria limita o processador e a GPU a cerca de metade,
+            e só isso já pode custar metade dos quadros. Coloque em <b>Padrão</b> e ligue o modo
+            jogo do telefone para o OxyDroid: Samsung Game Booster, Xiaomi/POCO Game Turbo,
+            Realme/OPPO/OnePlus Game Space, vivo/iQOO Ultra Game Mode, Infinix/Tecno Game
+            Mode.</li>
+        <li>Use a predefinição <b>Gráficos</b> (cartão próprio). Se preferir ajustar no jogo, a
+            primeira coisa a desligar é a <b>tesselação</b>.</li>
+        <li>Baixe a <b>Resolução de renderização</b> — os tamanhos aparecem em pixels; os do meio são um bom equilíbrio — e defina um
+            <b>Limite de FPS</b> para a taxa ficar estável em vez de oscilar.</li>
+        <li>O telefone esquenta, e todo telefone se desacelera sozinho quando isso acontece. Um
+            telefone frio pode ir bem mais rápido do que ele mesmo vinte minutos depois; tirar a
+            capa e ficar num ambiente fresco ajuda mais do que parece.</li>
+        <li>Feche apps em segundo plano, principalmente outros jogos e navegadores.</li>
+    </ul>
+</section>
+
+<hr>
+
+<section id="known-issues">
+    <h2>Problemas conhecidos</h2>
+
+    <h3>Hospedar: mantenha o jogo na tela</h3>
+    <p>
+        Enquanto você hospeda um mundo, mantenha o OxyDroid na tela: no motor nativo o jogo pausa assim
+        que vai para segundo plano, e seus amigos são desconectados.
+    </p>
+
+    <h3>A lista de resoluções no jogo mostra 0x0</h3>
+    <p>
+        É o esperado. O launcher inicia o jogo no tamanho da própria janela, e esse tamanho não é um
+        dos modos padrão de Valheim. Mude a resolução em <b>Resolução de renderização</b> nas
+        configurações da instância; a lista dentro do jogo não faz nada.
+    </p>
+
+    <h3>Som estalando sob carga</h3>
+    <p>
+        O som pode estalar durante o carregamento ou em cenas pesadas, e melhora depois. Ainda não
+        corrigido.
+    </p>
+
+    <h3>Tela preta ao iniciar o jogo de novo</h3>
+    <p>
+        Se você sair do jogo enquanto ele ainda roda e tocar <b>▶</b> de novo, a tela pode ficar
+        preta. Volte ao jogo em execução pela tela de apps recentes. Se já estiver preta, feche o
+        OxyDroid por completo (deslize nos recentes) e abra de novo.
+    </p>
+
+    <h3>Imagem cortada nas laterais (OPPO e outros telefones com ColorOS)</h3>
+    <p>
+        A configuração de tela por app <b>Ocultar câmera</b> encolhe o jogo e corta as laterais.
+        <b>Solução:</b> desligue <b>Ocultar câmera</b> para o OxyDroid, mantenha <b>Tela cheia</b>
+        ligado, feche o app por completo e abra de novo. Os nomes dessas opções mudam de telefone
+        para telefone; procure por "tela cheia" nas configurações.
+    </p>
+
+    <h3>Telefones sem GPU Adreno</h3>
+    <p>
+        Valheim foi posto para rodar primeiro em telefones Snapdragon (Adreno). Agora também roda
+        em Mali, melhor no <a href="#engine">motor nativo</a>. Em outras GPUs pode nem iniciar, ou a
+        imagem pode sair errada. Mande um relato por <a href="#report">Relatar um problema</a>.
+    </p>
+
+    <h3>Chão preto em algumas GPUs Mali</h3>
+    <p>
+        Em algumas GPUs Mali (a Mali-G615, por exemplo) o chão pode aparecer preto. Estamos
+        trabalhando nisso. Mande um relato por <a href="#report">Relatar um problema</a>: isso nos
+        ajuda a corrigir.
+    </p>
+</section>
+
+<hr>
+
+<section id="report">
+    <h2>Relatar um problema</h2>
+    <p>
+        Abra o menu lateral e toque em <b>Relatar um problema</b>, depois escolha a instância onde o
+        problema aconteceu. O OxyDroid anexa os logs, suas configurações gráficas e os dados do
+        telefone a uma mensagem para nós: escolha o app de e-mail, descreva o problema e envie.
+        Relate logo depois que acontecer, enquanto o log ainda tem o registro.
+    </p>
+    <p>
+        Os ícones no topo do menu lateral levam às novas versões no GitHub e ao autor no X e no
+        Reddit.
+    </p>
+</section>
+</body>
+</html>

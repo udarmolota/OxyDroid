@@ -1,0 +1,643 @@
+package com.oxydroid.game;
+
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.res.AssetManager;
+import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.zip.CRC32;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+/**
+ * Native engine (experimental): runs the game on Unity's own ARM64 Android player instead of the Linux
+ * player under box64, with the game's C# on OxyDroid's ARM64 Mono through il2mono. Only present when
+ * the APK was built with the ":unity" module (tools/unity-native/prepare_unity_module.sh).
+ *
+ * Preparing an instance builds nothing big: the player's data (globalgamemanagers, levels, assets) goes
+ * into one stored zip the player mounts in place of its APK; asset bundles, saves and the game's
+ * managed assemblies are read straight from the instance. Research and plan:
+ * docs/research/unity-native-integration-plan.md.
+ */
+public final class NativeEngine {
+    private static final String TAG = "OxyDroid/NativeEngine";
+    private static final String ACTIVITY = "com.oxydroid.nativeunity.NativeUnityActivity";
+    private static final String EXTRA_DATA_ARCHIVE = "oxydroid.dataArchive";
+    private static final String EXTRA_ENV = "oxydroid.env";
+    private static final String EXTRA_OVERLAY = "oxydroid.overlay";
+    /** The instance being played (its controls layout and settings), read by NativeGameOverlay. */
+    public static final String EXTRA_INSTANCE = "oxydroid.instance";
+    /** Display mode (refresh rate) the frame-rate mode picked, 0 = leave the panel alone; for NativeGameOverlay. */
+    public static final String EXTRA_DISPLAY_MODE = "oxydroid.displayMode";
+    private static final String EXTRA_BACKGROUND_TEXT = "oxydroid.backgroundText";
+
+    /** Player files packaged in the APK; they win over the game's copies of the same names. */
+    private static final String PLAYER_ASSETS = "bin/Data";
+    /** Android builds of engine/package assemblies that replace the game's Linux copies. */
+    private static final String MANAGED_OVERRIDES_ASSETS = "oxydroid_native/Managed";
+
+    /** Unity BuildTarget: the Android player only loads serialized files tagged as Android. */
+    private static final int TARGET_ANDROID = 13;
+    private static final int TARGET_LINUX64 = 24;
+
+    private NativeEngine() {}
+
+    /** Whether this APK carries the native player module. */
+    public static boolean isAvailable() {
+        try {
+            Class.forName(ACTIVITY);
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    /** Prepares the instance (only what changed) and returns the intent that starts the player. */
+    public static Intent prepare(Context context, GameInstance instance) throws IOException {
+        return prepare(context, instance, null);
+    }
+
+    /**
+     * The game's Steam achievements and stats on this phone, kept by the libsteam_api stub
+     * (OXYDROID_STEAM_STATS) and sent to the account by SteamStatsSync.
+     */
+    public static File steamStatsFile(GameInstance instance) {
+        return new File(new File(instance.getGamePath(), "native_engine"), "steam_stats.txt");
+    }
+
+    /** Where the crossplay sign-in leaves the Steam ticket for the game (read once, then deleted). */
+    public static File steamTicketFile(GameInstance instance) {
+        return new File(new File(instance.getGamePath(), "native_engine"), "steam_ticket.bin");
+    }
+
+    /**
+     * As above; {@code steam} is the launch's Steam sign-in (null = offline as always). With a ticket
+     * (crossplay) the game's Steam stub answers with the real SteamID, name and session ticket, and
+     * Valheim logs in to PlayFab at start (ShouldTryAutoLogin). Without one a ticket left from an
+     * earlier launch is removed.
+     */
+    public static Intent prepare(Context context, GameInstance instance, com.oxydroid.SteamTicketLogin.Result steam)
+            throws IOException {
+        File gameDir = new File(instance.getGamePath());
+        File dataDir = new File(gameDir, instance.getDataDirectoryName());
+        if (!new File(dataDir, "globalgamemanagers").isFile())
+            throw new IOException("game data not found in " + dataDir);
+        // The simulation library exists for Linux as x86-64 only; the native engine runs the arm64 slice
+        // of the macOS build's (unity/src/main/cpp/simdll). Say so here, not at the game's first tick.
+        File simdll = macSimDll(gameDir);
+        if (!simdll.isFile())
+            throw new IOException("the macOS SimDLL is missing: copy OxygenNotIncluded.app/Contents/PlugIns/"
+                    + "SimDLL.bundle/Contents/MacOS/SimDLL from the macOS version of the same game build to "
+                    + simdll);
+        File workDir = new File(gameDir, "native_engine");
+        if (!workDir.isDirectory() && !workDir.mkdirs()) throw new IOException("cannot create " + workDir);
+
+        long apkStamp = apkStamp(context);
+        File overrides = extractManagedOverrides(context, apkStamp);
+        File archive = buildDataArchive(context, dataDir, workDir, apkStamp);
+        File etc = prepareMonoConfig(dataDir, workDir);
+
+        List<String> env = new ArrayList<>();
+        env.add("OXYDROID_IL2MONO_MANAGED=" + overrides.getAbsolutePath() + ":" + new File(dataDir, "Managed").getAbsolutePath());
+        env.add("OXYDROID_IL2MONO_ETC=" + etc.getAbsolutePath());
+        env.add("OXYDROID_IL2MONO_CWD=" + gameDir.getAbsolutePath()); // steam_appid.txt lives here
+        env.add("OXYDROID_IL2MONO_STREAMING_ASSETS=" + new File(dataDir, "StreamingAssets").getAbsolutePath());
+        env.add("OXYDROID_IL2MONO_PERSISTENT_DATA=" + instance.getUserDataDir().getAbsolutePath());
+        env.add("OXYDROID_SIMDLL_MACHO=" + simdll.getAbsolutePath());
+
+        addMods(context, instance, gameDir, dataDir, env);
+        env.add("OXYDROID_STEAM_STATS=" + steamStatsFile(instance).getAbsolutePath());
+        boolean crossplay = steam != null && steam.ticketFile != null;
+        if (crossplay) {
+            env.add("OXYDROID_STEAM_TICKET=" + steam.ticketFile.getAbsolutePath());
+            env.add("OXYDROID_STEAM_ID=" + Long.toUnsignedString(steam.steamId));
+            if (steam.persona != null && !steam.persona.isEmpty()) env.add("OXYDROID_STEAM_PERSONA=" + steam.persona);
+        } else {
+            steamTicketFile(instance).delete();
+        }
+        int displayMode = graphicsSettings(context, instance.settings(), env);
+        addUserEnvironment(context, instance.settings(), env);
+        com.oxydroid.LauncherLog.line("native engine environment: " + launchSummary(env));
+        VideoPatch.restore(gameDir);   // clips an earlier test build made unreadable
+
+        Intent intent = new Intent();
+        intent.setClassName(context.getPackageName(), ACTIVITY);
+        intent.putExtra(EXTRA_DATA_ARCHIVE, archive.getAbsolutePath());
+        intent.putExtra(EXTRA_ENV, env.toArray(new String[0]));
+        intent.putExtra(EXTRA_OVERLAY, com.oxydroid.NativeGameOverlay.class.getName());
+        intent.putExtra(EXTRA_INSTANCE, instance.getName());
+        intent.putExtra(EXTRA_DISPLAY_MODE, displayMode);
+        // "Keep running in the background" (a hosted world): the player goes on off screen, with this
+        // notification meanwhile (NativeUnityActivity, BackgroundRunService).
+        if (instance.settings().isKeepRunningInBackground())
+            intent.putExtra(EXTRA_BACKGROUND_TEXT, context.getString(com.oxydroid.R.string.keep_running_notice));
+        // Unity's own command line (the player reads the "unity" extra): ours (below), then the instance's
+        // environment field for tests, OXYDROID_UNITY_ARGS=-force-gfx-direct,-other (commas for spaces).
+        StringBuilder unityArgs = new StringBuilder();
+        String secondary = null, userArgs = null;
+        for (String e : env) {
+            if (e.startsWith(NO_SECONDARY + "=")) secondary = e.substring(NO_SECONDARY.length() + 1);
+            if (e.startsWith("OXYDROID_UNITY_ARGS=")) userArgs = e.substring("OXYDROID_UNITY_ARGS=".length());
+        }
+        if ("1".equals(secondary)) unityArgs.append("-vulkan-disable-secondary-commandbuffers");
+        if (userArgs != null && !userArgs.isEmpty())
+            unityArgs.append(unityArgs.length() > 0 ? " " : "").append(userArgs.replace(',', ' '));
+        if (unityArgs.length() > 0) intent.putExtra("unity", unityArgs.toString());
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return intent;
+    }
+
+    /**
+     * Mods: the Mods screen's master switch, as in the box64 launch on native Mono (GameLauncher): the
+     * bundled BepInEx is refreshed in the instance and il2mono starts its preloader (bepinex.c). The
+     * DOORSTOP_* variables stand in for what Doorstop would derive from the game's executable, so
+     * BepInEx finds the same game root, BepInEx folder and Managed folder as in the box64 launch.
+     */
+    private static void addMods(Context context, GameInstance instance, File gameDir, File dataDir, List<String> env) {
+        if (!instance.settings().isModSupport()) return;
+        try {
+            com.oxydroid.ModManager.ensureBepInEx(context, gameDir);
+        } catch (IOException e) {
+            Log.e(TAG, "Mods: could not set up BepInEx, starting without mods", e);
+            com.oxydroid.LauncherLog.line("Mods: BepInEx setup FAILED, starting without mods: " + e);
+            return;
+        }
+        String dataName = dataDir.getName();
+        String stem = dataName.endsWith("_Data") ? dataName.substring(0, dataName.length() - 5) : dataName;
+        env.add("OXYDROID_BEPINEX_PRELOADER=" + com.oxydroid.ModManager.preloader(gameDir).getAbsolutePath());
+        env.add("DOORSTOP_PROCESS_PATH=" + new File(gameDir, stem + ".x86_64").getAbsolutePath());
+        env.add("DOORSTOP_MANAGED_FOLDER_DIR=" + new File(dataDir, "Managed").getAbsolutePath());
+        Log.i(TAG, "Mods: BepInEx " + com.oxydroid.ModManager.BEPINEX_VERSION + ", "
+                + com.oxydroid.ModManager.countEnabled(gameDir) + " mod(s) enabled");
+    }
+
+    /**
+     * The launcher's graphics settings for the player, as environment for il2mono and the bridge:
+     * the render resolution preset (the fixed 720p mode becomes 720 lines filling the screen:
+     * the player has no black margins) and the frame-rate cap, with "off" capping at the screen's top
+     * rate. Returns the display mode the frame-rate mode wants, 0 = none.
+     */
+    private static int graphicsSettings(Context context, com.oxydroid.InstanceSettings is, List<String> env) {
+        // No texture reduction: Oxygen Not Included is 2D, and dropping mip levels of its atlases and UI
+        // sprites blurs everything on screen. The game's own settings are left as the game writes them.
+        // Mali: the game's cinematics are off (bridge NoCinematics.cs; OXYDROID_SKIP_VIDEO=0 in the user's
+        // environment turns them back on). Starting the intro lost the GPU on a Mali-G615 and froze the
+        // picture; weaker Mali decoders refuse the clip anyway.
+        if (com.oxydroid.GpuInfo.isMali()) env.add("OXYDROID_SKIP_VIDEO=1");
+        // The landscape the overlay locks the activity to, for the bridge to lock the player to as well.
+        if (is.isReverseLandscape()) env.add("OXYDROID_REVERSE_LANDSCAPE=1");
+        if (is.getHudScale() > 100) env.add("OXYDROID_HUD_SCALE=" + is.getHudScale());
+        // Unity without secondary command buffers. On a Mali-G615 Arm's driver loses the device on them
+        // (the main menu, or the world right after: VK_ERROR_DEVICE_LOST, the picture frozen); with the
+        // flag it ran the native engine at 50+ fps against 20-30 on the mix (POCO X6 Pro, 2026-10-07).
+        // The G57, G720 and G925 run without it, and on the G720 it cost about 10 fps of 120
+        // (2026-10-08), so Auto turns it on for the G615 only; another GPU with the same fault has the
+        // setting. The player's Vulkan compatibility setting (Auto / On / Off) decides, and
+        // OXYDROID_NO_SECONDARY_CMDBUFFERS=0/1 in the environment field overrides that (added later).
+        int vkCompat = is.getVulkanCompat();
+        boolean noSecondary = vkCompat == com.oxydroid.InstanceSettings.VK_COMPAT_ON
+                || (vkCompat == com.oxydroid.InstanceSettings.VK_COMPAT_AUTO && needsVulkanCompat());
+        if (noSecondary) env.add(NO_SECONDARY + "=1");
+        Log.i(TAG, "vulkan compatibility " + vkCompat + " -> no secondary command buffers: " + noSecondary);
+
+        android.hardware.display.DisplayManager dm =
+                (android.hardware.display.DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
+        android.view.Display display = dm != null ? dm.getDisplay(android.view.Display.DEFAULT_DISPLAY) : null;
+        if (display != null) {
+            android.view.Display.Mode mode = display.getMode();
+            int sLong = Math.max(mode.getPhysicalWidth(), mode.getPhysicalHeight());
+            int sShort = Math.min(mode.getPhysicalWidth(), mode.getPhysicalHeight());
+            int w, h;
+            if (is.getFixedResMode() != com.oxydroid.InstanceSettings.FIXED_NONE) {
+                h = Math.min(720, sShort);
+                w = Math.round((float) sLong * h / sShort);
+            } else {
+                float scale = is.getEffectiveRenderScale(sLong, sShort);
+                w = Math.round(sLong * scale);
+                h = Math.round(sShort * scale);
+            }
+            env.add("OXYDROID_SCREEN_WIDTH=" + w);
+            env.add("OXYDROID_SCREEN_HEIGHT=" + h);
+            Log.i(TAG, "render resolution " + w + "x" + h + " on " + sLong + "x" + sShort);
+        }
+
+        com.oxydroid.FpsPlanner.Plan fp = com.oxydroid.FpsPlanner.plan(display, is.getFpsMode());
+        int cap = fp.fps > 0 ? fp.fps : com.oxydroid.FpsPlanner.maxHz(display);
+        if (cap > 0) env.add("OXYDROID_FPS_CAP=" + cap);
+        Log.i(TAG, "fps mode " + is.getFpsMode() + " -> cap " + cap + " @ " + fp.refreshHz + " Hz"
+                + (fp.modeId != 0 ? " (display mode " + fp.modeId + ")" : ""));
+        return fp.modeId;
+    }
+
+    /**
+     * The instance's own environment variables (card Advanced), as in the box64 launch: applied after
+     * everything above, so a tester can override a setting (OXYDROID_SCREEN_WIDTH=0 keeps the screen's
+     * own resolution, for one) without a new build.
+     */
+    private static void addUserEnvironment(Context context, com.oxydroid.InstanceSettings is, List<String> env) {
+        String raw = is.getEnvVars();
+        if (raw == null || raw.trim().isEmpty()) return;
+        for (String token : raw.trim().split("\\s+")) {
+            int eq = token.indexOf('=');
+            if (eq <= 0) continue;
+            if (token.startsWith(VULKAN_DRIVER + "="))
+                token = VULKAN_DRIVER + "=" + vulkanDriverPath(context, token.substring(eq + 1));
+            env.add(token);
+        }
+    }
+
+    private static final String VULKAN_DRIVER = "OXYDROID_VULKAN_DRIVER";
+    private static final String NO_SECONDARY = "OXYDROID_NO_SECONDARY_CMDBUFFERS";
+
+    /** Vulkan compatibility's Auto: the GPUs known to need it, the Mali-G615 (see graphicsSettings). */
+    public static boolean needsVulkanCompat() {
+        String renderer = com.oxydroid.GpuInfo.query().renderer;
+        return renderer != null && renderer.contains("G615");
+    }
+
+
+    /**
+     * OXYDROID_VULKAN_DRIVER (a test switch: the engine on another Vulkan driver, vkshim/driver.c) takes
+     * "custom" for the driver imported in the settings (an AdrenoTools zip or a .so), a bare name for one
+     * of the bundled drivers (the Turnip builds unpacked with the other libraries, or one shipped among
+     * the app's own native libraries, such as a test build's libpanvk.so), or an absolute path.
+     */
+    private static String vulkanDriverPath(Context context, String value) {
+        if (value.startsWith("/")) return value;
+        if (value.equals("custom")) return com.oxydroid.CustomDriverInstaller.driverFile().getAbsolutePath();
+        File bundled = new File(com.oxydroid.AppStorage.requireSingleton().getHomePath(),
+                com.oxydroid.C.deps.LIBS_ANDROID_ARM64 + "/" + value);
+        File own = new File(context.getApplicationInfo().nativeLibraryDir, value);
+        return (!bundled.isFile() && own.isFile() ? own : bundled).getAbsolutePath();
+    }
+
+    /** The launch settings worth seeing in a report: everything but il2mono's paths. */
+    private static String launchSummary(List<String> env) {
+        StringBuilder sb = new StringBuilder();
+        for (String e : env) {
+            if (e.startsWith("OXYDROID_IL2MONO_") || e.startsWith("DOORSTOP_")) continue;
+            // The player's SteamID and name stay out of the log (it goes into bug reports).
+            if (e.startsWith("OXYDROID_STEAM_") && !e.startsWith("OXYDROID_STEAM_TICKET=")) continue;
+            if (sb.length() > 0) sb.append(' ');
+            if (e.startsWith("OXYDROID_STEAM_TICKET=")) {
+                sb.append("crossplay=on");
+                continue;
+            }
+            sb.append(e.startsWith("OXYDROID_BEPINEX_PRELOADER=") ? "mods=on" : e);
+        }
+        return sb.length() > 0 ? sb.toString() : "(defaults)";
+    }
+
+    private static long apkStamp(Context context) {
+        try {
+            PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            return info.lastUpdateTime;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    // ---- managed overrides: copied out of the APK once per install ---------------------------
+
+    private static File extractManagedOverrides(Context context, long apkStamp) throws IOException {
+        File dir = new File(context.getFilesDir(), "native_engine/Managed");
+        File stamp = new File(dir, ".stamp");
+        if (readStamp(stamp) == apkStamp && apkStamp != 0) return dir;
+        if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("cannot create " + dir);
+        // Start empty: an assembly a newer APK no longer carries must not stay behind and shadow the
+        // game's own copy (the Android Input System builds did until 2026-10).
+        File[] old = dir.listFiles();
+        if (old != null) for (File f : old) if (f.isFile() && !f.delete()) throw new IOException("cannot delete " + f);
+        AssetManager assets = context.getAssets();
+        String[] names = assets.list(MANAGED_OVERRIDES_ASSETS);
+        if (names == null || names.length == 0) throw new IOException("no managed overrides in the APK");
+        for (String name : names) {
+            try (InputStream in = assets.open(MANAGED_OVERRIDES_ASSETS + "/" + name);
+                 OutputStream out = new FileOutputStream(new File(dir, name))) {
+                copy(in, out);
+            }
+        }
+        writeStamp(stamp, apkStamp);
+        Log.i(TAG, "extracted " + names.length + " managed overrides");
+        return dir;
+    }
+
+    // ---- data archive -------------------------------------------------------------------------
+
+    // Folders and files of the Linux data dir the player must not see (or that come from the APK).
+    private static boolean isExcluded(String relative) {
+        return relative.startsWith("Managed/") || relative.startsWith("MonoBleedingEdge/")
+                || relative.startsWith("Plugins/") || relative.startsWith("StreamingAssets/")
+                || relative.equals("boot.config") || relative.equals("Resources/unity default resources")
+                || relative.endsWith(".png");
+    }
+
+    private static File buildDataArchive(Context context, File dataDir, File workDir, long apkStamp) throws IOException {
+        File archive = new File(workDir, "data.zip");
+        File stampFile = new File(workDir, "data.zip.stamp");
+        List<String> gameFiles = new ArrayList<>();
+        listFiles(dataDir, "", gameFiles);
+        long stamp = apkStamp;
+        for (String rel : gameFiles) {
+            if (isExcluded(rel)) continue;
+            File f = new File(dataDir, rel);
+            stamp = stamp * 31 + f.length() * 7 + f.lastModified();
+        }
+        if (archive.isFile() && readStamp(stampFile) == stamp) return archive;
+
+        File tmp = new File(workDir, "data.zip.tmp");
+        AssetManager assets = context.getAssets();
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(tmp))) {
+            List<String> playerFiles = new ArrayList<>();
+            listAssets(assets, PLAYER_ASSETS, "", playerFiles);
+            for (String rel : playerFiles) {
+                byte[] bytes;
+                try (InputStream in = assets.open(PLAYER_ASSETS + "/" + rel)) {
+                    bytes = readAll(in);
+                }
+                putStored(zip, "assets/bin/Data/" + rel, bytes);
+            }
+            for (String rel : gameFiles) {
+                if (isExcluded(rel)) continue;
+                File f = new File(dataDir, rel);
+                if (rel.equals("ScriptingAssemblies.json")) {
+                    putStored(zip, "assets/bin/Data/" + rel, addBridgeAssembly(readFile(f)));
+                } else if (rel.equals("RuntimeInitializeOnLoads.json")) {
+                    putStored(zip, "assets/bin/Data/" + rel, addBridgeInitializer(readFile(f)));
+                } else {
+                    putStoredFile(zip, "assets/bin/Data/" + rel, f);
+                }
+            }
+        }
+        if (archive.exists() && !archive.delete()) throw new IOException("cannot replace " + archive);
+        if (!tmp.renameTo(archive)) throw new IOException("cannot rename " + tmp);
+        writeStamp(stampFile, stamp);
+        Log.i(TAG, "built " + archive + " (" + archive.length() / (1024 * 1024) + " MB)");
+        return archive;
+    }
+
+    // The bridge assembly (OxyDroidBridge.dll: virtual gamepad, keyboard and mouse) is not part of the
+    // game: list it and its [RuntimeInitializeOnLoadMethod] so the player loads and starts it.
+    private static byte[] addBridgeAssembly(byte[] json) throws IOException {
+        try {
+            JSONObject root = new JSONObject(new String(json, StandardCharsets.UTF_8));
+            JSONArray names = root.getJSONArray("names");
+            JSONArray types = root.getJSONArray("types");
+            for (int i = 0; i < names.length(); i++)
+                if ("OxyDroidBridge.dll".equals(names.getString(i))) return json;
+            names.put("OxyDroidBridge.dll");
+            types.put(16);
+            return root.toString().getBytes(StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new IOException("ScriptingAssemblies.json: " + e.getMessage(), e);
+        }
+    }
+
+    private static byte[] addBridgeInitializer(byte[] json) throws IOException {
+        try {
+            JSONObject root = new JSONObject(new String(json, StandardCharsets.UTF_8));
+            JSONArray list = root.getJSONArray("root");
+            for (int i = 0; i < list.length(); i++)
+                if ("OxyDroidBridge".equals(list.getJSONObject(i).optString("assemblyName"))) return json;
+            JSONObject entry = new JSONObject();
+            entry.put("assemblyName", "OxyDroidBridge");
+            entry.put("nameSpace", "OxyDroid");
+            entry.put("className", "Bridge");
+            entry.put("methodName", "Initialize");
+            entry.put("loadTypes", 1); // BeforeSceneLoad
+            entry.put("isUnityClass", false);
+            list.put(entry);
+            return root.toString().getBytes(StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new IOException("RuntimeInitializeOnLoads.json: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Offset of the target-platform int in a Unity SerializedFile header (format v22+), or -1 when the
+     * file is not one: 48-byte header, then the unityVersion C string, then int32 target.
+     */
+    static int targetPlatformOffset(byte[] head, int length) {
+        if (length < 64) return -1;
+        int version = ((head[8] & 0xff) << 24) | ((head[9] & 0xff) << 16) | ((head[10] & 0xff) << 8) | (head[11] & 0xff);
+        if (version < 22 || version > 64) return -1;
+        int end = 48;
+        while (end < length && end < 120 && head[end] != 0) {
+            if (head[end] < 0x20 || head[end] > 0x7e) return -1; // printable, e.g. "6000.0.75f1"
+            end++;
+        }
+        if (end == 48 || end + 5 > length || head[end] != 0) return -1;
+        boolean littleEndian = head[16] == 0;
+        int off = end + 1;
+        int target = littleEndian
+                ? (head[off] & 0xff) | ((head[off + 1] & 0xff) << 8) | ((head[off + 2] & 0xff) << 16) | ((head[off + 3] & 0xff) << 24)
+                : ((head[off] & 0xff) << 24) | ((head[off + 1] & 0xff) << 16) | ((head[off + 2] & 0xff) << 8) | (head[off + 3] & 0xff);
+        return target == TARGET_LINUX64 ? off : -1;
+    }
+
+    // Writes a file as a STORED entry; a Linux-tagged serialized file gets its target set to Android
+    // on the way (the Android player refuses any other target, "created for another build target").
+    private static void putStoredFile(ZipOutputStream zip, String name, File file) throws IOException {
+        byte[] head = new byte[256];
+        int headLen;
+        try (InputStream in = new FileInputStream(file)) {
+            headLen = Math.max(0, in.read(head));
+        }
+        int targetOff = targetPlatformOffset(head, headLen);
+        if (targetOff >= 0) {
+            boolean le = head[16] == 0;
+            head[targetOff] = (byte) (le ? TARGET_ANDROID : 0);
+            head[targetOff + 1] = 0;
+            head[targetOff + 2] = 0;
+            head[targetOff + 3] = (byte) (le ? 0 : TARGET_ANDROID);
+        }
+        // STORED needs size and CRC before the data: one pass to checksum, one to write.
+        CRC32 crc = new CRC32();
+        byte[] buf = new byte[1 << 16];
+        try (InputStream in = new FileInputStream(file)) {
+            long pos = 0;
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                patchHead(buf, n, pos, head, headLen);
+                crc.update(buf, 0, n);
+                pos += n;
+            }
+        }
+        ZipEntry entry = new ZipEntry(name);
+        entry.setMethod(ZipEntry.STORED);
+        entry.setSize(file.length());
+        entry.setCompressedSize(file.length());
+        entry.setCrc(crc.getValue());
+        zip.putNextEntry(entry);
+        try (InputStream in = new FileInputStream(file)) {
+            long pos = 0;
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                patchHead(buf, n, pos, head, headLen);
+                zip.write(buf, 0, n);
+                pos += n;
+            }
+        }
+        zip.closeEntry();
+    }
+
+    private static void patchHead(byte[] buf, int n, long pos, byte[] head, int headLen) {
+        for (int i = 0; i < n && pos + i < headLen; i++) buf[i] = head[(int) (pos + i)];
+    }
+
+    private static void putStored(ZipOutputStream zip, String name, byte[] bytes) throws IOException {
+        CRC32 crc = new CRC32();
+        crc.update(bytes);
+        ZipEntry entry = new ZipEntry(name);
+        entry.setMethod(ZipEntry.STORED);
+        entry.setSize(bytes.length);
+        entry.setCompressedSize(bytes.length);
+        entry.setCrc(crc.getValue());
+        zip.putNextEntry(entry);
+        zip.write(bytes);
+        zip.closeEntry();
+    }
+
+    /**
+     * Where the launcher keeps the macOS build's SimDLL inside a game folder: {@code macos/SimDLL}, a
+     * copy of {@code OxygenNotIncluded.app/Contents/PlugIns/SimDLL.bundle/Contents/MacOS/SimDLL}.
+     */
+    public static File macSimDll(File gameDir) {
+        return new File(new File(gameDir, "macos"), "SimDLL");
+    }
+
+    // ---- Mono config ----------------------------------------------------------------------------
+
+    // The game's etc/mono, with System.Native mapped to the libmono-native.so in the app's own
+    // native libs instead of the Linux layout's $mono_libdir.
+    /** Sends a library's dlopen to il2mono (libil2cpp.so); its other functions stay where they were. */
+    private static final String DLOPEN_ENTRY =
+            "<dllentry dll=\"libil2cpp.so\" name=\"dlopen\" target=\"il2mono_dlopen\"/>";
+
+    private static File prepareMonoConfig(File dataDir, File workDir) throws IOException {
+        File src = new File(dataDir, "MonoBleedingEdge/etc");
+        File dst = new File(workDir, "etc");
+        copyTree(src, dst);
+        File config = new File(dst, "mono/config");
+        if (config.isFile()) {
+            // P/Invoke names: Android's libc is libc.so (libdl, libm likewise; pthread is inside libc),
+            // not the glibc sonames the Linux config and Linux mods use (BepInEx calls uname() through
+            // "libc.so.6"). Under box64 those names reached box64's own libraries. Names handed to
+            // dlopen() itself (MonoMod's DynDll) never meet the dllmap: dlopen goes to il2mono's
+            // il2mono_dlopen, which translates them.
+            String text = new String(readFile(config), StandardCharsets.UTF_8)
+                    // System.Native's two stat entry points go through il2mono, which hides
+                    // /system/build.prop from managed code: MonoMod (inside the game's Harmony) takes
+                    // that file for "this is Android" and refuses to patch anything (il2mono/monomod.c).
+                    .replace("<dllmap dll=\"System.Native\" target=\"$mono_libdir/libmono-native.so\" os=\"!windows\" />",
+                            "<dllmap dll=\"System.Native\" target=\"libmono-native.so\" os=\"!windows\">"
+                            + "<dllentry dll=\"libil2cpp.so\" name=\"SystemNative_Stat2\" target=\"il2mono_stat2\"/>"
+                            + "<dllentry dll=\"libil2cpp.so\" name=\"SystemNative_LStat2\" target=\"il2mono_lstat2\"/>"
+                            + "</dllmap>")
+                    .replace("$mono_libdir/libmono-native.so", "libmono-native.so")
+                    .replace("target=\"libc.so.6\"", "target=\"libc.so\"")
+                    .replace("</configuration>",
+                            "\t<dllmap dll=\"libc.so.6\" target=\"libc.so\"/>\n"
+                            + "\t<dllmap dll=\"libdl.so.2\" target=\"libdl.so\">" + DLOPEN_ENTRY + "</dllmap>\n"
+                            + "\t<dllmap dll=\"dl\">" + DLOPEN_ENTRY + "</dllmap>\n"
+                            + "\t<dllmap dll=\"libdl\">" + DLOPEN_ENTRY + "</dllmap>\n"
+                            + "\t<dllmap dll=\"libm.so.6\" target=\"libm.so\"/>\n"
+                            + "\t<dllmap dll=\"libpthread.so.0\" target=\"libc.so\"/>\n"
+                            // PlayFab Party (crossplay): Valheim's PlayFabParty.dll asks for the Linux
+                            // file name; the Android build is libparty.so (NativeUnityActivity.loadParty).
+                            + "\t<dllmap dll=\"libParty.so\" target=\"libparty.so\"/>\n"
+                            // FMOD Studio: the game's wrapper imports everything, the core FMOD5_*
+                            // functions too, from "fmodstudio" (NativeUnityActivity.loadFmod).
+                            + "\t<dllmap dll=\"fmodstudio\" target=\"libfmodstudio.so\"/>\n"
+                            // The simulation: libSimDLL.so of this APK (it loads the macOS arm64 build).
+                            + "\t<dllmap dll=\"SimDLL\" target=\"libSimDLL.so\"/>\n"
+                            + "</configuration>");
+            try (OutputStream out = new FileOutputStream(config)) {
+                out.write(text.getBytes(StandardCharsets.UTF_8));
+            }
+        }
+        return dst;
+    }
+
+    // ---- small file helpers -------------------------------------------------------------------
+
+    private static void listFiles(File dir, String prefix, List<String> out) {
+        File[] kids = dir.listFiles();
+        if (kids == null) return;
+        for (File k : kids) {
+            String rel = prefix + k.getName();
+            if (k.isDirectory()) listFiles(k, rel + "/", out);
+            else out.add(rel);
+        }
+    }
+
+    private static void listAssets(AssetManager assets, String root, String prefix, List<String> out) throws IOException {
+        String path = prefix.isEmpty() ? root : root + "/" + prefix.substring(0, prefix.length() - 1);
+        String[] names = assets.list(path);
+        if (names == null) return;
+        for (String name : names) {
+            String rel = prefix + name;
+            String[] sub = assets.list(root + "/" + rel);
+            if (sub != null && sub.length > 0) listAssets(assets, root, rel + "/", out);
+            else out.add(rel);
+        }
+    }
+
+    private static void copyTree(File src, File dst) throws IOException {
+        if (src.isDirectory()) {
+            if (!dst.isDirectory() && !dst.mkdirs()) throw new IOException("cannot create " + dst);
+            File[] kids = src.listFiles();
+            if (kids != null) for (File k : kids) copyTree(k, new File(dst, k.getName()));
+        } else if (src.isFile()) {
+            try (InputStream in = new FileInputStream(src); OutputStream out = new FileOutputStream(dst)) {
+                copy(in, out);
+            }
+        }
+    }
+
+    private static byte[] readFile(File f) throws IOException {
+        try (InputStream in = new FileInputStream(f)) {
+            return readAll(in);
+        }
+    }
+
+    private static byte[] readAll(InputStream in) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        copy(in, out);
+        return out.toByteArray();
+    }
+
+    private static void copy(InputStream in, OutputStream out) throws IOException {
+        byte[] buf = new byte[1 << 16];
+        int n;
+        while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+    }
+
+    private static long readStamp(File f) {
+        try {
+            return Long.parseLong(new String(readFile(f), StandardCharsets.UTF_8).trim());
+        } catch (Exception e) {
+            return Long.MIN_VALUE;
+        }
+    }
+
+    private static void writeStamp(File f, long value) throws IOException {
+        try (OutputStream out = new FileOutputStream(f)) {
+            out.write(Long.toString(value).getBytes(StandardCharsets.UTF_8));
+        }
+    }
+}

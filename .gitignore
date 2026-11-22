@@ -1,0 +1,43 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+app/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Local scratch / debugging artifacts (not part of the project)
+_*
+*_INSTRUCTIONS.md
+AUDIO_FMOD_*.md
+
+# Unused duplicate checkout of box64 (the APK builds the root-level box64/, see app/src/main/cpp/box64_UNUSED_README.txt)
+app/src/main/cpp/box64/
+
+# Internal notes and documents — kept locally, not published
+/docs/
+/GAME_PATCHES.md
+app/src/main/cpp/box64_UNUSED_README.txt
+# No documents on GitHub: every Markdown file and box64's docs stay local (license files are kept)
+*.md
+box64/docs/
+box64/debian/changelog
+# ...except the repository front page
+!/README.md
+
+# Native Unity player: Unity binaries prepared by tools/unity-native/prepare_unity_module.sh
+/unity/prepared/
+/unity/.cxx/
+/unity/build/
+
+# Research notes and listings derived from the game files: kept locally
+/research/

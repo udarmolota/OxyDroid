@@ -1,0 +1,523 @@
+package com.oxydroid;
+
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.DocumentsContract;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.WindowInsets;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.graphics.Insets;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+import androidx.navigation.ui.AppBarConfiguration;
+import androidx.navigation.ui.NavigationUI;
+import androidx.activity.EdgeToEdge;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.oxydroid.databinding.ActivityLauncherBinding;
+import com.oxydroid.game.GameInstance;
+import com.oxydroid.game.GameInstanceManager;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+public class LauncherActivity extends AppCompatActivity {
+
+    private ActivityLauncherBinding binding;
+    private NavController navController;
+    private AppBarConfiguration appBarConfiguration;
+    /** The screens of the bottom bar (menu_bottom_nav.xml); the bar is shown on these only. */
+    private static final int[] BOTTOM_NAV_DESTINATIONS = {
+            R.id.launcher_fragment, R.id.download_fragment, R.id.thunderstore_fragment,
+            R.id.transfer_fragment, R.id.projects_fragment};
+    private final Handler ui = new Handler(Looper.getMainLooper());
+
+    private final ActivityResultLauncher<String[]> modZipPicker =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(),
+                    uri -> { if (uri != null) ContentInstaller.showTargetDialog(this, uri); });
+
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        EdgeToEdge.enable(this);
+        super.onCreate(savedInstanceState);
+
+        binding = ActivityLauncherBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        binding.appbarLayout.setOnApplyWindowInsetsListener((v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(WindowInsets.Type.systemBars());
+            // With the bottom bar shown, the bar itself takes the navigation-bar inset
+            // (paddingBottomSystemWindowInsets) so its colour runs under the system buttons; padding
+            // the whole screen too left a strip between them with 3-button navigation (as RimDroid).
+            boolean barShown = binding.bottomNav.getVisibility() == View.VISIBLE;
+            v.setPadding(v.getPaddingLeft(), insets.top, v.getPaddingRight(), barShown ? 0 : insets.bottom);
+            return windowInsets;
+        });
+
+        setSupportActionBar(binding.appbar);
+
+        // The bottom bar's screens are top level: the drawer button, not a back arrow.
+        appBarConfiguration = new AppBarConfiguration.Builder(BOTTOM_NAV_DESTINATIONS)
+                .setOpenableLayout(binding.drawerLayout)
+                .build();
+
+        navController = Navigation.findNavController(this, R.id.nav_host_fragment);
+        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+        NavigationUI.setupWithNavController(binding.launcherNv, navController);
+        NavigationUI.setupWithNavController(binding.bottomNav, navController);
+        // The bottom bar only on its own screens (as in Zomdroid and RimDroid): elsewhere it would eat height.
+        navController.addOnDestinationChangedListener((c, dest, args) -> {
+            boolean main = false;
+            for (int d : BOTTOM_NAV_DESTINATIONS) if (d == dest.getId()) main = true;
+            if ((binding.bottomNav.getVisibility() == View.VISIBLE) != main) {
+                binding.bottomNav.setVisibility(main ? View.VISIBLE : View.GONE);
+                binding.appbarLayout.requestApplyInsets();   // move the bottom inset to the bar or back
+            }
+        });
+        // Refresh the toolbar menu on navigation so the "+" (add instance) shows only on the main screen.
+        navController.addOnDestinationChangedListener((c, dest, args) -> invalidateOptionsMenu());
+
+        binding.launcherNv.setNavigationItemSelectedListener(item -> {
+            binding.drawerLayout.close();
+            int id = item.getItemId();
+            if (id == R.id.action_settings) {
+                navController.navigate(R.id.action_app_settings);   // global app settings (theme); per-instance is via the card gear
+                return true;
+            } else if (id == R.id.action_cloud_saves) {
+                navController.navigate(R.id.action_cloud_saves);   // pull PC saves from Steam Cloud
+                return true;
+            } else if (id == R.id.action_install_instance) {
+                navController.navigate(R.id.action_install_instance);
+                return true;
+            } else if (id == R.id.action_install_content) {
+                navController.navigate(R.id.action_open_mods);   // Mods (BepInEx): instance, master switch, list
+                return true;
+            } else if (id == R.id.action_edit_controls) {
+                chooseInstanceThen(gi -> {
+                    Intent i = new Intent(this, ControlsEditorActivity.class);
+                    i.putExtra(ControlsEditorActivity.EXTRA_INSTANCE_NAME, gi.getName());
+                    startActivity(i);
+                });
+                return true;
+            } else if (id == R.id.action_gamepad_mapper) {
+                startActivity(new Intent(this, GamepadMapperActivity.class));   // device-wide, no instance
+                return true;
+            } else if (id == R.id.action_icon_packs) {
+                navController.navigate(R.id.action_open_icon_packs);   // icon packs for the on-screen buttons
+                return true;
+            } else if (id == R.id.action_custom_driver) {
+                navController.navigate(R.id.action_open_custom_driver);   // device-global custom Vulkan driver import
+                return true;
+            } else if (id == R.id.action_multiplayer) {
+                navController.navigate(R.id.action_open_multiplayer);   // crossplay per instance
+                return true;
+            } else if (id == R.id.action_bug_report) {
+                navController.navigate(R.id.action_open_bug_report);   // by email or to a file, one screen
+                return true;
+            }
+            // GitHub / X / Reddit / Support are no longer menu rows — they're the icon row in the
+            // drawer header, wired in wireHeaderLinks().
+            // "Manage storage" is gone from the drawer: every instance card already has it in its own
+            // menu, scoped to that instance (LauncherFragment.openInstanceStorage), so the global copy
+            // was a duplicate that only made an already-long drawer longer.
+            return NavigationUI.onNavDestinationSelected(item, navController)
+                    || super.onOptionsItemSelected(item);
+        });
+
+        wireHeaderLinks();
+        maybeDailyUpdateCheck();
+        if (savedInstanceState == null) maybeWarnForeignSignature();
+    }
+
+    private static final String SIGNATURE_PREFS = "signature_check";
+    private static final String SIGNATURE_DISMISSED = "dismissed_sha256";
+
+    /**
+     * A copy not signed with the release key (a repack from an APK site, a fork, a re-signed test
+     * build) says so once per start, without blocking anything: GPL forks are legitimate. "Don't show
+     * again" remembers that one key, so a different repack warns again. Debug builds are not checked.
+     */
+    private void maybeWarnForeignSignature() {
+        if (BuildConfig.DEBUG) return;
+        SignatureCheck.Signer s = SignatureCheck.foreign(this);
+        if (s == null) return;
+        android.content.SharedPreferences prefs = getSharedPreferences(SIGNATURE_PREFS, MODE_PRIVATE);
+        if (s.sha256.equals(prefs.getString(SIGNATURE_DISMISSED, null))) return;
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.signature_warning_title)
+                .setMessage(R.string.signature_warning_message)
+                .setPositiveButton(R.string.signature_warning_github, (d, w) -> {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW,
+                                android.net.Uri.parse("https://github.com/udarmolota/OxyDroid/releases")));
+                    } catch (Exception ignored) {}
+                })
+                .setNegativeButton(android.R.string.ok, null)
+                .setNeutralButton(R.string.signature_warning_dont_show, (d, w) ->
+                        prefs.edit().putString(SIGNATURE_DISMISSED, s.sha256).apply())
+                .show();
+    }
+
+    /** The icon row in the drawer header: the wiki and the external links (icons, not menu rows). */
+    private void wireHeaderLinks() {
+        findViewById(R.id.link_wiki).setOnClickListener(v -> {
+            binding.drawerLayout.close();
+            navController.navigate(R.id.action_open_wiki);
+        });
+        findViewById(R.id.link_github).setOnClickListener(v -> { binding.drawerLayout.close(); checkForUpdates(); });
+        findViewById(R.id.link_reddit).setOnClickListener(v -> openLink(R.string.url_reddit_sub));
+        findViewById(R.id.link_support).setOnClickListener(v -> { binding.drawerLayout.close(); showDonateDialog(); });
+        findViewById(R.id.link_zomdroid).setOnClickListener(v -> { binding.drawerLayout.close(); showZomdroidDialog(); });
+    }
+
+    /** Cross-promo dialog for Zomdroid (sibling launcher, same author). Link is clickable. */
+    private void showZomdroidDialog() {
+        android.text.SpannableString s =
+                new android.text.SpannableString(getString(R.string.zomdroid_dialog_message));
+        android.text.util.Linkify.addLinks(s, android.text.util.Linkify.WEB_URLS);
+        androidx.appcompat.app.AlertDialog dialog =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.nav_label_zomdroid)
+                        .setMessage(s)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .create();
+        dialog.show();
+        TextView mv = dialog.findViewById(android.R.id.message);
+        if (mv != null) mv.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+    }
+
+    /** Open a link, or say "coming soon" if that URL hasn't been set yet (empty string resource). */
+    private void openLink(int urlRes) {
+        String url = getString(urlRes);
+        if (url == null || url.trim().isEmpty()) {
+            Toast.makeText(this, R.string.link_soon, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        binding.drawerLayout.close();
+        openUrl(url);
+    }
+
+    /** Support dialog — the ko-fi link is clickable (matches how Zomdroid asks for support). */
+    private void showDonateDialog() {
+        android.text.SpannableString s =
+                new android.text.SpannableString(getString(R.string.donate_message));
+        android.text.util.Linkify.addLinks(s, android.text.util.Linkify.WEB_URLS);
+        androidx.appcompat.app.AlertDialog dialog =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.donate_title)
+                        .setMessage(s)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .create();
+        dialog.show();
+        TextView mv = dialog.findViewById(android.R.id.message);
+        if (mv != null) mv.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+    }
+
+    @Override
+    public boolean onSupportNavigateUp() {
+        return NavigationUI.navigateUp(navController, appBarConfiguration)
+                || super.onSupportNavigateUp();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.launcher_toolbar, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        int dest = currentDestinationId();
+        // The "+" lives only on the launcher main screen (sub-screens show the back arrow + their title).
+        MenuItem add = menu.findItem(R.id.action_install_instance);
+        if (add != null) add.setVisible(dest == R.id.launcher_fragment);
+        // The "?" is on every screen except the wiki itself.
+        MenuItem help = menu.findItem(R.id.action_wiki_help);
+        if (help != null) help.setVisible(dest != 0 && dest != R.id.wiki_fragment);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    private int currentDestinationId() {
+        return navController != null && navController.getCurrentDestination() != null
+                ? navController.getCurrentDestination().getId() : 0;
+    }
+
+    /** The wiki section that explains the screen the "?" was pressed on. */
+    private static String wikiSectionFor(int destinationId) {
+        if (destinationId == R.id.new_instance_fragment)    return "zip-archive";
+        if (destinationId == R.id.download_fragment)        return "steam-in-app";
+        if (destinationId == R.id.install_content_fragment
+                || destinationId == R.id.mods_fragment
+                || destinationId == R.id.thunderstore_fragment) return "mods";
+        if (destinationId == R.id.cloud_saves_fragment
+                || destinationId == R.id.transfer_fragment)  return "saves";
+        if (destinationId == R.id.settings_fragment
+                || destinationId == R.id.driver_fragment)   return "renderers";
+        return "quick-start";   // the main screen, app settings, and any screen added later
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_install_instance) {
+            navController.navigate(R.id.action_install_instance);   // global action -> new_instance_fragment
+            return true;
+        }
+        if (item.getItemId() == R.id.action_wiki_help) {
+            navController.navigate(R.id.action_open_wiki,
+                    com.oxydroid.fragments.WikiFragment.section(wikiSectionFor(currentDestinationId())));
+            return true;
+        }
+        return NavigationUI.onNavDestinationSelected(item, navController)
+                || super.onOptionsItemSelected(item);
+    }
+
+    // ---- Smart mod import -----------------------------------------------------
+
+    /** Import mods from a picked .zip into the selected instance's Mods folder. */
+    private void importModsFromZip(Uri uri) {
+        final GameInstance instance = currentInstance();
+        if (instance == null) { toast("Create a game instance first, then import mods."); return; }
+
+        final File modsDir = new File(instance.getGamePath(), "Mods");
+        final String fallback = guessZipName(uri);
+        toast("Importing mods…");
+
+        new Thread(() -> {
+            File cacheZip = new File(getCacheDir(), "import_mods.zip");
+            try (InputStream in = getContentResolver().openInputStream(uri);
+                 FileOutputStream out = new FileOutputStream(cacheZip)) {
+                byte[] buf = new byte[65536];
+                int n;
+                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+            } catch (Exception ex) {
+                ui.post(() -> toast("Read failed: " + ex.getMessage()));
+                return;
+            }
+            ModImporter.Result res = ModImporter.importZip(cacheZip, modsDir, fallback);
+            //noinspection ResultOfMethodCallIgnored
+            cacheZip.delete();
+            ui.post(() -> {
+                if (res.ok()) {
+                    toast("Imported " + res.imported.size() + " mod(s) into " + instance.getName()
+                            + ": " + android.text.TextUtils.join(", ", res.imported));
+                } else {
+                    String msg = res.errors.isEmpty() ? "no mod found in zip" : res.errors.get(0);
+                    toast("Import failed: " + msg);
+                }
+            });
+        }).start();
+    }
+
+    /** The instance to act on: the last-launched one, else the first available, else null. */
+    private GameInstance currentInstance() {
+        GameInstanceManager mgr = GameInstanceManager.requireSingleton();
+        mgr.reload();
+        String last = LauncherPreferences.requireSingleton().getLastInstanceName();
+        GameInstance gi = (last != null && !last.isEmpty()) ? mgr.getByName(last) : null;
+        if (gi == null) {
+            List<GameInstance> all = mgr.getInstances();
+            if (!all.isEmpty()) gi = all.get(0);
+        }
+        return gi;
+    }
+
+
+    /** Ask which instance to act on (skips the dialog when there's only one), then continue. */
+    private void chooseInstanceThen(java.util.function.Consumer<GameInstance> cont) {
+        chooseInstanceThen(cont, () -> toast("Create a game instance first."));
+    }
+
+    private void chooseInstanceThen(java.util.function.Consumer<GameInstance> cont, Runnable onEmpty) {
+        GameInstanceManager mgr = GameInstanceManager.requireSingleton();
+        mgr.reload();
+        // Keep the displayed names and targets paired even if another screen reloads the manager.
+        List<GameInstance> all = new ArrayList<>(mgr.getInstances());
+        if (all.isEmpty()) { onEmpty.run(); return; }
+        if (all.size() == 1) { cont.accept(all.get(0)); return; }
+        String[] names = new String[all.size()];
+        for (int i = 0; i < all.size(); i++) names[i] = all.get(i).getName();
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Which instance?")
+                .setItems(names, (d, which) -> cont.accept(all.get(which)))
+                .show();
+    }
+
+    // ---- Update check (installed vs latest GitHub release) ---------------------
+
+    /** Fetch the latest GitHub release tag and compare it to the installed version. */
+    private void checkForUpdates() {
+        final String installed = installedVersion();
+        toast("Checking for updates…");
+        new Thread(() -> {
+            String[] res = fetchLatestTag();   // {tag, error}
+            final String fLatest = res[0], fErr = res[1];
+            if (fLatest != null) {
+                LauncherPreferences lp = LauncherPreferences.getSingleton();
+                if (lp != null) lp.setLatestSeenTag(fLatest);   // keep the badge state in sync
+            }
+            ui.post(() -> { showUpdateDialog(installed, fLatest, fErr); refreshUpdateBadge(); });
+        }, "rd-update-check").start();
+    }
+
+    private String installedVersion() {
+        try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
+        catch (Exception e) { return "?"; }
+    }
+
+    /** Fetch the latest release tag from GitHub. Returns {tag|null, error|null}. */
+    private static String[] fetchLatestTag() {
+        try {
+            java.net.HttpURLConnection c = (java.net.HttpURLConnection)
+                    new java.net.URL("https://api.github.com/repos/udarmolota/OxyDroid/releases/latest")
+                            .openConnection();
+            c.setRequestProperty("Accept", "application/vnd.github+json");
+            c.setConnectTimeout(8000);
+            c.setReadTimeout(8000);
+            int code = c.getResponseCode();
+            try {
+                if (code == 200) {
+                    java.io.BufferedReader r = new java.io.BufferedReader(
+                            new java.io.InputStreamReader(c.getInputStream()));
+                    StringBuilder sb = new StringBuilder(); String ln;
+                    while ((ln = r.readLine()) != null) sb.append(ln);
+                    r.close();
+                    com.google.gson.JsonObject o =
+                            com.google.gson.JsonParser.parseString(sb.toString()).getAsJsonObject();
+                    if (o.has("tag_name") && !o.get("tag_name").isJsonNull())
+                        return new String[]{ o.get("tag_name").getAsString(), null };
+                    return new String[]{ null, "no tag in response" };
+                } else if (code == 404) {
+                    return new String[]{ null, "no releases published yet" };
+                }
+                return new String[]{ null, "GitHub returned " + code };
+            } finally { c.disconnect(); }
+        } catch (Exception e) {
+            return new String[]{ null, e.getMessage() };
+        }
+    }
+
+    /** True only if the seen GitHub tag is STRICTLY NEWER than the installed version. A plain
+     *  "differs" check falsely badged dev builds that run AHEAD of the public release. */
+    private boolean updateAvailable() {
+        LauncherPreferences lp = LauncherPreferences.getSingleton();
+        if (lp == null) return false;
+        String tag = lp.getLatestSeenTag();
+        if (tag == null || tag.trim().isEmpty()) return false;
+        return compareVersions(tag.replaceFirst("^[vV]", ""), installedVersion()) > 0;
+    }
+
+    /** Compare dotted version strings numerically ("0.2.10" > "0.2.3"). >0 if a is newer than b. */
+    private static int compareVersions(String a, String b) {
+        String[] pa = a.split("[.\\-+ ]"), pb = b.split("[.\\-+ ]");
+        int n = Math.max(pa.length, pb.length);
+        for (int i = 0; i < n; i++) {
+            int x = i < pa.length ? parseIntSafe(pa[i]) : 0;
+            int y = i < pb.length ? parseIntSafe(pb[i]) : 0;
+            if (x != y) return Integer.compare(x, y);
+        }
+        return 0;
+    }
+
+    private static int parseIntSafe(String s) {
+        try { return Integer.parseInt(s.trim()); } catch (Exception e) { return 0; }
+    }
+
+    private void refreshUpdateBadge() {
+        View dot = findViewById(R.id.update_badge);
+        if (dot != null) dot.setVisibility(updateAvailable() ? View.VISIBLE : View.GONE);
+    }
+
+    /**
+     * Once per day, on launcher start, ask GitHub for the latest release and remember it so the
+     * drawer can badge the GitHub icon. The attempt DAY is recorded before the network call, so a
+     * phone with no internet still tries at most once a day. The stored tag is compared to the live
+     * installed version in {@link #updateAvailable()}, so the badge clears itself after an update.
+     */
+    private void maybeDailyUpdateCheck() {
+        refreshUpdateBadge();   // reflect whatever we already know, every start
+        LauncherPreferences lp = LauncherPreferences.getSingleton();
+        if (lp == null) return;
+        String today = new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+                .format(new java.util.Date());
+        if (today.equals(lp.getUpdateCheckDay())) return;   // already tried today
+        lp.setUpdateCheckDay(today);                        // count the attempt now (even if it fails)
+        new Thread(() -> {
+            String[] res = fetchLatestTag();
+            if (res[0] == null) return;                     // offline/failed — try again tomorrow
+            LauncherPreferences p = LauncherPreferences.getSingleton();
+            if (p != null) p.setLatestSeenTag(res[0]);
+            ui.post(this::refreshUpdateBadge);
+        }, "rd-daily-update-check").start();
+    }
+
+    private void showUpdateDialog(String installed, String latest, String err) {
+        String norm = latest != null ? latest.replaceFirst("^[vV]", "") : null;
+        boolean upToDate = norm != null && norm.equals(installed);
+        String msg;
+        if (latest == null) {
+            msg = "Installed: " + installed + "\n\nCouldn't check the latest version"
+                    + (err != null ? " (" + err + ")" : "") + ".";
+        } else if (upToDate) {
+            msg = "Installed: " + installed + "\nLatest: " + latest + "\n\nYou're up to date.";
+        } else {
+            msg = "Installed: " + installed + "\nLatest on GitHub: " + latest
+                    + "\n\nA newer version is available.";
+        }
+        MaterialAlertDialogBuilder b = new MaterialAlertDialogBuilder(this)
+                .setTitle("App version")
+                .setMessage(msg)
+                .setNegativeButton("Close", null);
+        if (latest == null || !upToDate) {
+            b.setPositiveButton("Open GitHub", (d, w) -> openUrl(getString(R.string.url_github_releases)));
+        }
+        b.show();
+    }
+
+    // ---- Save / settings backup & restore -------------------------------------
+
+
+    // ---- On-screen controls layout backup --------------------------------------
+
+    /** Export the chosen instance's on-screen controls as a zip: controls.json + icons/ (the
+     *  Zomdroid format). An instance still on the bundled default exports that default. */
+
+
+
+    /** Open a URL in the user's browser (community / updates links). */
+    private void openUrl(String url) {
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+        } catch (Exception e) {
+            toast("Couldn't open link: " + url);
+        }
+    }
+
+    private String guessZipName(Uri uri) {
+        String s = uri.getLastPathSegment();
+        if (s == null) return "mod";
+        int slash = s.lastIndexOf('/');
+        if (slash >= 0) s = s.substring(slash + 1);
+        if (s.toLowerCase().endsWith(".zip")) s = s.substring(0, s.length() - 4);
+        return s.isEmpty() ? "mod" : s;
+    }
+
+    private void toast(String m) { Toast.makeText(this, m, Toast.LENGTH_LONG).show(); }
+}

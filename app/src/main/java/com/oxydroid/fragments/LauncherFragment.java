@@ -1,0 +1,754 @@
+package com.oxydroid.fragments;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.DocumentsContract;
+import android.system.ErrnoException;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.ScrollView;
+import android.widget.TextView;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.oxydroid.AppStorage;
+import com.oxydroid.GameActivity;
+import com.oxydroid.GameLauncher;
+import com.oxydroid.InstallerService;
+import com.oxydroid.LauncherPreferences;
+import com.oxydroid.R;
+import com.oxydroid.game.GameInstance;
+import com.oxydroid.game.GameInstanceManager;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+public class LauncherFragment extends Fragment {
+
+    private static final String TAG = "OxyDroid/LauncherFrag";
+    private static final int MAX_LOG_LINES = 500;
+
+    private RecyclerView rvInstances;
+    private View emptyCard;
+    private volatile String pendingInstallName;   // ZIP instance being installed → GPU driver advisor
+    private Button btnClearLog;
+    private TextView tvLog;
+    private ScrollView scrollLog;
+
+    private final List<GameInstance> instances = new ArrayList<>();
+    private RecyclerView.Adapter<RecyclerView.ViewHolder> instanceAdapter;
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private int logLineCount = 0;
+    private boolean receiverRegistered = false;
+
+    private final ActivityResultLauncher<String[]> zipPicker =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(),
+                    uri -> { if (uri != null) onZipSelected(uri); });
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_launcher, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        rvInstances        = view.findViewById(R.id.rv_instances);
+        emptyCard          = view.findViewById(R.id.launcher_empty_card);
+        // The empty-state card (no instance yet): the wiki's quick start and the two in-app downloads,
+        // which are otherwise only in the drawer.
+        view.findViewById(R.id.btn_empty_quick_start).setOnClickListener(v -> Navigation.findNavController(v)
+                .navigate(R.id.action_open_wiki, WikiFragment.section("quick-start")));
+        view.findViewById(R.id.btn_empty_steam).setOnClickListener(v -> Navigation.findNavController(v)
+                .navigate(R.id.action_download_game));
+        btnClearLog        = view.findViewById(R.id.btn_clear_log);
+        tvLog              = view.findViewById(R.id.tv_log);
+        scrollLog          = view.findViewById(R.id.scroll_log);
+
+        rvInstances.setLayoutManager(new LinearLayoutManager(requireContext()));
+        instanceAdapter = buildInstanceAdapter();
+        rvInstances.setAdapter(instanceAdapter);
+
+        // ZIP install is now ONLY in the drawer's "Add Instance" (which lets you name the instance
+        // and refuses to overwrite). The launcher's name-less install button was a redundant subset.
+        btnClearLog.setOnClickListener(v -> clearLog());
+
+        // Hook up the log callback from GameLauncher
+        GameLauncher.setLogCallback(line -> appendLog(line));
+
+        if (!LauncherPreferences.requireSingleton().areDependenciesInstalled()) {
+            appendLog("Installing renderer libraries...");
+            InstallerService.startInstallDeps(requireContext());
+        }
+
+        maybeShowReleaseNotes();
+        showNews(view);
+    }
+
+    /** Fetched once per app start; later visits to the home screen show what is cached. */
+    private static boolean newsFetched;
+
+    /**
+     * Valheim news under the instances: the cached posts at once, then fresh ones from Steam once
+     * per app start (SteamNews). A tap opens the post on Steam.
+     */
+    private void showNews(View view) {
+        android.content.Context app = requireContext().getApplicationContext();
+        fillNews(view, com.oxydroid.SteamNews.cached(app));
+        if (newsFetched) return;
+        newsFetched = true;
+        new Thread(() -> {
+            List<com.oxydroid.SteamNews.Item> fresh = com.oxydroid.SteamNews.fetch(app);
+            if (fresh != null) mainHandler.post(() -> { if (isAdded() && getView() != null) fillNews(getView(), fresh); });
+        }, "rd-news").start();
+    }
+
+    private void fillNews(View view, List<com.oxydroid.SteamNews.Item> items) {
+        ViewGroup list = view.findViewById(R.id.ll_news_items);
+        list.removeAllViews();
+        view.findViewById(R.id.ll_news).setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
+        android.content.Context app = requireContext().getApplicationContext();
+        int width = getResources().getDisplayMetrics().widthPixels;
+        java.text.DateFormat df = java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM);
+        for (com.oxydroid.SteamNews.Item item : items) {
+            View card = LayoutInflater.from(requireContext()).inflate(R.layout.item_news, list, false);
+            ((TextView) card.findViewById(R.id.tv_news_date)).setText(df.format(new java.util.Date(item.date * 1000)));
+            ((TextView) card.findViewById(R.id.tv_news_title)).setText(item.title);
+            TextView snippet = card.findViewById(R.id.tv_news_snippet);
+            snippet.setText(item.snippet);
+            snippet.setVisibility(item.snippet.isEmpty() ? View.GONE : View.VISIBLE);
+            card.setOnClickListener(v -> {
+                try {
+                    startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse(item.link)));
+                } catch (Exception ignored) {}   // no browser
+            });
+            android.widget.ImageView image = card.findViewById(R.id.iv_news_image);
+            new Thread(() -> {
+                android.graphics.Bitmap bmp = com.oxydroid.SteamNews.image(app, item.imageUrl, width);
+                if (bmp != null) mainHandler.post(() -> { image.setImageBitmap(bmp); image.setVisibility(View.VISIBLE); });
+            }, "rd-news-image").start();
+            list.addView(card);
+        }
+    }
+
+    /**
+     * "What's new", shown once per installed version - after an update AND after a fresh install,
+     * as in Zomdroid: a clean install is a common way to update, and treating those players as
+     * newcomers would hide the notes from exactly them. The text ships in strings.xml instead of
+     * being fetched, so it does not depend on the network being up at that moment.
+     */
+    private void maybeShowReleaseNotes() {
+        LauncherPreferences lp = LauncherPreferences.requireSingleton();
+        String current = com.oxydroid.BuildConfig.VERSION_NAME;
+        if (current.equals(lp.getReleaseNotesShownFor())) return;
+        lp.setReleaseNotesShownFor(current);
+
+        // getText, not getString: the text carries <b>/<i> markup.
+        android.text.SpannableString text = new android.text.SpannableString(getText(R.string.release_notes_body));
+        android.text.util.Linkify.addLinks(text, android.text.util.Linkify.WEB_URLS);
+        androidx.appcompat.app.AlertDialog dialog =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(getString(R.string.release_notes_title, current))
+                        .setMessage(text)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show();
+        TextView message = dialog.findViewById(android.R.id.message);
+        if (message != null) message.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Re-register the installer receiver and re-read disk state every time the
+        // fragment becomes visible. This is what makes the Launch button switch to
+        // enabled right after an instance finishes installing — without it, the
+        // button only refreshed in onViewCreated and stayed disabled until the app
+        // was restarted (no onResume = no refresh on return from other screens).
+        registerInstallerReceiver();
+        refreshInstances();
+        showNativeMonoFallbackOnce();
+    }
+
+    /**
+     * If the last launch asked for the native ARM64 Mono but box64 fell back to the emulated one
+     * (about half the fps, no other sign), say so once, per failure.
+     */
+    private void showNativeMonoFallbackOnce() {
+        for (com.oxydroid.game.GameInstance gi : com.oxydroid.game.GameInstanceManager.requireSingleton().getInstances()) {
+            String failure = com.oxydroid.game.NativeMono.takeUnshownFailure(gi);
+            if (failure == null) continue;
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.native_mono_fallback_title)
+                    .setMessage(getString(R.string.native_mono_fallback_message, gi.getName(), failure))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show();
+            return;   // one notice at a time
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        unregisterInstallerReceiver();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        GameLauncher.setLogCallback(null);
+        unregisterInstallerReceiver();
+    }
+
+    // ---- Instances ----------------------------------------------------------
+
+    private void refreshInstances() {
+        GameInstanceManager.requireSingleton().reload();
+        instances.clear();
+        instances.addAll(GameInstanceManager.requireSingleton().getInstances());
+        if (instanceAdapter != null) instanceAdapter.notifyDataSetChanged();
+        int empty = instances.isEmpty() ? View.VISIBLE : View.GONE;
+        if (emptyCard != null) emptyCard.setVisibility(empty);
+    }
+
+    /** One card per instance: name + a settings (gear) button + a Launch button. */
+    private RecyclerView.Adapter<RecyclerView.ViewHolder> buildInstanceAdapter() {
+        return new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            @NonNull
+            @Override
+            public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                View v = LayoutInflater.from(parent.getContext())
+                        .inflate(R.layout.game_instance_item, parent, false);
+                return new RecyclerView.ViewHolder(v) {};
+            }
+
+            @Override
+            public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+                GameInstance gi = instances.get(position);
+                View v = holder.itemView;
+                TextView name = v.findViewById(R.id.instance_item_name);
+                ImageButton more = v.findViewById(R.id.instance_item_more);
+                ImageButton settings = v.findViewById(R.id.instance_item_settings);
+                ImageButton launch = v.findViewById(R.id.instance_item_launch);
+
+                // An instance folder exists from the moment a download starts (that is what makes a
+                // download resumable), so a half-downloaded copy is in this list too. Say so on the
+                // card and take the ▶ button away: there is nothing to launch yet, and a play button
+                // that only opens an error dialog reads like a bug. Cheap (a few File.isFile checks).
+                boolean ready = gi.isComplete();
+                com.oxydroid.SteamDownloadState dl = com.oxydroid.SteamDownloadState.get();
+                boolean downloadingThis = dl.isDownloading()
+                        && gi.getName().equals(dl.getAdviseInstance());
+                if (ready) {
+                    name.setMaxLines(1);
+                    name.setText(gi.getName());
+                } else if (downloadingThis) {
+                    // The tag itself says to wait ("downloading, wait until it finishes").
+                    name.setMaxLines(2);
+                    name.setText(gi.getName() + "  ⤓ " + getString(R.string.instance_downloading));
+                } else {
+                    // The one-word tag alone ("not finished") left players guessing what to do, so add
+                    // a smaller second line that says how to resume from Steam Downloads.
+                    String hint = getString(R.string.instance_incomplete_hint, getString(R.string.nav_download_game));
+                    android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder(
+                            gi.getName() + "  ⚠ " + getString(R.string.instance_incomplete) + "\n");
+                    int start = sb.length();
+                    sb.append(hint);
+                    sb.setSpan(new android.text.style.RelativeSizeSpan(0.8f), start, sb.length(),
+                            android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    name.setMaxLines(4);
+                    name.setText(sb);
+                }
+                launch.setVisibility(ready ? View.VISIBLE : View.GONE);
+                // (renderer subtitle is commented out in the layout — keep the binding out too)
+
+                launch.setOnClickListener(x -> launchInstance(gi));
+                settings.setOnClickListener(x -> openInstanceSettings(gi));   // gear = straight to Settings
+                more.setOnClickListener(x -> showInstanceMenu(more, gi));     // ⋮ = Manage storage / Delete
+            }
+
+            @Override
+            public int getItemCount() { return instances.size(); }
+        };
+    }
+
+    /** ⋮ button → a small menu: Manage storage / Delete instance. Settings now opens directly from
+     *  the gear icon, so it's no longer in here. */
+    private void showInstanceMenu(View anchor, GameInstance gi) {
+        android.widget.PopupMenu pm = new android.widget.PopupMenu(requireContext(), anchor);
+        pm.getMenuInflater().inflate(R.menu.menu_game_instance, pm.getMenu());
+        pm.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.action_instance_storage)  { openInstanceStorage(gi); return true; }
+            if (id == R.id.action_instance_delete)   { confirmDeleteInstance(gi); return true; }
+            return false;
+        });
+        pm.show();
+    }
+
+    private void openInstanceSettings(GameInstance gi) {
+        Bundle b = new Bundle();
+        b.putString(SettingsFragment.ARG_INSTANCE, gi.getName());
+        Navigation.findNavController(requireView()).navigate(R.id.action_settings, b);
+    }
+
+    /** Open the system Documents UI directly at this instance's folder — the only way in now that the
+     *  drawer's global "Manage storage" is gone (it duplicated this, unscoped). Falls back to the
+     *  storage root if a file manager doesn't honour a folder-level view. */
+    private void openInstanceStorage(GameInstance gi) {
+        String docId = AppStorage.requireSingleton().getInstanceDir(gi.getName()).getAbsolutePath();
+        try {
+            android.net.Uri uri = android.provider.DocumentsContract.buildDocumentUri(
+                    com.oxydroid.C.STORAGE_PROVIDER_AUTHORITY, docId);
+            android.content.Intent i = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+            i.setDataAndType(uri, "vnd.android.document/directory");
+            i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                    | android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    | android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            startActivity(i);
+        } catch (Exception e) {
+            try {   // fallback: open the storage root (like the drawer's Manage Storage)
+                android.net.Uri root = android.provider.DocumentsContract.buildRootsUri(
+                        com.oxydroid.C.STORAGE_PROVIDER_AUTHORITY);
+                android.content.Intent i = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+                i.setDataAndType(root, "vnd.android.document/root");
+                i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+            } catch (Exception ignore) {
+                android.widget.Toast.makeText(requireContext(),
+                        "No file manager to open storage", android.widget.Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void confirmDeleteInstance(GameInstance gi) {
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.delete_instance))
+                .setMessage(getString(R.string.delete_instance_confirm, gi.getName()))
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.delete_instance, (d, w) -> deleteInstance(gi))
+                .show();
+    }
+
+    private void deleteInstance(GameInstance gi) {
+        final String name = gi.getName();
+        final java.io.File dir = AppStorage.requireSingleton().getInstanceDir(name);
+        appendLog("Deleting instance: " + name + "…");
+        new Thread(() -> {
+            java.util.List<String> failed = new java.util.ArrayList<>();
+            deleteRecursive(dir, failed);
+            final boolean gone = !dir.exists();
+            com.oxydroid.InstanceSettings.delete(name);   // drop its per-instance settings keys
+            LauncherPreferences lp = LauncherPreferences.requireSingleton();
+            if (name.equals(lp.getLastInstanceName())) lp.setLastInstanceName("");
+            mainHandler.post(() -> {
+                if (gone && failed.isEmpty()) {
+                    appendLog("Deleted instance: " + name);
+                } else {
+                    appendLog("Deleted instance: " + name + " — WARNING: " + failed.size()
+                            + " item(s) could not be removed (left in " + dir.getAbsolutePath() + ")");
+                    int show = Math.min(failed.size(), 8);
+                    for (int i = 0; i < show; i++) appendLog("  ! " + failed.get(i));
+                    if (failed.size() > show) appendLog("  … and " + (failed.size() - show) + " more");
+                }
+                refreshInstances();
+            });
+        }, "rd-delete-instance").start();
+    }
+
+    /**
+     * Recursively delete {@code f}, collecting paths that could not be removed into {@code failed}.
+     * Symlinks are deleted as links (we never follow them into their target — RimWorld depots
+     * contain symlinks, and following them both wastes work and could touch files outside the
+     * instance). Read-only entries are force-made-writable first. We attempt EVERY entry even if
+     * some fail, so one stubborn file no longer strands its whole parent subtree.
+     */
+    private static void deleteRecursive(java.io.File f, java.util.List<String> failed) {
+        if (f == null) return;
+        java.nio.file.Path p = f.toPath();
+        boolean isLink = java.nio.file.Files.isSymbolicLink(p);
+        if (!isLink && f.isDirectory()) {
+            java.io.File[] kids = f.listFiles();
+            if (kids != null) for (java.io.File k : kids) deleteRecursive(k, failed);
+        }
+        try {
+            //noinspection ResultOfMethodCallIgnored
+            f.setWritable(true);
+        } catch (Exception ignored) { /* best effort */ }
+        try {
+            java.nio.file.Files.deleteIfExists(p);   // removes the link itself for symlinks
+        } catch (Exception e) {
+            failed.add(f.getAbsolutePath() + " (" + e.getClass().getSimpleName()
+                    + ": " + e.getMessage() + ")");
+        }
+    }
+
+    // ---- Launch -------------------------------------------------------------
+
+    private void launchInstance(GameInstance gi) {
+        if (gi == null) return;
+        // Block launching a game copy that's missing base content (Data/Core etc.) — it would just
+        // reach RimWorld's ModLister and crash to a black screen, looking like an app bug. Tell the
+        // user it's their files. isInstalled() stays lenient so the instance still shows in the list.
+        java.util.List<String> missing = gi.missingCoreFiles();
+        if (!missing.isEmpty()) {
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.incomplete_game_title)
+                    .setMessage(getString(R.string.incomplete_game_msg, String.join("\n", missing)))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .setNeutralButton(R.string.nav_wiki, (d, w) -> Navigation.findNavController(requireView())
+                            .navigate(R.id.action_open_wiki, WikiFragment.section("get-game")))
+                    .show();
+            return;
+        }
+        startGame(gi);
+    }
+
+    private void startGame(GameInstance gi) {
+        LauncherPreferences.requireSingleton().setLastInstanceName(gi.getName());
+        clearLog();
+
+        // Which engine this launch uses, in launcher.log: a report then says it for every run.
+        boolean nativeEngine = com.oxydroid.game.NativeEngine.isAvailable() && gi.settings().isNativeEngine();
+        int engine = gi.settings().getEngine();
+        com.oxydroid.LauncherLog.line("launch '" + gi.getName() + "': engine = "
+                + (nativeEngine ? "native engine"
+                   : engine == com.oxydroid.InstanceSettings.ENGINE_BOX64_MONO ? "box64 + native Mono" : "box64 (full emulation)"));
+        if (nativeEngine) {
+            startNativeEngine(gi);
+            return;
+        }
+
+        android.content.Intent gameIntent = new android.content.Intent(requireContext(), GameActivity.class);
+        gameIntent.putExtra(GameActivity.EXTRA_INSTANCE_NAME, gi.getName());   // per-instance scale + controls
+        requireContext().startActivity(gameIntent);
+
+        new Thread(() -> {
+            try {
+                GameLauncher.launch(gi);
+            } catch (Throwable e) {
+                // A failed launch must not take the whole app down: log it where "Report a bug"
+                // picks it up instead of crashing with no game logs at all. Throwable, not just
+                // RuntimeException: an Error (UnsatisfiedLinkError, OOM) killed the app with nothing
+                // in launcher.log. The stack goes in synchronously — the logcat stream may lag.
+                Log.e(TAG, "Launch failed", e);
+                com.oxydroid.LauncherLog.line("LAUNCH FAILED: " + Log.getStackTraceString(e));
+                appendLog("ERROR: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    // Native engine (experimental): with Crossplay on, the Steam sign-in comes first (askCrossplaySignIn).
+    private void startNativeEngine(GameInstance gi) {
+        if (gi.settings().isCrossplay() || gi.settings().isSteamAchievements()) askCrossplaySignIn(gi);
+        else launchNativeEngine(requireContext().getApplicationContext(), gi, null);
+    }
+
+    // ---- Steam sign-in before a launch: crossplay and/or achievements -------------------
+
+    /** Steam login and password (the login filled in from last time), or play without signing in. */
+    private void askCrossplaySignIn(GameInstance gi) {
+        android.content.Context app = requireContext().getApplicationContext();
+        View form = getLayoutInflater().inflate(R.layout.dialog_crossplay_login, null);
+        com.google.android.material.textfield.TextInputEditText etUser = form.findViewById(R.id.et_crossplay_user);
+        com.google.android.material.textfield.TextInputEditText etPass = form.findViewById(R.id.et_crossplay_pass);
+        String lastLogin = LauncherPreferences.requireSingleton().getSteamLoginName();
+        etUser.setText(lastLogin);
+        if (!lastLogin.isEmpty()) etPass.requestFocus();
+        androidx.appcompat.app.AlertDialog dialog =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext(), R.style.ThemeOverlay_OxyDroid_Dialog_Buttons)
+                        .setTitle(R.string.crossplay_signin_title)
+                        .setView(form)
+                        .setPositiveButton(R.string.crossplay_signin_go, null)
+                        .setNeutralButton(R.string.crossplay_play_offline, (d, w) -> launchNativeEngine(app, gi, null))
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .create();
+        dialog.setOnShowListener(d -> dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(x -> {
+            String user = etUser.getText() == null ? "" : etUser.getText().toString().trim();
+            String pass = etPass.getText() == null ? "" : etPass.getText().toString();
+            if (user.isEmpty() || pass.isEmpty()) {
+                android.widget.Toast.makeText(app, R.string.cloud_saves_need_login, android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+            LauncherPreferences.requireSingleton().setSteamLoginName(user);
+            dialog.dismiss();
+            runCrossplaySignIn(gi, user, pass);
+        }));
+        dialog.show();
+    }
+
+    /**
+     * Signs in (SteamTicketLogin) behind a waiting dialog, then launches with the ticket. The Steam
+     * session outlives the launch by a few minutes; the keep-alive service holds the app's process
+     * for that time (and while the player is away approving in Steam Mobile).
+     */
+    private void runCrossplaySignIn(GameInstance gi, String user, String pass) {
+        android.content.Context app = requireContext().getApplicationContext();
+        androidx.appcompat.app.AlertDialog waiting =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext(), R.style.ThemeOverlay_OxyDroid_Dialog_Buttons)
+                        .setTitle(R.string.crossplay_signin_title)
+                        .setMessage(R.string.crossplay_step_connect)
+                        .setCancelable(false)
+                        .create();
+        com.oxydroid.SteamTicketLogin[] login = new com.oxydroid.SteamTicketLogin[1];
+        login[0] = new com.oxydroid.SteamTicketLogin(user, pass,
+                gi.settings().isCrossplay() ? com.oxydroid.game.NativeEngine.steamTicketFile(gi) : null,
+                gi.settings().isSteamAchievements() ? com.oxydroid.game.NativeEngine.steamStatsFile(gi) : null,
+                new com.oxydroid.SteamTicketLogin.Listener() {
+            @Override
+            public java.util.concurrent.CompletableFuture<String> requestSteamGuardCode(boolean prevWrong, String email) {
+                java.util.concurrent.CompletableFuture<String> fut = new java.util.concurrent.CompletableFuture<>();
+                mainHandler.post(() -> {
+                    if (!isAdded()) { fut.complete(""); return; }
+                    android.widget.EditText et = new android.widget.EditText(requireContext());
+                    et.setHint(email != null ? getString(R.string.cloud_saves_code_email, email)
+                                             : getString(R.string.cloud_saves_code));
+                    et.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                            | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+                    new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext(), R.style.ThemeOverlay_OxyDroid_Dialog_Buttons)
+                            .setTitle(prevWrong ? R.string.cloud_saves_code_wrong : R.string.cloud_saves_code_title)
+                            .setView(et)
+                            .setCancelable(false)
+                            .setPositiveButton(android.R.string.ok, (d, w) -> fut.complete(et.getText().toString().trim()))
+                            .show();
+                });
+                return fut;
+            }
+
+            @Override
+            public void onProgress(String step) {
+                int text = "approve".equals(step) ? R.string.crossplay_step_approve
+                        : "ticket".equals(step) ? R.string.crossplay_step_ticket
+                        : "achievements".equals(step) ? R.string.crossplay_step_achievements : R.string.crossplay_step_connect;
+                mainHandler.post(() -> waiting.setMessage(app.getString(text)));
+            }
+
+            @Override
+            public void onReady(com.oxydroid.SteamTicketLogin.Result result) {
+                mainHandler.post(() -> {
+                    // The achievements result stays in the sign-in window for a moment before the game
+                    // starts: a toast went unseen under the starting game.
+                    String note = result.achievementsError != null
+                            ? app.getString(R.string.steam_achievements_failed, result.achievementsError)
+                            : result.achievementsSent > 0
+                            ? app.getString(R.string.steam_achievements_sent, result.achievementsSent) : null;
+                    if (note == null) {
+                        waiting.dismiss();
+                        launchNativeEngine(app, gi, result);
+                        return;
+                    }
+                    waiting.setMessage(note);
+                    mainHandler.postDelayed(() -> {
+                        waiting.dismiss();
+                        launchNativeEngine(app, gi, result);
+                    }, 3000);
+                });
+            }
+
+            @Override
+            public void onFailed(String message) {
+                mainHandler.post(() -> {
+                    waiting.dismiss();
+                    if (!isAdded()) return;
+                    new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext(), R.style.ThemeOverlay_OxyDroid_Dialog_Buttons)
+                            .setMessage(getString(R.string.crossplay_failed, message))
+                            .setPositiveButton(R.string.crossplay_play_offline, (d, w) -> launchNativeEngine(app, gi, null))
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show();
+                });
+            }
+        });
+        waiting.setButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL, getString(R.string.crossplay_play_offline), (d, w) -> {
+            login[0].cancel();
+            launchNativeEngine(app, gi, null);
+        });
+        waiting.setButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE, getString(android.R.string.cancel),
+                (d, w) -> login[0].cancel());
+        waiting.show();
+        com.oxydroid.DownloadKeepAliveService.start(app, app.getString(R.string.crossplay_keepalive));
+        new Thread(() -> {
+            try {
+                login[0].run();
+            } finally {
+                com.oxydroid.DownloadKeepAliveService.stop(app);
+            }
+        }, "CrossplaySignIn").start();
+    }
+
+    // Prepare the instance off the UI thread (first time builds the data archive, ~100 MB), then hand
+    // over to the native player's own process. steam = the crossplay sign-in, null = offline.
+    private void launchNativeEngine(android.content.Context app, GameInstance gi, com.oxydroid.SteamTicketLogin.Result steam) {
+        android.widget.Toast.makeText(app, R.string.native_engine_preparing, android.widget.Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            try {
+                android.content.Intent intent = com.oxydroid.game.NativeEngine.prepare(app, gi, steam);
+                app.startActivity(intent);
+            } catch (Throwable e) {
+                Log.e(TAG, "Native engine launch failed", e);
+                com.oxydroid.LauncherLog.line("NATIVE ENGINE FAILED: " + Log.getStackTraceString(e));
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(() ->
+                        android.widget.Toast.makeText(app, app.getString(R.string.native_engine_failed, e.getMessage()),
+                                android.widget.Toast.LENGTH_LONG).show());
+            }
+        }).start();
+    }
+
+    // ---- Install from ZIP ---------------------------------------------------
+
+    private void onZipSelected(Uri uri) {
+        new Thread(() -> {
+            try {
+                File cacheZip = new File(requireContext().getCacheDir(), "instance.zip");
+                try (InputStream in = requireContext().getContentResolver().openInputStream(uri);
+                     FileOutputStream out = new FileOutputStream(cacheZip)) {
+                    byte[] buf = new byte[65536];
+                    int len;
+                    while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
+                }
+                String instanceName = guessInstanceName(uri);
+                pendingInstallName = instanceName;
+                mainHandler.post(() -> appendLog("Installing: " + instanceName + "..."));
+                InstallerService.startInstallInstance(requireContext(),
+                        cacheZip.getAbsolutePath(), instanceName);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to copy zip", e);
+                appendLog("ERROR: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    private String guessInstanceName(Uri uri) {
+        try (android.database.Cursor c = requireContext().getContentResolver().query(
+                uri, new String[]{DocumentsContract.Document.COLUMN_DISPLAY_NAME},
+                null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+                String name = c.getString(0);
+                if (name != null) {
+                    if (name.toLowerCase().endsWith(".zip"))
+                        name = name.substring(0, name.length() - 4);
+                    return name;
+                }
+            }
+        } catch (Exception ignored) {}
+        return "rimworld";
+    }
+
+    /** After a ZIP instance install from the launcher button, detect the GPU and set the recommended
+     *  driver on the new instance, then show a one-time dialog (no navigation — already on launcher). */
+    private void adviseDriverForPendingInstall() {
+        final String inst = pendingInstallName;
+        pendingInstallName = null;
+        if (inst == null) return;
+        new Thread(() -> {
+            final com.oxydroid.GpuDriverAdvisor.Result r =
+                    com.oxydroid.GpuDriverAdvisor.applyRecommendedDriver(inst);
+            mainHandler.post(() -> {
+                if (!isAdded() || getView() == null || !r.applied || !r.mobileGlues) return;
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.renderer_default_title)
+                        .setMessage(R.string.renderer_default_msg)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show();
+            });
+        }, "rd-gpu-advise").start();
+    }
+
+    // ---- Installer broadcast ------------------------------------------------
+
+    private final BroadcastReceiver installerReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context ctx, Intent intent) {
+            String msg = intent.getStringExtra(InstallerService.EXTRA_MESSAGE);
+            String action = intent.getAction();
+            if (InstallerService.BROADCAST_PROGRESS.equals(action)) {
+                // Numeric updates for the install dialog carry no text (several a second) — skip them.
+                if (msg != null) appendLog(msg);
+            } else if (InstallerService.BROADCAST_DONE.equals(action)) {
+                appendLog(msg);
+                refreshInstances();
+                adviseDriverForPendingInstall();
+            } else if (InstallerService.BROADCAST_ERROR.equals(action)) {
+                appendLog("ERROR: " + msg);
+            }
+        }
+    };
+
+    private void registerInstallerReceiver() {
+        if (receiverRegistered) return;
+        IntentFilter f = new IntentFilter();
+        f.addAction(InstallerService.BROADCAST_PROGRESS);
+        f.addAction(InstallerService.BROADCAST_DONE);
+        f.addAction(InstallerService.BROADCAST_ERROR);
+        requireContext().registerReceiver(installerReceiver, f, Context.RECEIVER_NOT_EXPORTED);
+        receiverRegistered = true;
+    }
+
+    private void unregisterInstallerReceiver() {
+        if (!receiverRegistered) return;
+        try {
+            requireContext().unregisterReceiver(installerReceiver);
+        } catch (IllegalArgumentException ignored) {
+            // Already unregistered — safe to ignore.
+        }
+        receiverRegistered = false;
+    }
+
+    // ---- Log ----------------------------------------------------------------
+
+    public void appendLog(String line) {
+        if (line == null) return;
+        mainHandler.post(() -> {
+            // Cap the number of lines so the UI doesn't slow down
+            if (logLineCount >= MAX_LOG_LINES) {
+                String current = tvLog.getText().toString();
+                int newline = current.indexOf('\n');
+                if (newline >= 0) {
+                    tvLog.setText(current.substring(newline + 1));
+                    logLineCount--;
+                }
+            }
+            tvLog.append(line + "\n");
+            logLineCount++;
+            setLogShown(true);
+            scrollLog.post(() -> scrollLog.fullScroll(View.FOCUS_DOWN));
+        });
+    }
+
+    private void clearLog() {
+        mainHandler.post(() -> {
+            tvLog.setText("");
+            logLineCount = 0;
+            setLogShown(false);
+        });
+    }
+
+    /** The log and its header take no room while there is nothing in it (as in RimDroid). */
+    private void setLogShown(boolean shown) {
+        View root = getView();
+        if (root == null) return;
+        int v = shown ? View.VISIBLE : View.GONE;
+        root.findViewById(R.id.ll_log_header).setVisibility(v);
+        scrollLog.setVisibility(v);
+    }
+}

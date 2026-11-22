@@ -1,0 +1,474 @@
+[
+  {
+    "alpha": 156,
+    "bindings": [],
+    "centerXRelative": 0.13461539,
+    "centerYRelative": 0.7583333,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.1,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "STICK_WASD"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "MOUSE_BUTTON_LEFT"
+    ],
+    "centerXRelative": 0.93240684,
+    "centerYRelative": 0.4085612,
+    "color": -1,
+    "dragLook": true,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "ATK/R",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "MOUSE_BUTTON_RIGHT"
+    ],
+    "centerXRelative": 0.83368015,
+    "centerYRelative": 0.45616862,
+    "color": -1,
+    "dragLook": true,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "BLK/L",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "MOUSE_BUTTON_WHEEL"
+    ],
+    "centerXRelative": 0.87165713,
+    "centerYRelative": 0.31017253,
+    "color": -1,
+    "dragLook": true,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.75,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "ALT",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_SPACE"
+    ],
+    "centerXRelative": 0.23087065,
+    "centerYRelative": 0.54132485,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.0,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "JUMP",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_E"
+    ],
+    "centerXRelative": 0.7799429,
+    "centerYRelative": 0.5831217,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.9,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "USE/E",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_R"
+    ],
+    "centerXRelative": 0.77543944,
+    "centerYRelative": 0.75730795,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.65,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "R",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_F"
+    ],
+    "centerXRelative": 0.77495116,
+    "centerYRelative": 0.89112955,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.65,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "F",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_LEFT_SHIFT"
+    ],
+    "centerXRelative": 0.7063514,
+    "centerYRelative": 0.57358396,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": true,
+    "noTint": false,
+    "scale": 0.8,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "RUN",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_LEFT_CONTROL"
+    ],
+    "centerXRelative": 0.026923077,
+    "centerYRelative": 0.875,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.8,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "CROUCH",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_Q"
+    ],
+    "centerXRelative": 0.69791543,
+    "centerYRelative": 0.43761393,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.65,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "AUTO",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_ESCAPE"
+    ],
+    "centerXRelative": 0.053846154,
+    "centerYRelative": 0.525,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.64,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "Esc",
+    "type": "BUTTON_RECT"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_TAB"
+    ],
+    "centerXRelative": 0.26923078,
+    "centerYRelative": 0.7583333,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.65,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "INV",
+    "type": "BUTTON_RECT"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_M"
+    ],
+    "centerXRelative": 0.26923078,
+    "centerYRelative": 0.875,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.65,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "MAP",
+    "type": "BUTTON_RECT"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_1"
+    ],
+    "centerXRelative": 0.342351,
+    "centerYRelative": 0.910189,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.6,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "1",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_2"
+    ],
+    "centerXRelative": 0.381133,
+    "centerYRelative": 0.910189,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.6,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "2",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_3"
+    ],
+    "centerXRelative": 0.419915,
+    "centerYRelative": 0.910189,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.6,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "3",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_4"
+    ],
+    "centerXRelative": 0.458697,
+    "centerYRelative": 0.910189,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.6,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "4",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_5"
+    ],
+    "centerXRelative": 0.497479,
+    "centerYRelative": 0.910189,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.6,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "5",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_6"
+    ],
+    "centerXRelative": 0.536261,
+    "centerYRelative": 0.910189,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.6,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "6",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_7"
+    ],
+    "centerXRelative": 0.575044,
+    "centerYRelative": 0.910189,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.6,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "7",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "KEY_8"
+    ],
+    "centerXRelative": 0.613826,
+    "centerYRelative": 0.910189,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.6,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "8",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "UI_TOGGLE_KEYBOARD"
+    ],
+    "centerXRelative": 0.50201696,
+    "centerYRelative": 0.1461914,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.6,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "KB",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [
+      "UI_TOGGLE_OVERLAY"
+    ],
+    "centerXRelative": 0.4535419,
+    "centerYRelative": 0.14277343,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 0.6,
+    "sensitivity": 2.0,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "text": "V",
+    "type": "BUTTON_CIRCLE"
+  },
+  {
+    "alpha": 156,
+    "bindings": [],
+    "centerXRelative": 0.9058984,
+    "centerYRelative": 0.74907225,
+    "color": -1,
+    "icon": "NO_ICON",
+    "inputType": "MNK",
+    "isToggle": false,
+    "noTint": false,
+    "scale": 1.33,
+    "sensitivity": 4.5,
+    "style": "OUTLINE",
+    "tapDisabled": false,
+    "type": "STICK_MOUSE"
+  }
+]

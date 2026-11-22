@@ -1,0 +1,233 @@
+OxyDroid
+Copyright (c) 2026 udarmolota
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. See the LICENSE file for the full GPL-3.0 text.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+Additional permission under GNU GPL version 3 section 7
+
+If you modify this Program, or any covered work, by linking or combining it with
+the Unity runtime (the Unity Android player libraries such as libunity.so and
+libmain.so, and the UnityEngine managed modules, published by Unity Technologies),
+containing parts covered by the terms of the Unity license, the licensor of this
+Program grants you additional permission to convey the resulting work. Corresponding
+Source for a non-source form of such a combination shall not include the source
+code for the parts of the Unity runtime used, but shall include the source code
+of the parts of this Program that are combined with it (il2mono, the Vulkan shim
+and the OxyDroid bridge assembly, among others).
+
+OxyDroid is an unofficial, community-developed compatibility launcher for running
+the Linux x86_64 version of Valheim on ARM64 Android devices. It grew out of
+RimDroid (github.com/udarmolota/RimDroid) by the same author.
+
+Using OxyDroid requires the user's own copy of Valheim. Valheim and its related
+names and trademarks belong to Iron Gate AB; the game is published by Coffee Stain
+Publishing. OxyDroid is not affiliated with, endorsed by or supported by Iron Gate
+or Coffee Stain, and it contains no game files.
+
+================================================================================
+THIRD-PARTY COMPONENTS
+================================================================================
+
+OxyDroid's own source code is licensed under GPL-3.0 unless a source file or a
+section below states otherwise. OxyDroid also bundles and/or uses third-party
+components under their respective open-source or proprietary licenses.
+
+Third-party components remain the property of their respective copyright holders
+and are not relicensed under GPL-3.0 by their inclusion in OxyDroid.
+
+Per-file exception (MIT, not GPL-3.0): the anonymous Steam Workshop mod-download
+mechanism — app/src/main/java/com/oxydroid/SteamAnonModDownloader.java and
+app/src/main/java/com/oxydroid/SteamAnonModSpike.java (original work by udarmolota) —
+is licensed under the MIT License. The author may reuse it in her other projects
+and others may reuse it too, provided the copyright notice is preserved.
+MIT is GPL-compatible, so this does not affect the GPL-3.0 status of the rest of OxyDroid.
+
+--- Derived source code ---
+
+Winlator X server      LGPL-2.1             Copyright (c) BrunoSX (brunodev85)
+                       https://github.com/brunodev85/winlator-app
+                       (main project: https://github.com/brunodev85/winlator)
+                       The in-process X11 server Valheim draws and gets input through:
+                       app/src/main/java/com/oxydroid/xserver/,
+                       app/src/main/java/com/oxydroid/xconnector/,
+                       app/src/main/java/com/oxydroid/sysvshm/ and app/src/main/cpp/xserver/.
+                       Modified (2026, via RimDroid): packages and JNI symbols renamed from
+                       com.winlator, reduced to what the games need, and changed for input,
+                       soft-keyboard text and stability fixes. These files remain under
+                       LGPL-2.1 (full text: LICENSES/LGPL-2.1.txt), which allows their use in
+                       a GPL-3.0 program.
+
+The on-screen controls (app/src/main/java/com/oxydroid/controls/) and the physical
+gamepad mapping (app/src/main/java/com/oxydroid/input/GamepadHandler.java,
+input/GamepadMapping.java and GamepadMapperActivity.java) are derived from
+Zomdroid (https://github.com/udarmolota/zomdroid, a fork of liamelui's Zomdroid),
+MIT licence. Original Zomdroid code Copyright (c) 2025 liamelui; touchpad, radial
+menu, scroll bar, mouse and WASD sticks and later changes Copyright (c) 2025-2026
+udarmolota and contributors.
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+--- Native (built into the APK) ---
+
+box64                  MIT License          Copyright (c) 2020 ptitSeb
+                       (OxyDroid uses a private fork with Android/Unity changes,
+                        which remains MIT, same as upstream.)
+
+liblinkernsbypass      BSD 2-Clause License Copyright (c) 2021 Billy Laws
+
+Mono (Unity fork)      MIT License          Copyright (c) .NET Foundation and Contributors;
+(libmonobdwgc-2.0.so,                       fork by Unity Technologies
+ libmono-native.so,                         github.com/Unity-Technologies/mono,
+ libMonoPosixHelper.so)                     built for Android ARM64 by udarmolota
+                       Includes the Boehm-Demers-Weiser garbage collector (MIT-style license),
+                       Copyright (c) 1988-1989 Hans-J. Boehm, Alan J. Demers; 1991-1995 Xerox
+                       Corporation; 1996-1999 Silicon Graphics; 1999-2001 Hewlett-Packard.
+
+libsteam_api.so        OxyDroid original work (GPL-3.0): an ARM64 stub that only exports the
+(arm64 stub)           Steamworks function names (and hands the game the launcher's Steam
+                       ticket for crossplay); contains no Valve code.
+
+libDiskSpacePlugin.so  OxyDroid original work (GPL-3.0): ARM64 replacement for the game's
+                       free-disk-space plugin.
+
+--- Native engine (experimental; built when the native engine is enabled) ---
+
+Unity Android player   Proprietary          Copyright (c) Unity Technologies
+(libunity.so,                               Downloaded from Unity's servers at build time
+ libmain.so,                                (Unity Android Support for 6000.0.75f1); not
+ UnityEngine.*.dll)                         stored in the OxyDroid repository. Not covered
+                                            by OxyDroid's GPL-3.0 license; combined with
+                                            OxyDroid under the additional permission above.
+                       OxyDroid patches libunity.so at build time: the platform check that
+                       accepts the game's Linux asset bundles, and the name of the Vulkan
+                       library it opens (libvkshim.so).
+
+PlayFab Party          MIT License          Copyright (c) Microsoft Corporation
+(libparty.so and its                        https://github.com/PlayFab/PlayFabParty
+ Java classes)                              Downloaded from Microsoft's release at build time
+                                            (1.10.17); not stored in the OxyDroid repository.
+                                            Crossplay's network library.
+
+Mono class libraries   MIT License          Copyright (c) .NET Foundation and Contributors;
+(tools/unity-native/                        Unity Technologies' fork of Mono. Build-time
+ monoref/, Unity's fork)                    references only, not shipped in the APK.
+
+UnitySwappyWrapper     Unity Technologies (Unity's Android Support package), built with
+(libswappywrapper.so)  the Android Games SDK frame pacing library (Swappy), Apache License
+                       2.0, Copyright (c) Google LLC.
+
+il2mono (libil2cpp.so),  OxyDroid original work (GPL-3.0 with the additional permission
+Vulkan shim (libvkshim.so,  above): the IL2CPP embedding API on ARM64 Mono, the Vulkan
+libvkdriverhook.so),        observing shim and its driver loader, and the managed bridge
+OxyDroidBridge.dll          (on-screen controls, graphics settings, diagnostics).
+
+--- Bundled runtime libraries (assets/bundles/libs.tar.xz) ---
+
+MobileGlues            LGPL-2.1             Copyright (c) MobileGL-Dev contributors
+                       https://github.com/MobileGL-Dev/MobileGlues
+
+Mesa (libOSMesa,       MIT License          Copyright (c) The Mesa 3D Graphics
+libzfa / Zink,                              Library contributors
+Turnip / freedreno
+Vulkan drivers)
+
+SDL2 (x86_64)          zlib License         Copyright (c) 1997-2024 Sam Lantinga
+                       (the game also links its own copy statically)
+
+GNU C Library (x86_64) LGPL-2.1             Copyright (c) Free Software Foundation, Inc.
+(ld-linux-x86-64.so.2, libc.so.6)
+
+libstdc++, libgcc_s    GPL-3.0 with the GCC Runtime Library Exception
+(x86_64)                                    Copyright (c) Free Software Foundation, Inc.
+
+X.Org client libraries MIT / X11 License    Copyright (c) The X.Org Foundation and contributors
+(libX11, libxcb and
+extensions, libXau,
+libXdmcp, libXext, ...)
+
+libxkbcommon           MIT License          Copyright (c) libxkbcommon contributors
+
+Qualcomm Adreno Vulkan Proprietary          Copyright (c) Qualcomm Technologies, Inc.
+drivers (vulkan.ad06XX.so,                  Not covered by OxyDroid's GPL-3.0 license.
+libvulkan.ad07XX_regular.so)
+
+--- Mods support ---
+
+BepInExPack Valheim    LGPL-2.1             Copyright (c) BepInEx contributors; Valheim pack by
+(assets/bepinex/)                           denikson, Azumatt, Vapok, Margmas
+                       Includes HarmonyX (MIT, Copyright (c) Andreas Pardeike, BepInEx) and
+                       MonoMod (MIT, Copyright (c) 0x0ade and contributors).
+
+--- Downloaded on demand, not bundled ---
+
+gbe_fork (Goldberg     LGPL-3.0             Copyright (c) Mr_Goldberg, Detanup01 and contributors
+Steam emulator)                             https://github.com/Detanup01/gbe_fork
+
+--- Proprietary runtime components ---
+
+Steamworks API runtime (libsteam_api.so from the game)
+Copyright (c) Valve Corporation.
+Valve proprietary software; not covered by OxyDroid's GPL-3.0 license.
+
+--- Java / Gradle dependencies ---
+
+AndroidX libraries     Apache License 2.0   Copyright (c) The Android Open Source Project
+Material Components     Apache License 2.0   Copyright (c) Google LLC
+Apache Commons Compress Apache License 2.0   Copyright (c) The Apache Software Foundation
+Gson                   Apache License 2.0   Copyright (c) Google LLC
+protobuf-java          BSD 3-Clause License Copyright (c) Google LLC
+XZ for Java            Public Domain (0BSD)  by Lasse Collin and contributors
+Bouncy Castle (bcprov) Bouncy Castle License Copyright (c) The Legion of the Bouncy
+                       (MIT-style)           Castle Inc.
+JavaSteam              MIT License          Copyright (c) Lossy / JavaSteam contributors
+javasteam-depotdownloader  MIT License      Copyright (c) JavaSteam contributors
+zstd-jni               BSD 2-Clause License Copyright (c) 2015-2024 Luben Karavelov
+
+--------------------------------------------------------------------------------
+ICONS
+--------------------------------------------------------------------------------
+
+Donate icon (app/src/main/res/drawable/ic_donate.xml): "Donate" by Edward Boatman
+from the Noun Project, licensed under CC BY 3.0.
+https://thenounproject.com/icon/donate-285/
+
+On-screen control icon packs (app/src/main/assets/control_icon_packs/), original
+artwork, not taken from Valheim; each folder has its LICENSE.txt:
+- "OxyDroid Viking": generated for OxyDroid; may be used, modified and
+  redistributed with OxyDroid.
+- "Figures by jurises99": made by jurises99 (generated with Copilot, edited in
+  ibisPaintX) and given to OxyDroid; may be used, modified and redistributed
+  with OxyDroid.
+
+================================================================================
+Each third-party component remains subject to its own license terms. The links
+above identify the applicable upstream projects and terms; components distributed
+in binary form remain subject to any notice and redistribution requirements of
+their respective licenses.
+
+The presence of a component in this list does not imply endorsement of OxyDroid
+by its copyright holder.
+================================================================================

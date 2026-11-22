@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 1) Set up an instance: add it, pick a GPU driver, install mods/DLC -->
+    <group android:id="@+id/group_game" android:checkableBehavior="none">
+        <item
+            android:id="@+id/action_install_instance"
+            android:icon="@drawable/mt_icon_add"
+            android:title="@string/nav_new_instance" />
+        <item
+            android:id="@+id/action_custom_driver"
+            android:icon="@drawable/mt_icon_settings"
+            android:title="@string/nav_custom_driver" />
+        <!-- Mods (BepInEx): opens ModsFragment. The id is the old RimWorld "Install mod / DLC" one;
+             that screen (InstallContentFragment) is no longer reachable from the menu. -->
+        <item
+            android:id="@+id/action_install_content"
+            android:icon="@drawable/mt_icon_mods"
+            android:title="@string/nav_mods" />
+        <!-- The Thunderstore catalog, the Steam download and Import / export are in the bottom bar
+             (menu_bottom_nav.xml), so not here too. -->
+    </group>
+
+    <!-- 2) On-screen controls and the gamepad: everything about controls in one place. Actions that
+         need an instance ask for it (or take the only one). -->
+    <group android:id="@+id/group_controls" android:checkableBehavior="none">
+        <item
+            android:id="@+id/action_edit_controls"
+            android:icon="@drawable/mt_icon_tune"
+            android:title="@string/edit_controls" />
+        <!-- Icon packs: pictures for the on-screen buttons, put on an instance's layout at once -->
+        <item
+            android:id="@+id/action_icon_packs"
+            android:icon="@drawable/mt_icon_stack"
+            android:title="@string/nav_icon_packs" />
+        <item
+            android:id="@+id/action_gamepad_mapper"
+            android:icon="@drawable/mt_icon_settings"
+            android:title="@string/gamepad_mapper_settings_btn" />
+    </group>
+
+    <!-- 3) Steam: cloud saves, multiplayer (the game download is the bottom bar's Game) -->
+    <group android:id="@+id/group_store" android:checkableBehavior="none">
+        <item
+            android:id="@+id/action_cloud_saves"
+            android:icon="@drawable/mt_icon_save"
+            android:title="@string/nav_cloud_saves" />
+        <!-- Multiplayer: crossplay on/off per instance (MultiplayerFragment); its sign-in is Steam's, as the two above -->
+        <item
+            android:id="@+id/action_multiplayer"
+            android:icon="@drawable/mt_icon_group"
+            android:title="@string/nav_multiplayer" />
+    </group>
+
+    <!-- 4) Settings (Import / export is the bottom bar's Import) -->
+    <group android:id="@+id/group_data" android:checkableBehavior="none">
+        <item
+            android:id="@+id/action_settings"
+            android:icon="@drawable/mt_icon_settings"
+            android:title="@string/nav_settings" />
+    </group>
+
+    <!-- 5) Diagnostics -->
+    <group android:id="@+id/group_files" android:checkableBehavior="none">
+        <!-- "Manage storage" lives on each instance card's own menu (menu_game_instance.xml), where
+             it acts on that instance — a global duplicate only made this drawer longer. -->
+        <!-- One screen: by email (mail apps only) or saved to a file (BugReportFragment) -->
+        <item
+            android:id="@+id/action_bug_report"
+            android:icon="@drawable/ic_bug_report"
+            android:title="@string/nav_bug_report" />
+    </group>
+
+    <!-- The four external links (GitHub / X / Reddit / Support) are a row of icons in the drawer
+         HEADER (nav_header_links.xml), not menu rows, to keep this list short. -->
+
+</menu>
