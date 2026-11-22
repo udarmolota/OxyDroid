@@ -11,7 +11,7 @@
         android:icon="@drawable/ic_nav_game"
         android:title="@string/bottom_nav_game" />
     <item
-        android:id="@+id/thunderstore_fragment"
+        android:id="@+id/mods_fragment"
         android:icon="@drawable/ic_nav_mods"
         android:title="@string/bottom_nav_mods" />
     <item

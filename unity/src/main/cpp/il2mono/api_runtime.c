@@ -416,37 +416,58 @@ IL2MONO_API const void* il2cpp_method_get_return_type(const void* method)
 // Same convention on both sides: value-type `this` is passed unboxed (IL2CPP Runtime::Invoke /
 // ConvertArgs unbox it before the invoker; mono_runtime_invoke expects a pointer to the value).
 //
-// One engine message is kept from managed code. The Android player's video decoder wants the built-in
-// material Hidden/VideoDecodeAndroid, which only an Android build carries; with PC data the player
-// logs an error the moment a VideoPlayer is created (the main menu makes one). Oxygen Not Included
-// opens its crash screen for any logged error, so the game never got past the menu. The message goes
-// to logcat as before; only Application.CallLogCallback is not called for it. Videos stay black.
-static int is_missing_video_material_log(const void* method, void** params)
+// A few engine messages are kept from managed code. Oxygen Not Included opens its crash screen, and
+// then quits, for any error logged through Unity, so an engine error that is harmless on Android
+// ends the game. The messages go to logcat as before; only Application.CallLogCallback is not called
+// for them.
+//   The Android player's video decoder wants the built-in material Hidden/VideoDecodeAndroid, which
+//   only an Android build carries; with PC data the player logs an error the moment a VideoPlayer is
+//   created (the main menu makes one), so the game never got past the menu. Videos stay black.
+//   The game's Mods screen has a button that opens a local mod's folder with a file:// URL; the
+//   Android player cannot open one and logs an error, and the game quit at the tap (S25 2026-11-22).
+//   The folder is in the app's private storage, which no file manager can show anyway: the button
+//   does nothing.
+static const char* const kept_messages[] = {
+    "Could not find material Hidden/VideoDecodeAndroid",
+    "Exception while trying to open url 'file://",
+};
+
+// Which of kept_messages a CallLogCallback call carries (its index), or -1.
+static int kept_log_message(const void* method, void** params)
 {
-    static const char prefix[] = "Could not find material Hidden/VideoDecodeAndroid";
     const char* name = p_mono_method_get_name((void*)method);
     if (!name || name[0] != 'C' || strcmp(name, "CallLogCallback") || !params || !params[0])
-        return 0;
+        return -1;
     int length = p_mono_string_length(params[0]);
     const uint16_t* chars = p_mono_string_chars(params[0]);
-    if (!chars || length < (int)sizeof(prefix) - 1)
-        return 0;
-    for (size_t i = 0; i < sizeof(prefix) - 1; i++)
-        if (chars[i] != (uint16_t)prefix[i])
-            return 0;
-    return 1;
+    if (!chars)
+        return -1;
+    for (int m = 0; m < (int)(sizeof(kept_messages) / sizeof(kept_messages[0])); m++)
+    {
+        const char* prefix = kept_messages[m];
+        size_t n = strlen(prefix);
+        if ((size_t)length < n)
+            continue;
+        size_t i = 0;
+        while (i < n && chars[i] == (uint16_t)(unsigned char)prefix[i])
+            i++;
+        if (i == n)
+            return m;
+    }
+    return -1;
 }
 
 IL2MONO_API void* il2cpp_runtime_invoke(const void* method, void* obj, void** params, void** exc)
 {
     FIRST_CALL();
-    if (is_missing_video_material_log(method, params))
+    int kept = kept_log_message(method, params);
+    if (kept >= 0)
     {
-        static int reported;
-        if (!reported)
+        static unsigned reported;
+        if (!(reported & (1u << kept)))
         {
-            reported = 1;
-            LOGI("video: Hidden/VideoDecodeAndroid is missing (PC data); the error is kept from the game");
+            reported |= 1u << kept;
+            LOGI("kept from the game (it would quit on it): \"%s...\"", kept_messages[kept]);
         }
         if (exc)
             *exc = NULL;

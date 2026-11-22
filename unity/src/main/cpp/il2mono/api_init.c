@@ -1,6 +1,7 @@
 // Start-up API, in the order libunity calls it (see spy/spy_run1.log).
 // libunity calls several of these BEFORE il2cpp_init (icall registration, arguments, policy), so they
 // are recorded here and applied once the Mono domain exists.
+#include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -368,6 +369,38 @@ static void mono_print_to_logcat(const char* text, int is_stdout)
     __android_log_print(is_stdout ? ANDROID_LOG_INFO : ANDROID_LOG_WARN, "IL2MONO-mono", "%s", text);
 }
 
+// The game's own log. Oxygen Not Included writes it with Console.WriteLine (its Debug class): on a
+// desktop the player's standard output is Player.log, in an Android app it is /dev/null, so only the
+// errors the game also hands to Unity ever reached a log. Standard output and standard error go to
+// Player.log in the game's user data folder, where the desktop build keeps it and where the launcher's
+// report looks for it; the previous run's log is kept as Player-prev.log, which holds the crash when
+// the player restarts before reporting.
+static void redirect_output_to_player_log(void)
+{
+    if (!il2mono_cfg.persistent_data[0])
+        return;
+    char path[1200], prev[1200];
+    snprintf(path, sizeof(path), "%s/Player.log", il2mono_cfg.persistent_data);
+    snprintf(prev, sizeof(prev), "%s/Player-prev.log", il2mono_cfg.persistent_data);
+    rename(path, prev);   // fails on the first run: there is no log yet
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_APPEND | O_CLOEXEC, 0644);
+    if (fd < 0)
+    {
+        LOGW("Player.log: cannot create %s", path);
+        return;
+    }
+    fflush(stdout);
+    fflush(stderr);
+    if (dup2(fd, STDOUT_FILENO) < 0 || dup2(fd, STDERR_FILENO) < 0)
+        LOGW("Player.log: cannot redirect the output");
+    else
+        LOGI("the game's log: %s", path);
+    close(fd);
+    // A line at a time, so a crash leaves the log complete up to the last line written.
+    setvbuf(stdout, NULL, _IOLBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+}
+
 IL2MONO_API int il2cpp_init(const char* domain_name)
 {
     FIRST_CALL();
@@ -379,6 +412,7 @@ IL2MONO_API int il2cpp_init(const char* domain_name)
     // the game folder on desktop but "/" in an Android app process.
     if (il2mono_cfg.cwd[0] && chdir(il2mono_cfg.cwd) != 0)
         LOGW("chdir(%s) failed", il2mono_cfg.cwd);
+    redirect_output_to_player_log();
 
     p_mono_trace_set_log_handler(mono_log_to_logcat, NULL);
     p_mono_trace_set_print_handler(mono_print_to_logcat);

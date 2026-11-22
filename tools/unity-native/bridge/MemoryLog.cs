@@ -14,7 +14,11 @@ namespace OxyDroid
     //              process, and running out of them fails an allocation long before the RAM is gone;
     //   gpu        the mappings of the GPU driver (/dev/kgsl*, /dev/mali*) and their size;
     //   unity      the engine's own allocator, allocated and reserved;
-    //   managed    the Mono heap in use (the game's and the mods' C# objects).
+    //   managed    the Mono heap in use (the game's and the mods' C# objects);
+    //   fps        frames rendered in that minute per second, and the longest single frame: a report
+    //              of "it is slow" needs the number, and the counter on screen is not in any log.
+    // Ten seconds in, once, the game's own build string (what its watermark shows), which the report
+    // reads back as the game version.
     // The Unity and Mono numbers are read on the main thread (cheap); /proc is read on a pool thread,
     // walking the maps byte by byte so a long list makes no garbage.
     internal static class MemoryLog
@@ -23,13 +27,32 @@ namespace OxyDroid
         static float s_Next = PeriodSeconds;
         static int s_Busy;
         static readonly float s_Start = Time.realtimeSinceStartup;
+        static int s_Frames;
+        static float s_PeriodStart = Time.realtimeSinceStartup, s_LastFrame = Time.realtimeSinceStartup, s_Slowest;
+        static bool s_BuildLogged;
 
+        // Once per rendered frame.
         internal static void Tick()
         {
             float now = Time.realtimeSinceStartup;
+            s_Frames++;
+            if (now - s_LastFrame > s_Slowest)
+                s_Slowest = now - s_LastFrame;
+            s_LastFrame = now;
+            if (!s_BuildLogged && now - s_Start > 10f)
+            {
+                s_BuildLogged = true;
+                LogGameBuild();
+            }
             if (now < s_Next)
                 return;
             s_Next = now + PeriodSeconds;
+            float seconds = now - s_PeriodStart;
+            int fps = seconds > 0f ? (int)(s_Frames / seconds + 0.5f) : 0;
+            int slowestMs = (int)(s_Slowest * 1000f + 0.5f);
+            s_Frames = 0;
+            s_Slowest = 0f;
+            s_PeriodStart = now;
             if (Interlocked.CompareExchange(ref s_Busy, 1, 0) != 0)
                 return;
             long unityAllocated = 0, unityReserved = 0, managed = 0;
@@ -47,7 +70,7 @@ namespace OxyDroid
             {
                 try
                 {
-                    Write(minutes, unityAllocated, unityReserved, managed);
+                    Write(minutes, unityAllocated, unityReserved, managed, fps, slowestMs);
                 }
                 catch (Exception e)
                 {
@@ -61,15 +84,36 @@ namespace OxyDroid
             });
         }
 
-        static void Write(int minutes, long unityAllocated, long unityReserved, long managed)
+        // BuildWatermark.GetBuildText() of the game, by reflection: this assembly does not reference the
+        // game's. "U57-764025-S" and the like; without it the line says why.
+        static void LogGameBuild()
+        {
+            string text;
+            try
+            {
+                var type = Type.GetType("BuildWatermark, Assembly-CSharp");
+                var method = type == null ? null : type.GetMethod("GetBuildText",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                text = method == null ? "unknown (no BuildWatermark.GetBuildText)" : (string)method.Invoke(null, null);
+            }
+            catch (Exception e)
+            {
+                text = "unknown (" + e.GetType().Name + ")";
+            }
+            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "OXYDROID game: build {0}", text);
+        }
+
+        static void Write(int minutes, long unityAllocated, long unityReserved, long managed, int fps, int slowestMs)
         {
             long rss = ReadStatusKb("VmRSS:") * 1024;
             int maps, gpuMaps;
             long gpuBytes;
             CountMaps(out maps, out gpuMaps, out gpuBytes);
             Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null,
-                "OXYDROID memory: {0} min | rss {1} | maps {2} (gpu {3}, {4}) | unity {5} of {6} | managed {7}",
-                minutes, Mb(rss), maps, gpuMaps, Mb(gpuBytes), Mb(unityAllocated), Mb(unityReserved), Mb(managed));
+                "OXYDROID memory: {0} min | rss {1} | maps {2} (gpu {3}, {4}) | unity {5} of {6} | managed {7}"
+                + " | fps {8}, slowest frame {9} ms",
+                minutes, Mb(rss), maps, gpuMaps, Mb(gpuBytes), Mb(unityAllocated), Mb(unityReserved), Mb(managed),
+                fps, slowestMs);
         }
 
         static string Mb(long bytes)

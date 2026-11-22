@@ -41,7 +41,7 @@
 
     <fragment
         android:id="@+id/mods_fragment"
-        android:name="com.oxydroid.fragments.ModsFragment"
+        android:name="com.oxydroid.fragments.OniModsFragment"
         android:label="@string/nav_mods" />
 
     <fragment

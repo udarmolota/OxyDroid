@@ -485,7 +485,7 @@
     <string name="transfer_saves">Сохранения</string>
     <string name="transfer_saves_hint">Zip с колониями инстанса: для резервной копии или чтобы перенести в другой инстанс или на другой телефон. При импорте колонии с такими же именами заменяются. Сохранения с ПК тоже импортируются: заархивируйте папку save_files или cloud_save_files либо папку колонии.</string>
     <string name="transfer_mods">Моды</string>
-    <string name="transfer_mods_hint">Импорт: один или несколько .zip с модами (Thunderstore или Nexus). Экспорт: все моды инстанса в одном .zip, который целиком ставится здесь или на другом телефоне.</string>
+    <string name="transfer_mods_hint">Импорт: .zip с одним или несколькими модами либо копия папки mods с ПК (Documents/Klei/OxygenNotIncluded/mods). Экспорт: все моды экземпляра в одном .zip.</string>
     <string name="transfer_mods_installing">Устанавливаю моды…</string>
     <string name="transfer_mods_imported">Установлено модов: %1$d</string>
     <string name="transfer_mods_none">В этом инстансе нет модов.</string>
@@ -516,4 +516,18 @@
     <string name="cloud_saves_push_not_yet">Отправка сохранений в облако пока недоступна. Получение из облака работает.</string>
     <string name="textures_converting_title">Преобразование текстур</string>
     <string name="textures_converting_message">Текстуры игры преобразуются под этот GPU: %1$d%%. Это делается один раз и занимает несколько минут; не закрывайте лаунчер.</string>
+    <string name="oni_mods_import">Установить моды из zip</string>
+    <string name="oni_mods_hint">Это список самой игры в порядке загрузки: стрелки двигают мод, переключатель включает его. Меняйте его, пока игра не запущена. Только что импортированный мод появляется внизу; запустите игру один раз, и его можно будет включить здесь или на экране модов в игре.</string>
+    <string name="oni_mods_empty">Модов пока нет. Установите zip с одним или несколькими модами.</string>
+    <string name="oni_mods_new">новый: запустите игру один раз</string>
+    <string name="oni_mods_missing">файлы отсутствуют</string>
+    <string name="oni_mods_crashes">падений: %1$d</string>
+    <string name="oni_mods_up">Раньше в порядке загрузки</string>
+    <string name="oni_mods_down">Позже в порядке загрузки</string>
+    <string name="oni_mods_delete">Удалить</string>
+    <string name="oni_mods_delete_confirm">Удалить %1$s? Папка мода будет удалена из этого экземпляра.</string>
+    <string name="oni_mods_failed">Не удалось изменить моды: %1$s</string>
+    <string name="oni_mods_exported">Экспортировано модов: %1$d. Zip импортируется обратно целиком, здесь или на другом телефоне.</string>
+    <string name="oni_mods_imported_next">Запустите игру один раз, затем включите новые моды на экране модов.</string>
+    <string name="oni_mods_unrecognized">Установлено, но признаков мода Oxygen Not Included внутри нет (ни mod_info.yaml, ни DLL, ни перевода). Игра может их не загрузить; пресеты ReShade и сейвы — не моды игры:</string>
 </resources>

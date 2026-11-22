@@ -613,6 +613,24 @@ public final class NativeEngine {
     private static final String DLOPEN_ENTRY =
             "<dllentry dll=\"libil2cpp.so\" name=\"dlopen\" target=\"il2mono_dlopen\"/>";
 
+    /**
+     * libc for managed code: bionic's libc.so, with the three functions whose ABI differs from glibc's
+     * sent to il2mono (il2mono/monomod.c): MonoMod (inside Harmony) asks for __errno_location, glibc's
+     * sysconf numbering and mmap with a 32-bit offset, and without them no mod's patches apply.
+     */
+    private static final String GLIBC_ENTRIES = "<dllentry dll=\"libil2cpp.so\" name=\"__errno_location\" target=\"il2mono_errno_location\"/><dllentry dll=\"libil2cpp.so\" name=\"sysconf\" target=\"il2mono_sysconf\"/><dllentry dll=\"libil2cpp.so\" name=\"mmap\" target=\"il2mono_mmap\"/>";
+
+    /**
+     * A dllmap for {@code dll} that sends GLIBC_ENTRIES to il2mono and everything else to bionic's
+     * libc.so. The plain map after the one with the entries is the one Mono meets first (it reads the
+     * newest first): without it every function of the library is looked up in libil2cpp.so (see
+     * System.Native below).
+     */
+    private static String libcMap(String dll) {
+        return "\t<dllmap dll=\"" + dll + "\" target=\"libc.so\">" + GLIBC_ENTRIES + "</dllmap>\n"
+                + "\t<dllmap dll=\"" + dll + "\" target=\"libc.so\"/>\n";
+    }
+
     private static File prepareMonoConfig(File dataDir, File workDir) throws IOException {
         File src = new File(dataDir, "MonoBleedingEdge/etc");
         File dst = new File(workDir, "etc");
@@ -640,9 +658,12 @@ public final class NativeEngine {
                             // two entries above still win for their own functions.
                             + "\t<dllmap dll=\"System.Native\" target=\"libmono-native.so\" os=\"!windows\" />")
                     .replace("$mono_libdir/libmono-native.so", "libmono-native.so")
+                    // The Linux config's "libc" (libc.so.6): bionic's libc with glibc's ABI where it
+                    // differs, for MonoMod; the same for mods that name libc.so.6 itself.
+                    .replace("<dllmap dll=\"libc\" target=\"libc.so.6\" os=\"!windows\"/>", libcMap("libc").trim())
                     .replace("target=\"libc.so.6\"", "target=\"libc.so\"")
                     .replace("</configuration>",
-                            "\t<dllmap dll=\"libc.so.6\" target=\"libc.so\"/>\n"
+                            libcMap("libc.so.6")
                             + "\t<dllmap dll=\"libdl.so.2\" target=\"libdl.so\">" + DLOPEN_ENTRY + "</dllmap>\n"
                             + "\t<dllmap dll=\"dl\">" + DLOPEN_ENTRY + "</dllmap>\n"
                             + "\t<dllmap dll=\"libdl\">" + DLOPEN_ENTRY + "</dllmap>\n"

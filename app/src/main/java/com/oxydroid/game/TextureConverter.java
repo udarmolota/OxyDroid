@@ -105,6 +105,28 @@ public final class TextureConverter {
         return done;
     }
 
+    /** For a report: what the GPU samples and how much BC texture data the instance still holds. */
+    public static String describe(File dataDir) {
+        if (!load()) return "converter library not loaded";
+        int formats = nativeGpuFormats();
+        String gpu = formats < 0 ? "GPU formats unknown"
+                : "GPU: BC " + ((formats & 1) != 0 ? "yes" : "NO") + ", ASTC " + ((formats & 2) != 0 ? "yes" : "NO");
+        long pending = 0;
+        int unreadable = 0;
+        File[] files = dataDir.listFiles();
+        if (files != null) {
+            for (File assets : files) {
+                if (!assets.isFile() || !assets.getName().endsWith(".assets")) continue;
+                File resS = new File(dataDir, assets.getName() + ".resS");
+                if (!resS.isFile()) continue;
+                long n = nativePending(assets.getAbsolutePath(), resS.getAbsolutePath());
+                if (n < 0) unreadable++; else pending += n;
+            }
+        }
+        return (pending == 0 ? "all converted to ASTC" : (pending >> 20) + " MB still in BC formats")
+                + (unreadable > 0 ? ", " + unreadable + " file(s) not readable" : "") + "; " + gpu;
+    }
+
     private static File journal(File workDir, File assets) {
         return new File(workDir, assets.getName() + ".astc-journal");
     }

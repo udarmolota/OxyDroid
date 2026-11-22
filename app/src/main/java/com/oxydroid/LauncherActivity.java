@@ -42,7 +42,7 @@ public class LauncherActivity extends AppCompatActivity {
     private AppBarConfiguration appBarConfiguration;
     /** The screens of the bottom bar (menu_bottom_nav.xml); the bar is shown on these only. */
     private static final int[] BOTTOM_NAV_DESTINATIONS = {
-            R.id.launcher_fragment, R.id.download_fragment, R.id.thunderstore_fragment,
+            R.id.launcher_fragment, R.id.download_fragment, R.id.mods_fragment,
             R.id.transfer_fragment, R.id.projects_fragment};
     private final Handler ui = new Handler(Looper.getMainLooper());
 

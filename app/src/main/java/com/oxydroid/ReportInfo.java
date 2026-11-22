@@ -43,7 +43,10 @@ public final class ReportInfo {
     public static final int SUN_PATH_MAX = 107;
 
     // With the network version when the line has it: that is what multiplayer compares.
-    private static final Pattern GAME_VERSION = Pattern.compile("\\bl-\\d+\\.\\d+\\.\\d+(?: \\(network version \\d+\\))?");
+    // The game's own line in Player.log ("Build: U60-764025-V", once Steam is up: the first one, before
+    // it, reads "??-764025-?"), or the bridge's in the native engine's log (bridge/MemoryLog.cs).
+    private static final Pattern GAME_VERSION =
+            Pattern.compile("Build: [A-Z]+\\d+-\\d+-[A-Z]\\S*|OXYDROID game: build .*");
 
     private ReportInfo() {}
 
@@ -158,7 +161,6 @@ public final class ReportInfo {
         }
         line(sb, "files dir", ctx.getFilesDir().getAbsolutePath());
         line(sb, "cache dir", ctx.getCacheDir().getAbsolutePath());
-        line(sb, "x11 socket", describeSocketPath(x11SocketPath(ctx)));
         line(sb, "free space", freeSpace(ctx.getFilesDir()));
         line(sb, "launcher log", LauncherLog.status());
 
@@ -177,7 +179,6 @@ public final class ReportInfo {
             line(sb, "missing files", missing);
             line(sb, "download", gi.isDownloadUnfinished() ? "UNFINISHED (download marker present)" : "(none)");
             line(sb, "game version", gameVersion(gi));
-            line(sb, "box64", box64Banner(gi));
         }
 
         // --- Log ages: a stale file (from a run days ago) is obvious at a glance ---
@@ -185,8 +186,8 @@ public final class ReportInfo {
         line(sb, "launcher.log", age(new File(files, LauncherLog.FILE), fmt));
         if (gi != null) {
             File game = new File(gi.getGamePath());
-            line(sb, "rimdroid.log", age(new File(game, "rimdroid.log"), fmt));
-            line(sb, "box64.log", age(new File(game, "box64.log"), fmt));
+            line(sb, com.oxydroid.game.NativeLog.FILE, age(new File(game, com.oxydroid.game.NativeLog.FILE), fmt));
+            // The game's own log (its standard output, see il2mono/api_init.c).
             line(sb, "Player.log", age(new File(gi.getUserDataDir(), "Player.log"), fmt));
         }
         sb.append("=======================\n");

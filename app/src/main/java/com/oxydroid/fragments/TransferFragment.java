@@ -22,7 +22,6 @@ import androidx.navigation.Navigation;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.oxydroid.GameDataTransfer;
 import com.oxydroid.LauncherPreferences;
-import com.oxydroid.ModManager;
 import com.oxydroid.R;
 import com.oxydroid.controls.ControlsStorage;
 import com.oxydroid.game.GameInstance;
@@ -167,18 +166,17 @@ public class TransferFragment extends Fragment {
         pending = NONE;
         if (uris == null || uris.isEmpty() || gi == null || !isAdded()) return;
         final Context app = requireContext().getApplicationContext();
-        final File gameDir = new File(gi.getGamePath());
-        final boolean supportOn = gi.settings().isModSupport();
+        final File userDir = gi.getUserDataDir();
         Toast.makeText(app, R.string.transfer_mods_installing, Toast.LENGTH_SHORT).show();
         new Thread(() -> {
-            List<String> done = new ArrayList<>(), failed = new ArrayList<>();
+            List<String> done = new ArrayList<>(), failed = new ArrayList<>(), odd = new ArrayList<>();
             for (Uri uri : uris) {
                 String file = displayName(app, uri);
                 if (file == null) file = String.valueOf(uri.getLastPathSegment());
                 String base = file.toLowerCase(java.util.Locale.ROOT).endsWith(".zip")
                         ? file.substring(0, file.length() - 4) : file;
                 try {
-                    done.add(ModManager.install(app, uri, gameDir, base));
+                    done.addAll(com.oxydroid.game.OniMods.importUri(app, uri, userDir, base, odd));
                 } catch (Exception e) {
                     failed.add(file + ": " + e.getMessage());
                 }
@@ -189,7 +187,11 @@ public class TransferFragment extends Fragment {
                 msg.append("\n\n").append(app.getString(R.string.mods_copy_failed));
                 for (String f : failed) msg.append("\n• ").append(f);
             }
-            if (!done.isEmpty() && !supportOn) msg.append("\n\n").append(app.getString(R.string.ts_mods_off));
+            if (!odd.isEmpty()) {
+                msg.append("\n\n").append(app.getString(R.string.oni_mods_unrecognized));
+                for (String n : odd) msg.append("\n• ").append(n);
+            }
+            if (!done.isEmpty()) msg.append("\n\n").append(app.getString(R.string.oni_mods_imported_next));
             android.app.Activity act = getActivity();
             if (act != null) act.runOnUiThread(() -> {
                 if (!isAdded()) {
@@ -252,7 +254,7 @@ public class TransferFragment extends Fragment {
     private void startExport(int what) {
         GameInstance gi = currentOrToast();
         if (gi == null) return;
-        if (what == MODS && ModManager.list(new File(gi.getGamePath())).isEmpty()) {
+        if (what == MODS && com.oxydroid.game.OniMods.list(gi.getUserDataDir()).isEmpty()) {
             Toast.makeText(requireContext(), R.string.transfer_mods_none, Toast.LENGTH_SHORT).show();
             return;
         }
@@ -279,8 +281,8 @@ public class TransferFragment extends Fragment {
                     ControlsStorage.exportZip(app, gi.getName(), out);
                     msg = app.getString(R.string.controls_exported);
                 } else if (what == MODS) {
-                    int count = ModManager.exportZip(instanceDir, ModManager.list(instanceDir), out);
-                    msg = app.getString(R.string.mods_exported, count);
+                    int count = com.oxydroid.game.OniMods.exportZip(gi.getUserDataDir(), out);
+                    msg = app.getString(R.string.oni_mods_exported, count);
                 } else {
                     String part = what == SAVES ? GameDataTransfer.SAVES : GameDataTransfer.CONFIG;
                     GameDataTransfer.Result r = GameDataTransfer.export(instanceDir, out, new String[]{part});

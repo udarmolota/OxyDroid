@@ -46,6 +46,9 @@ Not tested yet:
 ## Requirements
 
 - Android 11 or newer, ARM64.
+- **Minimum:** Snapdragon 865 / Dimensity 1000–1100 class.
+- **Recommended:** Snapdragon 8 Gen 1 / Dimensity 8100 or newer.
+- Anything below the minimum is experimental: it may start, and it is not a target.
 - A GPU with Vulkan. Adreno is the tested one.
 - About 8 GB of free storage per instance.
 - Your own copy of Oxygen Not Included on Steam.

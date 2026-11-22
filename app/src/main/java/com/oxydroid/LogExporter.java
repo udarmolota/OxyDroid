@@ -109,6 +109,8 @@ public final class LogExporter {
                 caps.put("sigsegv_fault.prev.log", new long[] { 0, SIGSEGV_TAIL_BYTES });
                 // The game's own settings: graphics preset, resolution, VSync, FPS limit, tessellation…
                 put(candidates, "prefs-game.xml", new File(userDir, "prefs"));
+                // Oxygen Not Included's own options (UI scale, low-resolution textures, sound, language).
+                put(candidates, "kplayerprefs.yaml", new File(userDir, "kplayerprefs.yaml"));
                 put(candidates, "prefs-unknown.xml", new File(gamePath, "unity3d/unknown/unknown/prefs"));
                 // The native engine's settings live in the app's shared_prefs; its numbers only.
                 String nativePrefs = com.oxydroid.game.ValheimPrefsSync.nativeNumbersText(ctx);
@@ -241,7 +243,7 @@ public final class LogExporter {
                   .append("  reason=").append(exitReasonName(e.getReason()))
                   .append("  status=").append(e.getStatus()).append(signalName(e))
                   .append("  pss=").append(e.getPss()).append("kB rss=").append(e.getRss())
-                  .append("kB\n");
+                  .append("kB  ").append(exitKind(e)).append('\n');
                 String d = e.getDescription();
                 if (d != null && !d.isEmpty()) sb.append("    desc: ").append(d).append('\n');
             }
@@ -325,6 +327,19 @@ public final class LogExporter {
      * tier, the toggles and the Extra env field. The game's own settings ship as prefs-*.xml; together
      * they answer most of "why is it slow / why does it look like that" without another round trip.
      */
+    /**
+     * The game's process is not stopped by the player: leaving the game puts it in the background,
+     * and Android ends it there with SIGKILL, which reads like a crash. What it was doing when it
+     * ended tells the two apart.
+     */
+    private static String exitKind(android.app.ApplicationExitInfo e) {
+        int importance = e.getImportance();
+        boolean visible = importance <= android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
+        if (e.getReason() == android.app.ApplicationExitInfo.REASON_SIGNALED && e.getStatus() == 9 && !visible)
+            return "[in the background, importance " + importance + ": the player had left the game]";
+        return "[" + (visible ? "ON SCREEN" : "in the background") + ", importance " + importance + "]";
+    }
+
     private static void addInstanceSettings(ZipOutputStream zos, GameInstance gi, Result r)
             throws java.io.IOException {
         final String name = "instance-settings.txt";
@@ -334,32 +349,23 @@ public final class LogExporter {
         line(sb, "app version", ReportInfo.buildId());
         line(sb, "device", android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL
                 + ", Android " + android.os.Build.VERSION.RELEASE);
-        line(sb, "renderer", String.valueOf(s.getRenderer()));
-        line(sb, "vulkan driver", String.valueOf(s.getVulkanDriverSo()));
         line(sb, "render scale", s.describeRenderScale());
         line(sb, "fixed res mode", String.valueOf(s.getFixedResMode()));
         line(sb, "fps mode", s.getFpsMode() + "   (0 off, 1 economy ~30, 2 balanced ~40, 3 smooth ~60)");
-        line(sb, "texture tier", s.getTexTier() + "   (0 none, 1 low, 2 ultra low)");
-        // The setting AND what box64 really loaded in the last launch: a failed native load falls back
-        // to the emulated x86 Mono silently, and only this line would show it.
-        String monoStatus = com.oxydroid.game.NativeMono.readStatus(gi);
-        int engine = s.getEngine();
-        line(sb, "engine", engine + "   (0 box64, 1 box64 + native Mono, 2 native engine)");
-        line(sb, "native mono", s.isNativeMono()
-                + (monoStatus != null ? " (last launch: " + monoStatus + ")" : ""));
-        // Whether the game ran modded, and with what — the first thing to know about a bug report.
-        StringBuilder mods = new StringBuilder(String.valueOf(s.isModSupport()));
-        for (ModManager.Mod m : ModManager.list(new java.io.File(gi.getGamePath()))) {
-            mods.append(mods.indexOf(":") < 0 ? ": " : ", ").append(m.name);
-            if (m.version != null) mods.append(' ').append(m.version);
-            if (!m.enabled) mods.append(" (off)");
+        line(sb, "engine", s.getEngine() + "   (2 native engine)");
+        line(sb, "vulkan compat", s.getVulkanCompat() + "   (Auto / On / Off in the order of the setting; Auto is "
+                + (com.oxydroid.game.NativeEngine.needsVulkanCompat() ? "on" : "off") + " on this GPU)");
+        line(sb, "reverse landscape", String.valueOf(s.isReverseLandscape()));
+        // Whether the game's textures are still in the PC formats, and whether this GPU needs them
+        // converted: the first thing to know about a memory report from a Mali phone.
+        String textures;
+        try {
+            textures = com.oxydroid.game.TextureConverter.describe(
+                    new java.io.File(gi.getGamePath(), gi.getDataDirectoryName()));
+        } catch (Throwable t) {
+            textures = "unknown: " + t;
         }
-        line(sb, "mod support", mods.toString());
-        line(sb, "compat mode", String.valueOf(s.isCompatibilityMode()));
-        line(sb, "drag pan", String.valueOf(s.isDragPan()));
-        // "the game kept running with the screen off" vs "it froze when I came back" starts here
-        line(sb, "keep running in bg", String.valueOf(s.isKeepRunningInBackground()));
-        line(sb, "shader cache", String.valueOf(s.isShaderCache()));
+        line(sb, "textures", textures);
         line(sb, "extra env", s.getEnvVars() == null ? "" : s.getEnvVars());
         byte[] out = sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
         zos.putNextEntry(new ZipEntry(name));
