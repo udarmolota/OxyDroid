@@ -43,6 +43,9 @@ box64/debian/changelog
 /research/
 
 
-# IDE settings and CI workflows: kept locally, not published
+# IDE settings and CI workflows: kept locally, not published, except the APK build (build.yml)
 /.idea/
-/.github/
+/.github/*
+!/.github/workflows/
+/.github/workflows/*
+!/.github/workflows/build.yml
