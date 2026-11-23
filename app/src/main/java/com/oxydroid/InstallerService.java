@@ -204,6 +204,18 @@ public class InstallerService extends Service {
         // Re-rooting and the Steam library download that follow have no measurable size.
         broadcastPhase(PHASE_SETUP, -1, -1);
 
+        // The macOS SimDLL may come in the same ZIP, beside the Linux build rather than in its
+        // macos/ folder (a macOS .app or SimDLL.bundle zipped along): re-rooting below drops
+        // everything outside the game's folder, so it is taken aside first and put in place after.
+        File macSimDll = null;
+        if (!com.oxydroid.game.MacSimDll.present(instanceDir)) {
+            File found = com.oxydroid.game.MacSimDll.find(instanceDir);
+            if (found != null) {
+                macSimDll = new File(getCacheDir(), "simdll-" + System.nanoTime());
+                if (!found.renameTo(macSimDll)) macSimDll = null;
+            }
+        }
+
         // Re-root: the game files may sit inside a wrapper folder at any depth. Find the binary and
         // lift its folder's contents to the instance top, dropping the wrappers, so isInstalled()
         // (which checks the root) passes. If it's somehow missing after extraction, delete the whole
@@ -226,6 +238,16 @@ public class InstallerService extends Service {
             bin = new File(instanceDir, GameDescriptor.ONI.executable());
         }
         bin.setExecutable(true);
+        if (macSimDll != null && !com.oxydroid.game.MacSimDll.present(instanceDir)) {
+            try {
+                com.oxydroid.game.MacSimDll.place(macSimDll, instanceDir);
+                broadcastProgress("macOS SimDLL found in the archive.");
+            } catch (IOException e) {
+                broadcastProgress("macOS SimDLL found but not placed: " + e.getMessage());
+            }
+        }
+        if (macSimDll != null) //noinspection ResultOfMethodCallIgnored
+            macSimDll.delete();
 
         // Valheim needs a working Steam: Goldberg shim + steam_settings + PlayFab auto-login off.
         // A failed shim download does not fail the install; the warning is passed on below.

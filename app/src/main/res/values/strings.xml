@@ -103,7 +103,7 @@ In the cloud: %2$s
     <string name="crossplay_keepalive">Steam session: syncing achievements</string>
     <string name="compat_mode_label">Compatibility mode</string>
     <string name="compat_mode_hint">Turn on if the game won\'t start (black screen / stuck on loading). A bit slower, but helps it launch on some devices.</string>
-    <string name="native_engine_preparing">Preparing the native engine…</string>
+    <string name="native_engine_preparing">Preparing the game…</string>
     <string name="native_engine_failed">Native engine could not start: %1$s</string>
     <string name="engine_label">Engine</string>
     <string name="engine_box64_mono">box64 + native Mono</string>
@@ -559,4 +559,11 @@ In the cloud: %2$s
     <string name="steam_achievements_sync_failed">Could not sync: %1$s</string>
     <string name="steam_achievements_close_game">Close the game first: it keeps the achievements while it runs.</string>
     <string name="instance_game_version">version %1$s</string>
+    <string name="simdll_missing_title">SimDLL from the macOS version is missing</string>
+    <string name="simdll_missing_message">%1$s has the Linux version of the game, but the native engine also needs one file from the macOS version: SimDLL, the colony simulation. It must be from the same game version.\n\nChoose it in any form: the file itself, or a ZIP of the macOS game, of OxygenNotIncluded.app or of SimDLL.bundle.\n\nWith Steam on a PC: open steam://open/console and run download_depot 457140 457142. The file is in OxygenNotIncluded.app/Contents/PlugIns/SimDLL.bundle/Contents/MacOS/.</string>
+    <string name="simdll_choose">Choose file</string>
+    <string name="simdll_added">SimDLL added to %1$s</string>
+    <string name="simdll_failed">Could not use this file: %1$s</string>
+    <string name="native_engine_preparing_note">The first launch of an instance takes a few seconds longer.</string>
+    <string name="native_engine_already_starting">The game is already starting</string>
 </resources>

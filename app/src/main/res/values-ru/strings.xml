@@ -102,7 +102,7 @@
     <string name="crossplay_keepalive">Сессия Steam: синхронизация достижений</string>
     <string name="compat_mode_label">Режим совместимости</string>
     <string name="compat_mode_hint">Включи, если игра не запускается (чёрный экран / зависает на загрузке). Чуть медленнее, но помогает запуститься на некоторых устройствах.</string>
-    <string name="native_engine_preparing">Подготовка нативного движка…</string>
+    <string name="native_engine_preparing">Подготовка игры…</string>
     <string name="native_engine_failed">Нативный движок не запустился: %1$s</string>
     <string name="engine_label">Движок</string>
     <string name="engine_box64_mono">box64 + нативный Mono</string>
@@ -537,4 +537,11 @@
     <string name="steam_achievements_sync_failed">Не удалось синхронизировать: %1$s</string>
     <string name="steam_achievements_close_game">Сначала закрой игру: пока она запущена, достижения у неё.</string>
     <string name="instance_game_version">версия %1$s</string>
+    <string name="simdll_missing_title">Не хватает SimDLL из macOS-версии игры</string>
+    <string name="simdll_missing_message">В %1$s есть Linux-версия игры, но нативному движку нужен ещё один файл из macOS-версии: SimDLL, симуляция колонии. Он должен быть из той же версии игры.\n\nВыберите его в любом виде: сам файл или ZIP с macOS-версией игры, с OxygenNotIncluded.app или с SimDLL.bundle.\n\nСо Steam на ПК: откройте steam://open/console и выполните download_depot 457140 457142. Файл лежит в OxygenNotIncluded.app/Contents/PlugIns/SimDLL.bundle/Contents/MacOS/.</string>
+    <string name="simdll_choose">Выбрать файл</string>
+    <string name="simdll_added">SimDLL добавлен в %1$s</string>
+    <string name="simdll_failed">Этот файл не подходит: %1$s</string>
+    <string name="native_engine_preparing_note">Первый запуск экземпляра занимает на несколько секунд дольше.</string>
+    <string name="native_engine_already_starting">Игра уже запускается</string>
 </resources>

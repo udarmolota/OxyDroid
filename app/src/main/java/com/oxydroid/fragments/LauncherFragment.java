@@ -61,6 +61,13 @@ public class LauncherFragment extends Fragment {
     private int logLineCount = 0;
     private boolean receiverRegistered = false;
 
+    /** The instance the macOS SimDLL is being picked for, and whether to start it after. */
+    private String simDllFor;
+    private boolean simDllThenLaunch;
+
+    private final ActivityResultLauncher<String[]> simDllPicker =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(), this::onSimDllPicked);
+
     private final ActivityResultLauncher<String[]> zipPicker =
             registerForActivityResult(new ActivityResultContracts.OpenDocument(),
                     uri -> { if (uri != null) onZipSelected(uri); });
@@ -477,7 +484,65 @@ public class LauncherFragment extends Fragment {
             box.show();
             return;
         }
+        // The native engine runs the macOS build's simulation library: without it, ask for it here
+        // instead of failing at the start of the game.
+        if (!com.oxydroid.game.MacSimDll.present(new File(gi.getGamePath()))) {
+            askForSimDll(gi, true);
+            return;
+        }
         startGame(gi);
+    }
+
+    /**
+     * The instance has the Linux build but not the macOS SimDLL: say what it is, where it comes from,
+     * and let the player pick it, in whatever shape they have it (MacSimDll.install).
+     */
+    private void askForSimDll(GameInstance gi, boolean thenLaunch) {
+        if (!isAdded()) return;
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.simdll_missing_title)
+                .setMessage(getString(R.string.simdll_missing_message, gi.getName()))
+                .setPositiveButton(R.string.simdll_choose, (d, w) -> {
+                    simDllFor = gi.getName();
+                    simDllThenLaunch = thenLaunch;
+                    simDllPicker.launch(new String[]{"*/*"});
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void onSimDllPicked(@androidx.annotation.Nullable Uri uri) {
+        final String name = simDllFor;
+        final boolean thenLaunch = simDllThenLaunch;
+        simDllFor = null;
+        if (uri == null || name == null || !isAdded()) return;
+        final GameInstance gi = new GameInstance(name);
+        final Context app = requireContext().getApplicationContext();
+        new Thread(() -> {
+            String error = null;
+            try {
+                com.oxydroid.game.MacSimDll.install(app, uri, new File(gi.getGamePath()));
+            } catch (Exception e) {
+                error = e.getMessage() == null ? e.toString() : e.getMessage();
+            }
+            final String err = error;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                if (err != null) {
+                    new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                            .setTitle(R.string.simdll_missing_title)
+                            .setMessage(getString(R.string.simdll_failed, err))
+                            .setPositiveButton(R.string.simdll_choose, (d, w) -> askForSimDll(gi, thenLaunch))
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show();
+                    return;
+                }
+                android.widget.Toast.makeText(app, getString(R.string.simdll_added, name),
+                        android.widget.Toast.LENGTH_SHORT).show();
+                refreshInstances();
+                if (thenLaunch) launchInstance(gi);
+            });
+        }, "SimDllImport").start();
     }
 
     private void startGame(GameInstance gi) {
@@ -654,15 +719,53 @@ public class LauncherFragment extends Fragment {
 
     // Prepare the instance off the UI thread (first time builds the data archive, ~100 MB), then hand
     // over to the native player's own process. steam = the crossplay sign-in, null = offline.
+    /**
+     * One launch at a time: the first launch of an instance builds its data archive (gigabytes, a few
+     * seconds), and a second tap meanwhile built it again and deleted the file under the game the
+     * first had already started (S25 2026-11-23: "cannot rename data.zip.tmp", the game's assets
+     * "corrupted"). Static: the launcher screen may be recreated while a launch prepares.
+     */
+    private static volatile boolean nativeLaunchPreparing;
+
     private void launchNativeEngine(android.content.Context app, GameInstance gi, com.oxydroid.SteamTicketLogin.Result steam) {
-        android.widget.Toast.makeText(app, R.string.native_engine_preparing, android.widget.Toast.LENGTH_SHORT).show();
+        if (nativeLaunchPreparing) {
+            android.widget.Toast.makeText(app, R.string.native_engine_already_starting, android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        nativeLaunchPreparing = true;
         final android.os.Handler ui = new android.os.Handler(android.os.Looper.getMainLooper());
-        // The one-time texture conversion (a GPU without BC formats) takes minutes: a dialog with its
-        // progress, made when the conversion first reports, and the keep-alive notification so the
-        // work goes on with the launcher off screen.
+        // "Preparing the game": a dialog that cannot be dismissed while the launch prepares, so it is
+        // clear something is happening and the play button cannot be tapped again. Shown after a short
+        // moment, so an ordinary launch (a fraction of a second) does not flash it. The one-time texture
+        // conversion (a GPU without BC formats, minutes) shows its progress in the same dialog, with
+        // the keep-alive notification so the work goes on with the launcher off screen.
         final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
+        final android.widget.TextView[] message = new android.widget.TextView[1];
+        final boolean[] finished = new boolean[1];
         final boolean[] keepAlive = new boolean[1];
         final int[] shownPercent = { -1 };
+        final Runnable showDialog = () -> {
+            android.app.Activity activity = getActivity();
+            if (finished[0] || dialog[0] != null || activity == null || activity.isFinishing()) return;
+            float d = activity.getResources().getDisplayMetrics().density;
+            android.widget.LinearLayout box = new android.widget.LinearLayout(activity);
+            box.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+            box.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            box.setPadding((int) (24 * d), (int) (20 * d), (int) (24 * d), (int) (12 * d));
+            android.widget.ProgressBar spinner = new android.widget.ProgressBar(activity);
+            box.addView(spinner, new android.widget.LinearLayout.LayoutParams((int) (36 * d), (int) (36 * d)));
+            message[0] = new android.widget.TextView(activity);
+            message[0].setText(R.string.native_engine_preparing_note);
+            message[0].setPadding((int) (16 * d), 0, 0, 0);
+            box.addView(message[0], new android.widget.LinearLayout.LayoutParams(0,
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            dialog[0] = new com.google.android.material.dialog.MaterialAlertDialogBuilder(activity)
+                    .setTitle(R.string.native_engine_preparing)
+                    .setView(box)
+                    .setCancelable(false)
+                    .show();
+        };
+        ui.postDelayed(showDialog, 300);
         com.oxydroid.game.TextureConverter.Progress textures = (done, total) -> {
             int percent = total <= 0 ? 100 : (int) Math.min(100, done * 100 / total);
             ui.post(() -> {
@@ -672,16 +775,9 @@ public class LauncherFragment extends Fragment {
                     keepAlive[0] = true;
                     com.oxydroid.DownloadKeepAliveService.start(app, app.getString(R.string.textures_converting_title));
                 }
-                android.app.Activity activity = getActivity();
-                if (dialog[0] == null && activity != null && !activity.isFinishing()) {
-                    dialog[0] = new androidx.appcompat.app.AlertDialog.Builder(activity)
-                            .setTitle(R.string.textures_converting_title)
-                            .setMessage(app.getString(R.string.textures_converting_message, percent))
-                            .setCancelable(false)
-                            .show();
-                } else if (dialog[0] != null) {
-                    dialog[0].setMessage(app.getString(R.string.textures_converting_message, percent));
-                }
+                showDialog.run();
+                if (dialog[0] != null) dialog[0].setTitle(R.string.textures_converting_title);
+                if (message[0] != null) message[0].setText(app.getString(R.string.textures_converting_message, percent));
             });
         };
         new Thread(() -> {
@@ -696,12 +792,17 @@ public class LauncherFragment extends Fragment {
                                 android.widget.Toast.LENGTH_LONG).show());
             } finally {
                 ui.post(() -> {
+                    finished[0] = true;
+                    ui.removeCallbacks(showDialog);
                     if (keepAlive[0]) com.oxydroid.DownloadKeepAliveService.stop(app);
                     try {
                         if (dialog[0] != null && dialog[0].isShowing()) dialog[0].dismiss();
                     } catch (RuntimeException ignored) {
                         // the launcher's window is already gone
                     }
+                    // A few seconds more before another launch is accepted: the game's process is
+                    // starting and the launcher screen comes back under it.
+                    ui.postDelayed(() -> nativeLaunchPreparing = false, 3000);
                 });
             }
         }).start();
@@ -781,6 +882,13 @@ public class LauncherFragment extends Fragment {
                 appendLog(msg);
                 refreshInstances();
                 adviseDriverForPendingInstall();
+                // An imported game without the macOS SimDLL: ask for it now, not at the first launch.
+                String last = LauncherPreferences.requireSingleton().getLastInstanceName();
+                if (last != null && !last.isEmpty()) {
+                    GameInstance gi = new GameInstance(last);
+                    if (gi.isComplete() && !com.oxydroid.game.MacSimDll.present(new File(gi.getGamePath())))
+                        askForSimDll(gi, false);
+                }
             } else if (InstallerService.BROADCAST_ERROR.equals(action)) {
                 appendLog("ERROR: " + msg);
             }

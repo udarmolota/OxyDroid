@@ -107,7 +107,7 @@ Na nuvem: %2$s
     <string name="crossplay_keepalive">Sessão da Steam: sincronizando conquistas</string>
     <string name="compat_mode_label">Modo de compatibilidade</string>
     <string name="compat_mode_hint">Ative se o jogo não iniciar (tela preta ou travado no carregamento). Fica um pouco mais lento, mas ajuda a abrir em alguns aparelhos.</string>
-    <string name="native_engine_preparing">Preparando o motor nativo…</string>
+    <string name="native_engine_preparing">Preparando o jogo…</string>
     <string name="native_engine_failed">O motor nativo não iniciou: %1$s</string>
     <string name="engine_label">Motor</string>
     <string name="engine_box64_mono">box64 + Mono nativo</string>
@@ -544,4 +544,11 @@ Na nuvem: %2$s
     <string name="steam_achievements_sync_failed">Não foi possível sincronizar: %1$s</string>
     <string name="steam_achievements_close_game">Feche o jogo primeiro: enquanto ele roda, as conquistas ficam com ele.</string>
     <string name="instance_game_version">versão %1$s</string>
+    <string name="simdll_missing_title">Falta o SimDLL da versão de macOS</string>
+    <string name="simdll_missing_message">%1$s tem a versão Linux do jogo, mas o motor nativo também precisa de um arquivo da versão macOS: SimDLL, a simulação da colônia. Ele precisa ser da mesma versão do jogo.\n\nEscolha-o em qualquer forma: o próprio arquivo, ou um ZIP do jogo de macOS, de OxygenNotIncluded.app ou de SimDLL.bundle.\n\nCom a Steam em um PC: abra steam://open/console e execute download_depot 457140 457142. O arquivo fica em OxygenNotIncluded.app/Contents/PlugIns/SimDLL.bundle/Contents/MacOS/.</string>
+    <string name="simdll_choose">Escolher arquivo</string>
+    <string name="simdll_added">SimDLL adicionado a %1$s</string>
+    <string name="simdll_failed">Não foi possível usar este arquivo: %1$s</string>
+    <string name="native_engine_preparing_note">A primeira execução de uma instância leva alguns segundos a mais.</string>
+    <string name="native_engine_already_starting">O jogo já está iniciando</string>
 </resources>

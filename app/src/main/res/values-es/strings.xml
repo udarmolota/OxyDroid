@@ -105,7 +105,7 @@ En la nube: %2$s
     <string name="crossplay_keepalive">Sesión de Steam: sincronizando logros</string>
     <string name="compat_mode_label">Modo de compatibilidad</string>
     <string name="compat_mode_hint">Actívalo si el juego no inicia (pantalla negra o se queda en la carga). Es un poco más lento, pero ayuda a que arranque en algunos dispositivos.</string>
-    <string name="native_engine_preparing">Preparando el motor nativo…</string>
+    <string name="native_engine_preparing">Preparando el juego…</string>
     <string name="native_engine_failed">El motor nativo no pudo iniciarse: %1$s</string>
     <string name="engine_label">Motor</string>
     <string name="engine_box64_mono">box64 + Mono nativo</string>
@@ -542,4 +542,11 @@ En la nube: %2$s
     <string name="steam_achievements_sync_failed">No se pudo sincronizar: %1$s</string>
     <string name="steam_achievements_close_game">Cierra el juego primero: mientras se ejecuta, los logros son suyos.</string>
     <string name="instance_game_version">versión %1$s</string>
+    <string name="simdll_missing_title">Falta SimDLL de la versión de macOS</string>
+    <string name="simdll_missing_message">%1$s tiene la versión de Linux del juego, pero el motor nativo también necesita un archivo de la versión de macOS: SimDLL, la simulación de la colonia. Debe ser de la misma versión del juego.\n\nElígelo en cualquier forma: el propio archivo, o un ZIP del juego de macOS, de OxygenNotIncluded.app o de SimDLL.bundle.\n\nCon Steam en un PC: abre steam://open/console y ejecuta download_depot 457140 457142. El archivo está en OxygenNotIncluded.app/Contents/PlugIns/SimDLL.bundle/Contents/MacOS/.</string>
+    <string name="simdll_choose">Elegir archivo</string>
+    <string name="simdll_added">SimDLL añadido a %1$s</string>
+    <string name="simdll_failed">No se pudo usar este archivo: %1$s</string>
+    <string name="native_engine_preparing_note">El primer inicio de una instancia tarda unos segundos más.</string>
+    <string name="native_engine_already_starting">El juego ya se está iniciando</string>
 </resources>
