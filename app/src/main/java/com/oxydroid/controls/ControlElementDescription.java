@@ -330,7 +330,7 @@ public class ControlElementDescription {
     public ControlElementDescription withIcon(String iconFile, boolean noTint) {
         return new ControlElementDescription(centerXRelative, centerYRelative, scale, type, bindings, text,
                 color, alpha, inputType, icon, isToggle, sensitivity, style, iconFile, noTint, tapDisabled,
-                dragLook, floating, floatZone, dragLookTouchpad);
+                dragLook, floating, floatZone, dragLookTouchpad, noOutline, noLabel);
     }
 
     public static ControlElementDescription sanitize(ControlElementDescription d) {
@@ -346,7 +346,7 @@ public class ControlElementDescription {
                     d.scale > 0f ? d.scale : 1f, d.type, nonNull.toArray(new GLFWBinding[0]),
                     d.text, d.color, d.alpha, it, d.icon != null ? d.icon : Icon.NO_ICON,
                     d.isToggle, d.sensitivity, d.style, d.iconFile, d.noTint, d.tapDisabled,
-                    d.dragLook, d.floating, d.floatZone, d.dragLookTouchpad);
+                    d.dragLook, d.floating, d.floatZone, d.dragLookTouchpad, d.noOutline, d.noLabel);
         } catch (RuntimeException e) {
             return null;
         }
