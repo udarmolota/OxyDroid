@@ -235,7 +235,7 @@ Na nuvem: %2$s
     <string name="new_instance_with_dlc">%1$s\n+ DLC: %2$d</string>
 
     <string name="nav_label_donate">Doar</string>
-    <string name="zomdroid_dialog_message">O Zomdroid roda Project Zomboid no Android do mesmo jeito que este launcher roda Oxygen Not Included. Mesmo autor, mesma abordagem.\n\nhttps://github.com/udarmolota/Zomdroid/releases</string>
+    <string name="syxdroid_dialog_message">O SyxDroid roda Songs of Syx no Android do mesmo jeito que este launcher roda Oxygen Not Included. Mesmo autor, mesma abordagem.\n\nhttps://github.com/udarmolota/syxdroid/releases</string>
     <string name="download_manifest_hint">Avançado: ID do manifesto — vazio = 1.5 recomendada</string>
     <string name="download_start">Baixar</string>
     <string name="download_tab_game">Jogo</string>
@@ -379,7 +379,7 @@ Na nuvem: %2$s
     <string name="icon_packs_title">Pacotes de ícones</string>
     <string name="icon_packs_note">Imagens para todos os botões na tela de uma vez, como um pacote, em vez de um por um. Escolha a instância e toque em Aplicar ao lado de um pacote; botões para os quais o pacote não tem imagem mantêm o texto.</string>
     <string name="icon_packs_howto">Como fazer seu próprio pacote</string>
-    <string name="icon_packs_format">Um conjunto de imagens PNG, quadradas, de 256 a 512 pixels, em fundo transparente. A cor não importa: o botão pinta a imagem com a própria cor (para manter as cores das imagens, adicione um pack.json com \"tint\": false). Os nomes dos arquivos importam, eles dizem qual botão recebe cada imagem: %1$s. Qualquer outra imagem do zip também é importada e pode ser colocada num botão manualmente no editor de controles. Compacte os arquivos em um zip e toque em Importar.</string>
+    <string name="icon_packs_format">Um conjunto de imagens PNG: quadradas, de 256 a 512 pixels, com fundo transparente. A cor não importa: o botão pinta a imagem com a própria cor (para manter as cores das imagens, adicione um pack.json com \"tint\": false). Os nomes dos arquivos dizem qual botão recebe qual imagem quando o pacote é aplicado a um layout: %1$s. Qualquer outra imagem do zip também é importada e pode ser posta num botão à mão no editor. Compacte os arquivos em um zip e toque em Importar.</string>
     <string name="icon_packs_instance">Instância</string>
     <string name="icon_packs_apply">Aplicar</string>
     <string name="icon_packs_delete">Excluir</string>
@@ -543,4 +543,5 @@ Na nuvem: %2$s
     <string name="steam_achievements_sync_done">Pronto. Conquistas novas enviadas: %1$d. O telefone agora tem também as conquistas da sua conta.</string>
     <string name="steam_achievements_sync_failed">Não foi possível sincronizar: %1$s</string>
     <string name="steam_achievements_close_game">Feche o jogo primeiro: enquanto ele roda, as conquistas ficam com ele.</string>
+    <string name="instance_game_version">versão %1$s</string>
 </resources>

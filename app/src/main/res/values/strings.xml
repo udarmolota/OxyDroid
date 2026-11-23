@@ -170,10 +170,10 @@ In the cloud: %2$s
     <string name="nav_label_x" translatable="false">X</string>
     <string name="nav_label_reddit" translatable="false">Reddit</string>
     <string name="nav_label_donate">Donate</string>
-    <string name="nav_label_zomdroid" translatable="false">Zomdroid</string>
+    <string name="nav_label_syxdroid" translatable="false">SyxDroid</string>
     <!-- Cross-promo dialog for the sibling launcher. -->
-    <string name="zomdroid_dialog_message">Zomdroid runs Project Zomboid on Android, the same way this launcher runs Oxygen Not Included. Same author, same approach.\n\nhttps://github.com/udarmolota/Zomdroid/releases</string>
-    <string name="zomdroid_url" translatable="false">https://github.com/udarmolota/Zomdroid/releases</string>
+    <string name="syxdroid_dialog_message">SyxDroid runs Songs of Syx on Android, the same way this launcher runs Oxygen Not Included. Same author, same approach.\n\nhttps://github.com/udarmolota/syxdroid/releases</string>
+    <string name="syxdroid_url" translatable="false">https://github.com/udarmolota/syxdroid/releases</string>
     <!-- Bug report email. Number = the tap date as ddMMyyyy, filled at runtime. -->
     <string name="bug_report_email" translatable="false">210478@mail.ru</string>
     <string name="bug_report_subject">OXYDROID REPORT %1$s</string>
@@ -396,7 +396,7 @@ In the cloud: %2$s
     <string name="icon_packs_title">Icon packs</string>
     <string name="icon_packs_note">Pictures for all on-screen buttons at once, as a set, instead of one by one. Pick the instance and press Apply next to a pack; buttons the pack has no picture for keep their text.</string>
     <string name="icon_packs_howto">How to make a pack yourself</string>
-    <string name="icon_packs_format">A set of PNG pictures, square, 256 to 512 pixels, on a transparent background. The colour does not matter: a button paints the picture its own colour (to keep the pictures\u2019 own colours, add a pack.json with \"tint\": false). The file names matter, they say which button gets which picture: %1$s. Any other picture in the zip is imported too and can be put on a button by hand in the controls editor. Zip the files and press Import.</string>
+    <string name="icon_packs_format">A set of PNG pictures, square, 256 to 512 pixels, on a transparent background. The colour does not matter: a button paints the picture its own colour (to keep the pictures\u2019 own colours, add a pack.json with \"tint\": false). The file names say which button gets which picture when the pack is applied to a layout: %1$s. Any other picture in the zip is imported too and can be put on a button by hand in the controls editor. Zip the files and press Import.</string>
     <string name="icon_packs_instance">Instance</string>
     <string name="icon_packs_apply">Apply</string>
     <string name="icon_packs_delete">Delete</string>
@@ -558,4 +558,5 @@ In the cloud: %2$s
     <string name="steam_achievements_sync_done">Done. New achievements sent: %1$d. The phone now has your account\'s achievements too.</string>
     <string name="steam_achievements_sync_failed">Could not sync: %1$s</string>
     <string name="steam_achievements_close_game">Close the game first: it keeps the achievements while it runs.</string>
+    <string name="instance_game_version">version %1$s</string>
 </resources>

@@ -325,7 +325,16 @@ public class LauncherFragment extends Fragment {
                     name.setText(sb);
                 }
                 launch.setVisibility(ready ? View.VISIBLE : View.GONE);
-                // (renderer subtitle is commented out in the layout — keep the binding out too)
+                // The game's version under the name, as on SyxDroid's cards: from the game's own log,
+                // so it shows once the instance has run (a few lines of one file).
+                TextView version = v.findViewById(R.id.instance_item_version);
+                String ver = ready ? com.oxydroid.ReportInfo.shortGameVersion(gi) : null;
+                if (ver != null) {
+                    version.setText(getString(R.string.instance_game_version, ver));
+                    version.setVisibility(View.VISIBLE);
+                } else {
+                    version.setVisibility(View.GONE);
+                }
 
                 launch.setOnClickListener(x -> launchInstance(gi));
                 settings.setOnClickListener(x -> openInstanceSettings(gi));   // gear = straight to Settings

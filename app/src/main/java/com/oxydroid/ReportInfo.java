@@ -321,6 +321,26 @@ public final class ReportInfo {
         return anyLog ? "unknown (no version line in the game's log)" : "unknown (no game log yet)";
     }
 
+    // "Build: U60-764025-V" in Player.log, or the bridge's "OXYDROID game: build U60-764025-V".
+    private static final Pattern SHORT_VERSION = Pattern.compile("U\\d+-\\d+");
+
+    /**
+     * The game's version for the instance card, "U60-764025" (update and build, without the DLC
+     * letters), from the game's own log of its last run; null before the first run. Reads the first
+     * hundred lines only: the line is near the top.
+     */
+    @Nullable
+    public static String shortGameVersion(GameInstance gi) {
+        File dir = gi.getUserDataDir();
+        for (File f : new File[] { new File(dir, "Player.log"), new File(dir, "Player-prev.log") }) {
+            String line = grepFirst(f, Pattern.compile("Build: U\\d+-\\d+-"), 100);
+            if (line == null) continue;
+            Matcher m = SHORT_VERSION.matcher(line);
+            if (m.find()) return m.group();
+        }
+        return null;
+    }
+
     /** box64's own banner line ("Box64 arm64 v0.x.y <hash> with Dynarec built on ...") from its log. */
     static String box64Banner(GameInstance gi) {
         Pattern p = Pattern.compile("Box64.*built on.*");

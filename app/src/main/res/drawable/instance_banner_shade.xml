@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Over the instance card's picture: clear at the top, dark at the bottom, where the name, the
+     version and the buttons sit, so they read on any part of the picture. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:startColor="#00000000"
+        android:centerColor="#40000000"
+        android:endColor="#CC000000" />
+</shape>

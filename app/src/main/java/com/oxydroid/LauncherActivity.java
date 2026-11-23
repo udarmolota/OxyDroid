@@ -183,17 +183,17 @@ public class LauncherActivity extends AppCompatActivity {
         findViewById(R.id.link_github).setOnClickListener(v -> { binding.drawerLayout.close(); checkForUpdates(); });
         findViewById(R.id.link_reddit).setOnClickListener(v -> openLink(R.string.url_reddit_sub));
         findViewById(R.id.link_support).setOnClickListener(v -> { binding.drawerLayout.close(); showDonateDialog(); });
-        findViewById(R.id.link_zomdroid).setOnClickListener(v -> { binding.drawerLayout.close(); showZomdroidDialog(); });
+        findViewById(R.id.link_syxdroid).setOnClickListener(v -> { binding.drawerLayout.close(); showSyxDroidDialog(); });
     }
 
-    /** Cross-promo dialog for Zomdroid (sibling launcher, same author). Link is clickable. */
-    private void showZomdroidDialog() {
+    /** Cross-promo dialog for SyxDroid (sibling launcher, same author). Link is clickable. */
+    private void showSyxDroidDialog() {
         android.text.SpannableString s =
-                new android.text.SpannableString(getString(R.string.zomdroid_dialog_message));
+                new android.text.SpannableString(getString(R.string.syxdroid_dialog_message));
         android.text.util.Linkify.addLinks(s, android.text.util.Linkify.WEB_URLS);
         androidx.appcompat.app.AlertDialog dialog =
                 new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                        .setTitle(R.string.nav_label_zomdroid)
+                        .setTitle(R.string.nav_label_syxdroid)
                         .setMessage(s)
                         .setPositiveButton(android.R.string.ok, null)
                         .create();

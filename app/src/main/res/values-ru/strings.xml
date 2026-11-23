@@ -159,7 +159,7 @@
     <string name="link_support">Поддержать разработчика</string>
     <string name="link_soon">Скоро</string>
     <string name="nav_label_donate">Донат</string>
-    <string name="zomdroid_dialog_message">Zomdroid запускает Project Zomboid на Android так же, как этот лаунчер запускает Oxygen Not Included. Тот же автор, тот же подход.\n\nhttps://github.com/udarmolota/Zomdroid/releases</string>
+    <string name="syxdroid_dialog_message">SyxDroid запускает Songs of Syx на Android так же, как этот лаунчер запускает Oxygen Not Included. Тот же автор, тот же подход.\n\nhttps://github.com/udarmolota/syxdroid/releases</string>
     <string name="bug_report_subject">OXYDROID REPORT %1$s</string>
     <string name="bug_report_body">Hi, I have a new bug report.\n\nDescription: \n\n\n---\n%1$s</string>
     <string name="bug_report_no_mail">На устройстве нет почтового приложения.</string>
@@ -375,7 +375,7 @@
     <string name="icon_packs_title">Наборы иконок</string>
     <string name="icon_packs_note">Картинки сразу на все экранные кнопки, набором, а не по одной. Выбери инстанс и нажми «Применить» у набора; кнопки, для которых в наборе нет картинки, остаются с текстом.</string>
     <string name="icon_packs_howto">Как сделать набор самому</string>
-    <string name="icon_packs_format">Набор картинок PNG, квадратных, от 256 до 512 пикселей, на прозрачном фоне. Цвет не важен: кнопка красит картинку в свой цвет (чтобы картинки остались в своих цветах, добавь pack.json с \"tint\": false). Важны имена файлов, по ним картинка попадает на свою кнопку: %1$s. Любая другая картинка из zip тоже импортируется, её можно поставить на кнопку вручную в редакторе управления. Запакуй файлы в zip и нажми «Импортировать».</string>
+    <string name="icon_packs_format">Набор картинок PNG: квадратные, от 256 до 512 пикселей, на прозрачном фоне. Цвет не важен: кнопка красит картинку в свой цвет (чтобы сохранить цвета картинок, добавьте pack.json с \"tint\": false). Имена файлов говорят, какая кнопка какую картинку получит, когда набор применяют к раскладке: %1$s. Любые другие картинки из zip тоже импортируются, их можно поставить на кнопку вручную в редакторе. Упакуйте файлы в zip и нажмите «Импорт».</string>
     <string name="icon_packs_instance">Инстанс</string>
     <string name="icon_packs_apply">Применить</string>
     <string name="icon_packs_delete">Удалить</string>
@@ -536,4 +536,5 @@
     <string name="steam_achievements_sync_done">Готово. Отправлено новых достижений: %1$d. На телефоне теперь и достижения твоего аккаунта.</string>
     <string name="steam_achievements_sync_failed">Не удалось синхронизировать: %1$s</string>
     <string name="steam_achievements_close_game">Сначала закрой игру: пока она запущена, достижения у неё.</string>
+    <string name="instance_game_version">версия %1$s</string>
 </resources>

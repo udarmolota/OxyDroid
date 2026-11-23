@@ -1,5 +1,0 @@
-OxyDroid Control Icons
-
-These original icon images were generated for OxyDroid. They may be used, modified, and redistributed with OxyDroid, including in OxyDroid builds and source distributions.
-
-The icons were created as original artwork and do not copy or trace Valheim's art.

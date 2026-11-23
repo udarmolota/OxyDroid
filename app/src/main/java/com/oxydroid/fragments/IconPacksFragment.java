@@ -38,8 +38,10 @@ import java.util.List;
  */
 public class IconPacksFragment extends Fragment {
 
-    private static final String ACTION_NAMES = "attack, secondary_attack, block, dodge, jump, crouch, run, "
-            + "auto_run, use, sit, hide_weapons, forsaken_power, inventory, map, menu, chat, keyboard, toggle_controls";
+    /** The file names a pack's pictures go by, one per action (IconPacks' table of keys). */
+    private static final String ACTION_NAMES = "click (left button), right_click, middle_click, zoom_in, zoom_out, "
+            + "pause (Space), speed_1 (Tab), menu (Esc), camera_up, camera_left, camera_down, camera_right (W A S D), "
+            + "rotate_right (O), keyboard, toggle_controls";
     private static final int PREVIEW_ICONS = 6;
 
     private Spinner spInstance;

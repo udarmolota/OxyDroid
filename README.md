@@ -53,6 +53,23 @@ Not tested yet:
 - About 8 GB of free storage per instance.
 - Your own copy of Oxygen Not Included on Steam.
 
+## Get it only from GitHub
+
+Download OxyDroid only from the [Releases page](https://github.com/udarmolota/OxyDroid/releases).
+Copies from other sites may be changed, and OxyDroid asks for your **Steam login** (to download the
+game, for Steam Cloud and for achievements). The real app uses it only to sign in to Steam and never
+stores it. Repacked launchers are not supported.
+
+Releases are signed with my own key. Certificate fingerprint (SHA-256):
+
+```
+F8:5A:43:7A:50:90:FB:84:B9:EB:2A:4C:BF:F5:AB:C0:7E:4D:3B:A2:D5:C4:BE:02:59:63:6F:3A:62:4E:D2:C6
+```
+
+You can check it in apps like MT Manager or App Manager. The launcher checks it too, and says so when
+a copy is signed with another key. The real OxyDroid also installs over itself as an update: if
+Android refuses to update your copy with the one from GitHub, your copy is not the original.
+
 ## Getting the game files
 
 **From Steam, inside the launcher.** Sign in with your Steam account on the download screen. The

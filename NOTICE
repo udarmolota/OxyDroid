@@ -228,13 +228,9 @@ Donate icon (app/src/main/res/drawable/ic_donate.xml): "Donate" by Edward Boatma
 from the Noun Project, licensed under CC BY 3.0.
 https://thenounproject.com/icon/donate-285/
 
-On-screen control icon packs (app/src/main/assets/control_icon_packs/), original
-artwork, not taken from Valheim; each folder has its LICENSE.txt:
-- "OxyDroid Viking": generated for OxyDroid; may be used, modified and
-  redistributed with OxyDroid.
-- "Figures by jurises99": made by jurises99 (generated with Copilot, edited in
-  ibisPaintX) and given to OxyDroid; may be used, modified and redistributed
-  with OxyDroid.
+On-screen control icon pack (app/src/main/assets/control_icon_packs/rimdroid_default/):
+"RimDroid", original artwork made for RimDroid by the same author, dedicated to the
+public domain under CC0 1.0 (its LICENSE.txt). No game artwork was used.
 
 ================================================================================
 Each third-party component remains subject to its own license terms. The links

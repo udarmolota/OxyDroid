@@ -32,10 +32,9 @@ import java.util.zip.ZipInputStream;
  * whole layout in one go (each button gets the icon of what it does) or picked one by one.
  *
  * <p>A pack is a zip of PNG files, white on a transparent background (the button tints them with
- * its colour), named by action: attack, secondary_attack, block, dodge, jump, crouch, run,
- * auto_run, use, sit, hide_weapons, forsaken_power, inventory, map, menu, chat, keyboard,
- * toggle_controls, and the free ones a player can pick by hand (build, hoe, cultivator, bow, throw,
- * emote, camera, settings, ...). An optional pack.json gives the name: {"format": 1, "name": "..."}.
+ * its colour), named by action: click, right_click, middle_click, zoom_in, zoom_out, pause,
+ * speed_1, menu, camera_up, camera_left, camera_down, camera_right, rotate_right, keyboard,
+ * toggle_controls, and the free ones a player can pick by hand. An optional pack.json gives the name: {"format": 1, "name": "..."}.
  * Any other PNG in the zip is imported too, as an icon to pick by hand. A pack of colour pictures says
  * "tint": false in pack.json: its icons are then shown in their own colours, not the button's. The packs live outside the
  * instances (app files/control_icon_packs/<id>/); the built-in ones in the APK's assets. An icon
@@ -211,8 +210,6 @@ public final class IconPacks {
 
     // ---- which icon a button gets ----------------------------------------------------------
 
-    // Valheim's own default keys and its default gamepad layout ("Default", Classic in its code):
-    // read from the game's ZInput (2026-10-07). A button bound to exactly this set gets the icon.
     /**
      * An icon of a built-in pack by the file name a layout stores for it ("pack_&lt;id&gt;_&lt;icon&gt;.png"),
      * read straight from the APK's assets, or null. Lets the bundled default layout carry icons
@@ -246,42 +243,24 @@ public final class IconPacks {
         ACTIONS.put(new HashSet<>(Arrays.asList(bindings)), icon);
     }
 
+    // Oxygen Not Included's default keys (the game's own keybindings, and the launcher's default
+    // layout): a button bound to exactly this set gets the icon of that name. The names are the ones
+    // the built-in RimDroid pack uses, so it applies as it is; a pack of one's own names its files
+    // the same way (IconPacksFragment.ACTION_NAMES).
     static {
-        action("attack", "MOUSE_BUTTON_LEFT");
-        action("block", "MOUSE_BUTTON_RIGHT");
-        action("secondary_attack", "MOUSE_BUTTON_WHEEL");
-        action("dodge", "MOUSE_BUTTON_RIGHT", "KEY_SPACE");   // a jump while blocking
-        action("jump", "KEY_SPACE");
-        action("use", "KEY_E");
-        action("hide_weapons", "KEY_R");
-        action("forsaken_power", "KEY_F");
-        action("run", "KEY_LEFT_SHIFT");
-        action("crouch", "KEY_LEFT_CONTROL");
-        action("auto_run", "KEY_Q");
-        action("sit", "KEY_X");
+        action("click", "MOUSE_BUTTON_LEFT");
+        action("right_click", "MOUSE_BUTTON_RIGHT");
+        action("middle_click", "MOUSE_BUTTON_WHEEL");
+        action("zoom_in", "MOUSE_WHEEL_UP");
+        action("zoom_out", "MOUSE_WHEEL_DOWN");
+        action("pause", "KEY_SPACE");
+        action("speed_1", "KEY_TAB");
         action("menu", "KEY_ESCAPE");
-        action("inventory", "KEY_TAB");
-        action("map", "KEY_M");
-        action("chat", "KEY_ENTER");
-
-        action("attack", "GAMEPAD_RTRIGGER");
-        action("attack", "GAMEPAD_AXIS_RT");
-        action("secondary_attack", "GAMEPAD_BUTTON_RB");
-        action("block", "GAMEPAD_LTRIGGER");
-        action("block", "GAMEPAD_AXIS_LT");
-        action("dodge", "GAMEPAD_LTRIGGER", "GAMEPAD_BUTTON_B");
-        action("dodge", "GAMEPAD_AXIS_LT", "GAMEPAD_BUTTON_B");
-        action("jump", "GAMEPAD_BUTTON_B");
-        action("use", "GAMEPAD_BUTTON_A");
-        action("sit", "GAMEPAD_BUTTON_X");
-        action("inventory", "GAMEPAD_BUTTON_Y");
-        action("run", "GAMEPAD_BUTTON_LB");
-        action("crouch", "GAMEPAD_BUTTON_LSTICK");
-        action("hide_weapons", "GAMEPAD_BUTTON_RSTICK");
-        action("forsaken_power", "GAMEPAD_DPAD_DOWN");
-        action("menu", "GAMEPAD_BUTTON_START");
-        action("map", "GAMEPAD_BUTTON_BACK");
-
+        action("camera_up", "KEY_W");
+        action("camera_left", "KEY_A");
+        action("camera_down", "KEY_S");
+        action("camera_right", "KEY_D");
+        action("rotate_right", "KEY_O");
         action("keyboard", "UI_TOGGLE_KEYBOARD");
         action("toggle_controls", "UI_TOGGLE_OVERLAY");
     }
