@@ -80,6 +80,8 @@ public class LauncherFragment extends Fragment {
         // which are otherwise only in the drawer.
         view.findViewById(R.id.btn_empty_quick_start).setOnClickListener(v -> Navigation.findNavController(v)
                 .navigate(R.id.action_open_wiki, WikiFragment.section("quick-start")));
+        if (!com.oxydroid.LauncherActivity.WIKI_READY)
+            view.findViewById(R.id.btn_empty_quick_start).setVisibility(View.GONE);
         view.findViewById(R.id.btn_empty_steam).setOnClickListener(v -> Navigation.findNavController(v)
                 .navigate(R.id.action_download_game));
         btnClearLog        = view.findViewById(R.id.btn_clear_log);
@@ -189,6 +191,48 @@ public class LauncherFragment extends Fragment {
         registerInstallerReceiver();
         refreshInstances();
         showNativeMonoFallbackOnce();
+        maybeRestartGame();
+    }
+
+    /**
+     * The game asked to be restarted (after a change of mods, language or DLC) and quit: the bridge
+     * left a note in the instance (NativeEngine.restartFlag). Back on screen, the launcher starts that
+     * instance again, the same way the Play button does. The note is removed first, so a failed
+     * start does not loop.
+     */
+    private static boolean gameProcessRunning(android.content.Context context) {
+        android.app.ActivityManager am = (android.app.ActivityManager) context.getSystemService(android.content.Context.ACTIVITY_SERVICE);
+        java.util.List<android.app.ActivityManager.RunningAppProcessInfo> procs = am != null ? am.getRunningAppProcesses() : null;
+        if (procs == null) return false;
+        String name = context.getPackageName() + ":unity";
+        for (android.app.ActivityManager.RunningAppProcessInfo p : procs)
+            if (name.equals(p.processName)) return true;
+        return false;
+    }
+
+    private void maybeRestartGame() {
+        for (GameInstance gi : GameInstanceManager.requireSingleton().getInstances()) {
+            File flag = com.oxydroid.game.NativeEngine.restartFlag(gi);
+            if (!flag.isFile()) continue;
+            //noinspection ResultOfMethodCallIgnored
+            flag.delete();
+            if (!gi.isInstalled()) return;
+            com.oxydroid.LauncherLog.line("the game asked for a restart: starting " + gi.getName() + " again");
+            android.widget.Toast.makeText(requireContext(), getString(R.string.game_restarting, gi.getName()),
+                    android.widget.Toast.LENGTH_SHORT).show();
+            // The player ends its own process after quitting, a moment after this screen is back. A
+            // start before that would land in the dying process, where Unity cannot start again: wait
+            // for it to be gone (10 s at most).
+            final android.content.Context app = requireContext().getApplicationContext();
+            final android.os.Handler ui = new android.os.Handler(android.os.Looper.getMainLooper());
+            new Thread(() -> {
+                for (int i = 0; i < 100 && gameProcessRunning(app); i++) {
+                    try { Thread.sleep(100); } catch (InterruptedException e) { return; }
+                }
+                ui.post(() -> { if (isAdded()) startNativeEngine(gi); });
+            }, "GameRestart").start();
+            return;
+        }
     }
 
     /**
@@ -413,13 +457,15 @@ public class LauncherFragment extends Fragment {
         // user it's their files. isInstalled() stays lenient so the instance still shows in the list.
         java.util.List<String> missing = gi.missingCoreFiles();
         if (!missing.isEmpty()) {
-            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            com.google.android.material.dialog.MaterialAlertDialogBuilder box =
+                    new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.incomplete_game_title)
                     .setMessage(getString(R.string.incomplete_game_msg, String.join("\n", missing)))
-                    .setPositiveButton(android.R.string.ok, null)
-                    .setNeutralButton(R.string.nav_wiki, (d, w) -> Navigation.findNavController(requireView())
-                            .navigate(R.id.action_open_wiki, WikiFragment.section("get-game")))
-                    .show();
+                    .setPositiveButton(android.R.string.ok, null);
+            if (com.oxydroid.LauncherActivity.WIKI_READY)
+                box.setNeutralButton(R.string.nav_wiki, (d, w) -> Navigation.findNavController(requireView())
+                        .navigate(R.id.action_open_wiki, WikiFragment.section("get-game")));
+            box.show();
             return;
         }
         startGame(gi);
@@ -461,8 +507,9 @@ public class LauncherFragment extends Fragment {
 
     // Native engine (experimental): with Crossplay on, the Steam sign-in comes first (askCrossplaySignIn).
     private void startNativeEngine(GameInstance gi) {
-        if (gi.settings().isCrossplay() || gi.settings().isSteamAchievements()) askCrossplaySignIn(gi);
-        else launchNativeEngine(requireContext().getApplicationContext(), gi, null);
+        // No Steam sign-in before the launch: crossplay is gone, and the achievements are synced
+        // from their own screen (MultiplayerFragment), with the game closed.
+        launchNativeEngine(requireContext().getApplicationContext(), gi, null);
     }
 
     // ---- Steam sign-in before a launch: crossplay and/or achievements -------------------

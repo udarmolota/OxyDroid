@@ -181,11 +181,11 @@ public class InstallerService extends Service {
             // is English and names a file the player has never heard of — it reads as "the launcher
             // is broken". Say what it is, in the player's language, and where the right one comes
             // from. Windows file names are case-insensitive, so match the .exe that way.
-            if (zipContainsEntry(zipFile, "valheim.exe", true))
+            if (zipContainsEntry(zipFile, "OxygenNotIncluded.exe", true))
                 throw new Exception(getString(R.string.install_windows_build,
                         getString(R.string.nav_download_game)));
             throw new Exception(GameDescriptor.ONI.executable()
-                    + " not found — this is not a Valheim Linux archive.");
+                    + " not found — this is not an Oxygen Not Included Linux archive.");
         }
         instanceDir.mkdirs();
         broadcastProgress("Extracting instance...");

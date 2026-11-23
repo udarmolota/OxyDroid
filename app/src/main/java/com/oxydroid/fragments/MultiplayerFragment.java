@@ -35,6 +35,8 @@ public class MultiplayerFragment extends Fragment {
     private android.widget.Button btnMyAchievements;
     private final List<GameInstance> instances = new ArrayList<>();
     private boolean binding;
+    private View btnSync;
+    private final android.os.Handler ui = new android.os.Handler(android.os.Looper.getMainLooper());
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -51,6 +53,8 @@ public class MultiplayerFragment extends Fragment {
         tvAchievements = v.findViewById(R.id.tv_achievements_summary);
         btnMyAchievements = v.findViewById(R.id.btn_my_achievements);
         btnMyAchievements.setOnClickListener(x -> showAchievements());
+        btnSync = v.findViewById(R.id.btn_sync_achievements);
+        btnSync.setOnClickListener(x -> askSignIn());
 
         GameInstanceManager.requireSingleton().reload();
         instances.clear();
@@ -96,7 +100,7 @@ public class MultiplayerFragment extends Fragment {
         swAchievements.setChecked(gi != null && gi.settings().isSteamAchievements());
         swAchievements.setEnabled(nativeEngine);
         binding = false;
-        tvNativeOnly.setVisibility(gi != null && !nativeEngine ? View.VISIBLE : View.GONE);
+        tvNativeOnly.setVisibility(View.GONE);   // a note about crossplay, which is hidden
         fillAchievements(gi);
     }
 
@@ -133,6 +137,141 @@ public class MultiplayerFragment extends Fragment {
         }
         tvAchievements.setText(sb);
         btnMyAchievements.setVisibility(l.entries.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+
+    // ---- Sync: sign in to Steam, exchange the achievements, sign out. No game launch. ----
+
+    private static boolean gameRunning(android.content.Context context) {
+        android.app.ActivityManager am = (android.app.ActivityManager) context.getSystemService(android.content.Context.ACTIVITY_SERVICE);
+        List<android.app.ActivityManager.RunningAppProcessInfo> procs = am != null ? am.getRunningAppProcesses() : null;
+        if (procs == null) return false;
+        String name = context.getPackageName() + ":unity";
+        for (android.app.ActivityManager.RunningAppProcessInfo p : procs)
+            if (name.equals(p.processName)) return true;
+        return false;
+    }
+
+    /** Steam login and password (the login filled in from last time); the password is not kept. */
+    private void askSignIn() {
+        GameInstance gi = current();
+        if (gi == null) {
+            android.widget.Toast.makeText(requireContext(), instances.isEmpty() ? R.string.no_instances
+                    : R.string.choose_instance_prompt, android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // The game's Steam stand-in owns the achievements file while the game runs.
+        if (gameRunning(requireContext())) {
+            android.widget.Toast.makeText(requireContext(), R.string.steam_achievements_close_game,
+                    android.widget.Toast.LENGTH_LONG).show();
+            return;
+        }
+        View form = getLayoutInflater().inflate(R.layout.dialog_crossplay_login, null);
+        com.google.android.material.textfield.TextInputEditText etUser = form.findViewById(R.id.et_crossplay_user);
+        com.google.android.material.textfield.TextInputEditText etPass = form.findViewById(R.id.et_crossplay_pass);
+        String lastLogin = com.oxydroid.LauncherPreferences.requireSingleton().getSteamLoginName();
+        etUser.setText(lastLogin);
+        if (!lastLogin.isEmpty()) etPass.requestFocus();
+        androidx.appcompat.app.AlertDialog dialog =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext(), R.style.ThemeOverlay_OxyDroid_Dialog_Buttons)
+                        .setTitle(R.string.crossplay_signin_title)
+                        .setView(form)
+                        .setPositiveButton(R.string.steam_achievements_sync_go, null)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .create();
+        dialog.setOnShowListener(d -> dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(x -> {
+            String user = etUser.getText() == null ? "" : etUser.getText().toString().trim();
+            String pass = etPass.getText() == null ? "" : etPass.getText().toString();
+            if (user.isEmpty() || pass.isEmpty()) {
+                android.widget.Toast.makeText(requireContext(), R.string.cloud_saves_need_login, android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+            com.oxydroid.LauncherPreferences.requireSingleton().setSteamLoginName(user);
+            dialog.dismiss();
+            sync(gi, user, pass);
+        }));
+        dialog.show();
+    }
+
+    /** The sign-in and the exchange (SteamTicketLogin without a ticket) behind a waiting dialog. */
+    private void sync(GameInstance gi, String user, String pass) {
+        final android.content.Context app = requireContext().getApplicationContext();
+        final androidx.appcompat.app.AlertDialog waiting =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext(), R.style.ThemeOverlay_OxyDroid_Dialog_Buttons)
+                        .setTitle(R.string.crossplay_signin_title)
+                        .setMessage(R.string.crossplay_step_connect)
+                        .setCancelable(false)
+                        .create();
+        final com.oxydroid.SteamTicketLogin[] login = new com.oxydroid.SteamTicketLogin[1];
+        login[0] = new com.oxydroid.SteamTicketLogin(user, pass, null,
+                com.oxydroid.game.NativeEngine.steamStatsFile(gi), new com.oxydroid.SteamTicketLogin.Listener() {
+            @Override
+            public java.util.concurrent.CompletableFuture<String> requestSteamGuardCode(boolean prevWrong, String email) {
+                java.util.concurrent.CompletableFuture<String> fut = new java.util.concurrent.CompletableFuture<>();
+                ui.post(() -> {
+                    if (!isAdded()) { fut.complete(""); return; }
+                    android.widget.EditText et = new android.widget.EditText(requireContext());
+                    et.setHint(email != null ? getString(R.string.cloud_saves_code_email, email)
+                                             : getString(R.string.cloud_saves_code));
+                    et.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                            | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+                    new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext(), R.style.ThemeOverlay_OxyDroid_Dialog_Buttons)
+                            .setTitle(prevWrong ? R.string.cloud_saves_code_wrong : R.string.cloud_saves_code_title)
+                            .setView(et)
+                            .setCancelable(false)
+                            .setPositiveButton(android.R.string.ok, (d, w) -> fut.complete(et.getText().toString().trim()))
+                            .show();
+                });
+                return fut;
+            }
+
+            @Override
+            public void onProgress(String step) {
+                int text = "approve".equals(step) ? R.string.crossplay_step_approve
+                        : "achievements".equals(step) ? R.string.crossplay_step_achievements : R.string.crossplay_step_connect;
+                ui.post(() -> waiting.setMessage(app.getString(text)));
+            }
+
+            @Override
+            public void onReady(com.oxydroid.SteamTicketLogin.Result result) {
+                ui.post(() -> done(waiting, result.achievementsError != null
+                        ? app.getString(R.string.steam_achievements_sync_failed, result.achievementsError)
+                        : app.getString(R.string.steam_achievements_sync_done, Math.max(0, result.achievementsSent))));
+            }
+
+            @Override
+            public void onFailed(String message) {
+                ui.post(() -> done(waiting, app.getString(R.string.steam_achievements_sync_failed, message)));
+            }
+        });
+        waiting.setButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE, getString(android.R.string.cancel),
+                (d, w) -> login[0].cancel());
+        waiting.show();
+        btnSync.setEnabled(false);
+        // The player leaves for Steam Mobile to approve: the keep-alive notification holds this process.
+        com.oxydroid.DownloadKeepAliveService.start(app, app.getString(R.string.crossplay_keepalive));
+        new Thread(() -> {
+            try {
+                login[0].run();
+            } finally {
+                com.oxydroid.DownloadKeepAliveService.stop(app);
+            }
+        }, "AchievementsSync").start();
+    }
+
+    private void done(androidx.appcompat.app.AlertDialog waiting, String message) {
+        try {
+            if (waiting.isShowing()) waiting.dismiss();
+        } catch (RuntimeException ignored) {
+            // the screen is gone
+        }
+        if (!isAdded()) return;
+        btnSync.setEnabled(true);
+        fillAchievements(current());
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.card_steam_achievements)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 
     /** Unlocked first (newest first), then the ones waiting to be sent, then the locked ones. */

@@ -87,9 +87,5 @@ cp "$WORK/Variations/mono/Managed/"UnityEngine*.dll "$MANAGED/"
 sh "$HERE/build_bridge.sh" "$WORK/Variations/mono/Managed" "$MANAGED"
 echo "prepared $OUT ($(ls "$MANAGED" | wc -l) managed overrides)"
 
-# FMOD Studio (the game's audio engine), from the FMOD Engine Android package; FMOD_DIR = its folder.
-if [ -n "$FMOD_DIR" ]; then
-    sh "$HERE/prepare_fmod.sh" "$FMOD_DIR"
-else
-    echo "FMOD_DIR not set: the player is prepared without FMOD (no audio); see prepare_fmod.sh"
-fi
+# FMOD Studio (the game's audio engine) is not prepared here: its Android libraries are part of the
+# repository, unity/src/main/jniLibs/arm64-v8a (prepare_fmod.sh replaces them with another version).

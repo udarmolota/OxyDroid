@@ -139,6 +139,11 @@ UnitySwappyWrapper     Unity Technologies (Unity's Android Support package), bui
 (libswappywrapper.so)  the Android Games SDK frame pacing library (Swappy), Apache License
                        2.0, Copyright (c) Google LLC.
 
+FMOD Studio and Core   Proprietary          Copyright (c) Firelight Technologies Pty Ltd.
+(libfmod.so,                                FMOD 2.03.09 for Android ARM64, under the FMOD
+ libfmodstudio.so,                          licence (fmod.com); the game's audio engine. The
+ app/libs/fmod.jar)                         libraries are in unity/src/main/jniLibs/arm64-v8a.
+
 astcenc                Apache License 2.0   Copyright (c) Arm Limited and Contributors
 (liboxydroidtex.so)                         github.com/ARM-software/astc-encoder (5.3.0);
                                             license in app/src/main/cpp/texconv/astcenc/.

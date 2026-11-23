@@ -64,9 +64,10 @@
 #include <thread>
 #include <vector>
 
-#define VK_NO_PROTOTYPES
+// Vulkan is linked, not dlopen()ed: in the launcher's process liboxydroidlinker (the box64 engine's)
+// exports its own dlopen and dlsym, which crash until a box64 game has started (pc 0, S25 2026-11-23,
+// the first launch of a new instance). Calls through the import table never meet them.
 #include <vulkan/vulkan.h>
-#include <dlfcn.h>
 
 #include "astcenc/astcenc.h"
 
@@ -582,14 +583,12 @@ bool convertPair(const char* assetsPath, const char* resSPath, const char* journ
 // What the phone's GPU samples: bit 0 BC, bit 1 ASTC LDR. -1 when Vulkan could not be asked.
 extern "C" JNIEXPORT jint JNICALL
 Java_com_oxydroid_game_TextureConverter_nativeGpuFormats(JNIEnv*, jclass) {
-    void* lib = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
-    if (!lib) return -1;
-    auto createInstance = (PFN_vkCreateInstance)dlsym(lib, "vkCreateInstance");
-    auto destroyInstance = (PFN_vkDestroyInstance)dlsym(lib, "vkDestroyInstance");
-    auto enumerate = (PFN_vkEnumeratePhysicalDevices)dlsym(lib, "vkEnumeratePhysicalDevices");
-    auto features = (PFN_vkGetPhysicalDeviceFeatures)dlsym(lib, "vkGetPhysicalDeviceFeatures");
+    PFN_vkCreateInstance createInstance = vkCreateInstance;
+    PFN_vkDestroyInstance destroyInstance = vkDestroyInstance;
+    PFN_vkEnumeratePhysicalDevices enumerate = vkEnumeratePhysicalDevices;
+    PFN_vkGetPhysicalDeviceFeatures features = vkGetPhysicalDeviceFeatures;
     int result = -1;
-    if (createInstance && destroyInstance && enumerate && features) {
+    {
         VkApplicationInfo app = {};
         app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         app.apiVersion = VK_API_VERSION_1_0;
@@ -609,7 +608,6 @@ Java_com_oxydroid_game_TextureConverter_nativeGpuFormats(JNIEnv*, jclass) {
             destroyInstance(instance, nullptr);
         }
     }
-    dlclose(lib);
     return result;
 }
 

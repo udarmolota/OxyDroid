@@ -79,6 +79,11 @@ public final class NativeEngine {
         return new File(new File(instance.getGamePath(), "native_engine"), "steam_stats.txt");
     }
 
+    /** The note the game leaves when it asks to be restarted (bridge RestartPatch.cs). */
+    public static File restartFlag(GameInstance instance) {
+        return new File(new File(instance.getGamePath(), "native_engine"), "restart_requested");
+    }
+
     /** Where the crossplay sign-in leaves the Steam ticket for the game (read once, then deleted). */
     public static File steamTicketFile(GameInstance instance) {
         return new File(new File(instance.getGamePath(), "native_engine"), "steam_ticket.bin");
@@ -139,6 +144,13 @@ public final class NativeEngine {
         env.add("OXYDROID_IL2MONO_STREAMING_ASSETS=" + new File(dataDir, "StreamingAssets").getAbsolutePath());
         env.add("OXYDROID_IL2MONO_PERSISTENT_DATA=" + instance.getUserDataDir().getAbsolutePath());
         env.add("OXYDROID_SIMDLL_MACHO=" + simdll.getAbsolutePath());
+        // The game restarts itself after a change of mods; the bridge (RestartPatch.cs) leaves this
+        // note instead, and the launcher starts the game again when it finds it. A note from an
+        // earlier run that was never picked up must not restart this one.
+        File restart = restartFlag(instance);
+        //noinspection ResultOfMethodCallIgnored
+        restart.delete();
+        env.add("OXYDROID_RESTART_FLAG=" + restart.getAbsolutePath());
 
         addMods(context, instance, gameDir, dataDir, env);
         env.add("OXYDROID_STEAM_STATS=" + steamStatsFile(instance).getAbsolutePath());

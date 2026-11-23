@@ -176,11 +176,14 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Device-wide: the custom Vulkan driver and the button icon packs have screens of their own -->
+        <!-- Device-wide: the custom Vulkan driver and the button icon packs have screens of their own.
+             HIDDEN: the native engine uses the phone's own driver, and the icon packs button is hidden
+             already. The ids stay for TransferFragment. -->
         <com.google.android.material.card.MaterialCardView
             style="@style/AppTheme.TransferCard"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"

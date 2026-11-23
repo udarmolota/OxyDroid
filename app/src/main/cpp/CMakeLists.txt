@@ -232,4 +232,5 @@ add_library(oxydroidtex SHARED texconv/texconv.cpp ${ASTCENC_SOURCES})
 target_compile_definitions(oxydroidtex PRIVATE
     ASTCENC_NEON=1 ASTCENC_SVE=0 ASTCENC_SSE=0 ASTCENC_AVX=0 ASTCENC_POPCNT=0 ASTCENC_F16C=0)
 target_compile_options(oxydroidtex PRIVATE -O3)
-target_link_libraries(oxydroidtex log dl)
+# vulkan: linked, never dlopen()ed (texconv.cpp: the launcher process has box64's dlopen).
+target_link_libraries(oxydroidtex log vulkan)

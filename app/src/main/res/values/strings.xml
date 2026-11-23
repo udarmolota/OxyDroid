@@ -23,7 +23,7 @@
     <string name="reverse_landscape_label">Rotate screen 180°</string>
     <string name="nav_cloud_saves">Steam Cloud saves</string>
     <string name="cloud_saves_title">Steam Cloud saves</string>
-    <string name="cloud_saves_hint">If you also play Valheim on a PC through Steam, your saves are synced to Steam Cloud — this pulls them onto the phone.\n\nSigning in is confirmed through the Steam Mobile app: you must have signed into it at least once and turned Steam Guard on there. When you tap the button, Steam sends an approval request to that app. The password goes straight to Steam and is never stored here.</string>
+    <string name="cloud_saves_hint">If you also play Oxygen Not Included on a PC through Steam, your colonies are synced to Steam Cloud — this pulls them onto the phone.\n\nSigning in is confirmed through the Steam Mobile app: you must have signed into it at least once and turned Steam Guard on there. When you tap the button, Steam sends an approval request to that app. The password goes straight to Steam and is never stored here.</string>
     <string name="cloud_saves_user">Steam username</string>
     <string name="cloud_saves_pass">Steam password</string>
     <string name="cloud_saves_instance">Copy the saves into</string>
@@ -74,7 +74,7 @@ In the cloud: %2$s
     <string name="keep_running_bg_label">Keep running in the background</string>
     <string name="keep_running_bg_hint">Off: the game pauses (picture, sound and world) while OxyDroid is not on screen — screen off, Home, another app — and continues when you return. Turn on only if you host a world for friends.</string>
     <string name="keep_running_notice">Valheim is running in the background</string>
-    <string name="nav_multiplayer">Online &amp; achievements</string>
+    <string name="nav_multiplayer">Steam achievements</string>
     <string name="crossplay_label">Crossplay (Steam sign-in at launch)</string>
     <string name="crossplay_hint">Experimental. Before each launch OxyDroid signs in to Steam (approve it in Steam Mobile) and gives the game a one-time pass for Valheim\'s crossplay. The password is not saved; the Steam connection closes a few minutes after the game starts.</string>
     <string name="crossplay_native_only">Crossplay works on the native engine only: switch it on in this instance\'s settings.</string>
@@ -82,7 +82,7 @@ In the cloud: %2$s
     <string name="crossplay_step_achievements">Sending achievements…</string>
     <string name="card_steam_achievements">Steam achievements</string>
     <string name="steam_achievements_label">Send achievements to Steam</string>
-    <string name="steam_achievements_hint">The game keeps the achievements you earn on the phone. With this on, OxyDroid signs in to Steam before each launch (approve it in Steam Mobile) and adds the new ones to your account. Achievements are only ever added, never removed. Native engine only.</string>
+    <string name="steam_achievements_hint">The game keeps the achievements you earn on the phone. Sync sends the new ones to your Steam account and brings the account\'s back: sign in, approve it in Steam Mobile, done. The game does not need to run. Achievements are only ever added, never removed.</string>
     <string name="steam_achievements_sent">Steam: %1$d new achievements sent</string>
     <string name="steam_achievements_failed">Could not send the achievements: %1$s</string>
     <string name="steam_achievements_show">My achievements</string>
@@ -90,7 +90,7 @@ In the cloud: %2$s
     <string name="steam_achievements_summary">Unlocked: %1$d of %2$d</string>
     <string name="steam_achievements_updated">updated %1$s</string>
     <string name="steam_achievements_pending">Waiting to be sent: %1$d</string>
-    <string name="steam_achievements_never">The list appears after the first Steam sign-in at launch.</string>
+    <string name="steam_achievements_never">Not synced yet: tap Sync with Steam.</string>
     <string name="steam_achievements_waiting">waiting to be sent</string>
     <string name="crossplay_signin_title">Sign in to Steam</string>
     <string name="crossplay_signin_note">The password is used for this sign-in only and is not saved.</string>
@@ -100,7 +100,7 @@ In the cloud: %2$s
     <string name="crossplay_step_approve">Approve the sign-in in the Steam Mobile app…</string>
     <string name="crossplay_step_ticket">Getting the crossplay pass…</string>
     <string name="crossplay_failed">Could not sign in to Steam: %1$s</string>
-    <string name="crossplay_keepalive">Steam session for crossplay</string>
+    <string name="crossplay_keepalive">Steam session: syncing achievements</string>
     <string name="compat_mode_label">Compatibility mode</string>
     <string name="compat_mode_hint">Turn on if the game won\'t start (black screen / stuck on loading). A bit slower, but helps it launch on some devices.</string>
     <string name="native_engine_preparing">Preparing the native engine…</string>
@@ -154,7 +154,7 @@ In the cloud: %2$s
     <string name="launcher_empty_title">Getting started</string>
     <string name="launcher_empty_quick_start">Quick start</string>
     <string name="launcher_empty_steam">Download from Steam</string>
-    <string name="launcher_empty_guide">To start playing, create an instance — an installed copy of Valheim. Add your game files with the + at the top, or download the game straight from Steam with the button below: the instance is then created by itself.</string>
+    <string name="launcher_empty_guide">To start playing, create an instance — an installed copy of Oxygen Not Included. Add your game files with the + at the top, or download the game straight from Steam with the button below: the instance is then created by itself.</string>
     <!-- "What's new" dialog, shown once per version (LauncherFragment.maybeShowReleaseNotes), in all
          four languages, cut from the release notes. Read with getText, so <b>/<i> are kept; keep it on
          one line, because a line break inside a string resource turns into a leading space. -->
@@ -172,7 +172,7 @@ In the cloud: %2$s
     <string name="nav_label_donate">Donate</string>
     <string name="nav_label_zomdroid" translatable="false">Zomdroid</string>
     <!-- Cross-promo dialog for the sibling launcher. -->
-    <string name="zomdroid_dialog_message">Zomdroid runs Project Zomboid on Android, the same way this launcher runs Valheim. Same author, same approach.\n\nhttps://github.com/udarmolota/Zomdroid/releases</string>
+    <string name="zomdroid_dialog_message">Zomdroid runs Project Zomboid on Android, the same way this launcher runs Oxygen Not Included. Same author, same approach.\n\nhttps://github.com/udarmolota/Zomdroid/releases</string>
     <string name="zomdroid_url" translatable="false">https://github.com/udarmolota/Zomdroid/releases</string>
     <!-- Bug report email. Number = the tap date as ddMMyyyy, filled at runtime. -->
     <string name="bug_report_email" translatable="false">210478@mail.ru</string>
@@ -242,8 +242,8 @@ In the cloud: %2$s
     <string name="install_content_go">Install</string>
 
     <!-- Download screen -->
-    <string name="download_game_title">Download Valheim from Steam</string>
-    <string name="download_instance_hint">Instance name (e.g. Valheim)</string>
+    <string name="download_game_title">Download Oxygen Not Included from Steam</string>
+    <string name="download_instance_hint">Instance name (e.g. ONI)</string>
     <string name="download_user_hint">Steam username</string>
     <string name="download_pass_hint">Steam password</string>
     <string name="download_login_note">Your login is sent to Steam (the same way DepotDownloader works) and is NOT stored. Approve the sign-in in your Steam Mobile app, or enter the Steam Guard code when asked.</string>
@@ -335,7 +335,7 @@ In the cloud: %2$s
     <string name="hud_scale_label">In-game interface size</string>
     <string name="hud_scale_default">As in the game</string>
     <string name="hud_scale_hint">Makes the bars, hotbar, minimap, messages, chat and texts bigger than the game\u2019s own interface scale allows (Settings \u2192 Accessibility, up to 115%). Menus and inventory keep the game\u2019s size. Takes effect at the next launch.</string>
-    <string name="release_notes_body" translatable="false"><b>– Thunderstore mods in the launcher</b>\nThe Mods button at the bottom: search, sort, categories and each mod\'s page. Queue the mods you want and install them with everything they need into the instance you choose. The catalog downloads on Wi-Fi by itself and asks first on mobile data.\n\n<b>– Bottom bar</b>\nHome, Game, Mods, Import and Projects are one tap away.\n\n<b>– Import / export, one screen</b>\nSaves, mods, game settings and on-screen controls of an instance, all in one place.\n\n<b>– Copy mods to another instance</b>\nMods → Copy to…: pick the mods and the instance. Their settings come along.\n\n<b>– Projects</b>\nMy other launchers, with their latest versions.\n\n<b>– Fixes</b>\nBluetooth keyboards with arrow keys type in the game again (they counted as a gamepad). Mods that keep their files in a folder of their own, such as OdinShip, now load: install them again.\n\n<b>– Genuine copy check</b>\nA copy not signed by me says so. Download OxyDroid only from GitHub.\n\n<b>– Console works</b>\nTurn it on in the game\'s settings, open it with L1 + L2 + Start on a gamepad or F5 on a keyboard, and type with OxyDroid\'s keyboard button.\n\n<b>– Tip: keyboard covers the game?</b>\nSwitch your keyboard app to its one-handed or floating mode (in Gboard: the keyboard\'s menu). It gets smaller and the game stays in view.</string>
+    <string name="release_notes_body" translatable="false"><b>– Oxygen Not Included on Android</b>\nThe full PC game runs natively: your own copy, the game\'s own simulation, touch controls.\n\n<b>– Getting the game</b>\nDownload it from Steam inside the launcher, or import a zip. Colonies come from Steam Cloud or from a zip.\n\n<b>– Mods</b>\nInstall mods from a zip on the Mods screen; the game loads them itself. Changing mods in the game restarts it.\n\n<b>– Mali and other GPUs without BC textures</b>\nThe game\'s textures are converted once to ASTC before the first launch.\n\nEarly version: tested on a Snapdragon 8 Elite phone. Reports help: side menu → Report a bug.</string>
     <string name="instance_downloading">downloading, wait until it finishes</string>
     <string name="instance_incomplete">not finished</string>
     <string name="instance_incomplete_hint">The download stopped before it finished. Open side menu → %1$s and download again with the same instance name — it continues where it stopped.</string>
@@ -346,7 +346,7 @@ In the cloud: %2$s
     <string name="etc2_cache_header_expanded">Compressed texture cache ▾</string>
     <string name="etc2_label">Enable ETC2 compression</string>
     <string name="etc2_hint">Compresses textures into a format the phone\'s GPU reads natively, so they take about four times less memory. On weaker phones and on Mali that is the difference between running and running out of memory. Works on MobileGlues. Large textures are also always scaled down.</string>
-    <string name="install_windows_build">This is the Windows version of Valheim, but OxyDroid runs only the Linux version (the one with valheim.x86_64). If you own the game on Steam, the app downloads the right version for you: side menu → %1$s.</string>
+    <string name="install_windows_build">This is the Windows version of Oxygen Not Included, but OxyDroid runs only the Linux version (the one with the OxygenNotIncluded file). If you own the game on Steam, the app downloads the right version for you: side menu → %1$s.</string>
     <string name="install_zip_damaged">Damaged archive. Download it again or make a new one.</string>
     <string name="install_progress_title">Installing the game</string>
     <string name="install_phase_copy">Copying the archive</string>
@@ -552,4 +552,10 @@ In the cloud: %2$s
     <string name="oni_mods_exported">Exported %1$d mods. The zip imports back whole, here or on another phone.</string>
     <string name="oni_mods_imported_next">Start the game once, then switch the new mods on in the Mods screen.</string>
     <string name="oni_mods_unrecognized">Installed, but with no sign of an Oxygen Not Included mod inside (no mod_info.yaml, DLL or translation). The game may not load these; ReShade presets and saves are not mods of the game:</string>
+    <string name="game_restarting">Restarting %1$s…</string>
+    <string name="steam_achievements_sync">Sync with Steam</string>
+    <string name="steam_achievements_sync_go">Sign in and sync</string>
+    <string name="steam_achievements_sync_done">Done. New achievements sent: %1$d. The phone now has your account\'s achievements too.</string>
+    <string name="steam_achievements_sync_failed">Could not sync: %1$s</string>
+    <string name="steam_achievements_close_game">Close the game first: it keeps the achievements while it runs.</string>
 </resources>

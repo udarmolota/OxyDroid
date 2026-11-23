@@ -249,7 +249,8 @@ public class LauncherActivity extends AppCompatActivity {
         if (add != null) add.setVisible(dest == R.id.launcher_fragment);
         // The "?" is on every screen except the wiki itself.
         MenuItem help = menu.findItem(R.id.action_wiki_help);
-        if (help != null) help.setVisible(dest != 0 && dest != R.id.wiki_fragment);
+        // Hidden while the wiki's pages are still the previous game's (WIKI_READY).
+        if (help != null) help.setVisible(WIKI_READY && dest != 0 && dest != R.id.wiki_fragment);
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -257,6 +258,9 @@ public class LauncherActivity extends AppCompatActivity {
         return navController != null && navController.getCurrentDestination() != null
                 ? navController.getCurrentDestination().getId() : 0;
     }
+
+    /** The wiki's pages are still Valheim's: its buttons are hidden until they are rewritten. */
+    public static final boolean WIKI_READY = false;
 
     /** The wiki section that explains the screen the "?" was pressed on. */
     private static String wikiSectionFor(int destinationId) {

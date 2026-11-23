@@ -36,6 +36,7 @@ namespace OxyDroid
             Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
             Application.SetStackTraceLogType(LogType.Warning, StackTraceLogType.None);
             ApplyLauncherSettings();
+            RestartPatch.Install();
             try
             {
                 s_State = GetGameStatePointer();

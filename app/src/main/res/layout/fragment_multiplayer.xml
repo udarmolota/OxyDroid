@@ -37,12 +37,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
+            <!-- Crossplay (the previous game's PlayFab login): hidden, with its notes. The ids stay
+                 for MultiplayerFragment. -->
             <Switch
                 android:id="@+id/sw_crossplay"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:textSize="14sp"
+                android:visibility="gone"
                 android:text="@string/crossplay_label" />
 
             <TextView
@@ -61,6 +64,7 @@
                 android:layout_marginTop="4dp"
                 android:textSize="12sp"
                 android:alpha="0.7"
+                android:visibility="gone"
                 android:text="@string/crossplay_hint" />
 
             <TextView
@@ -69,6 +73,7 @@
                 android:layout_marginTop="8dp"
                 android:textSize="12sp"
                 android:alpha="0.7"
+                android:visibility="gone"
                 android:text="@string/crossplay_servers_note" />
           </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -94,11 +99,14 @@
                 android:text="@string/card_steam_achievements"
                 android:layout_marginBottom="6dp" />
 
+            <!-- The old "sign in before each launch" switch: hidden, the sync is the button below. The
+                 id stays for MultiplayerFragment. -->
             <Switch
                 android:id="@+id/sw_steam_achievements"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="14sp"
+                android:visibility="gone"
                 android:text="@string/steam_achievements_label" />
 
             <TextView
@@ -116,6 +124,16 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:textSize="14sp" />
+
+            <!-- Sign in, exchange, sign out: no game launch needed. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_sync_achievements"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/steam_achievements_sync"
+                android:textColor="@color/rd_on_primary"
+                app:backgroundTint="@color/rd_primary" />
 
             <Button
                 android:id="@+id/btn_my_achievements"

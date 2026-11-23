@@ -25,7 +25,7 @@
     <string name="reverse_landscape_label">Girar la imagen (180°)</string>
     <string name="nav_cloud_saves">Partidas en Steam Cloud</string>
     <string name="cloud_saves_title">Partidas en Steam Cloud</string>
-    <string name="cloud_saves_hint">Si también juegas a Valheim en un PC a través de Steam, tus partidas se sincronizan con Steam Cloud: aquí puedes traerlas al teléfono.\n\nEl inicio de sesión se confirma en la app Steam Mobile: debes haber entrado en ella al menos una vez y tener Steam Guard activado. Al pulsar el botón, Steam envía allí una solicitud de aprobación. La contraseña va directa a Steam y nunca se guarda aquí.</string>
+    <string name="cloud_saves_hint">Si también juegas a Oxygen Not Included en un PC a través de Steam, tus colonias se sincronizan con Steam Cloud: aquí puedes traerlas al teléfono.\n\nEl inicio de sesión se confirma en la app Steam Mobile: debes haber entrado en ella al menos una vez y tener Steam Guard activado. Al pulsar el botón, Steam envía allí una solicitud de aprobación. La contraseña va directamente a Steam y nunca se guarda aquí.</string>
     <string name="cloud_saves_user">Usuario de Steam</string>
     <string name="cloud_saves_pass">Contraseña de Steam</string>
     <string name="cloud_saves_instance">Copiar las partidas en</string>
@@ -76,7 +76,7 @@ En la nube: %2$s
     <string name="keep_running_bg_label">Seguir ejecutándose en segundo plano</string>
     <string name="keep_running_bg_hint">Desactivado: el juego se pausa (imagen, sonido y mundo) mientras OxyDroid no está en pantalla — pantalla apagada, Inicio, otra app — y continúa al volver. Actívalo solo si alojas un mundo para amigos.</string>
     <string name="keep_running_notice">Valheim sigue funcionando en segundo plano</string>
-    <string name="nav_multiplayer">Online y logros</string>
+    <string name="nav_multiplayer">Logros de Steam</string>
     <string name="crossplay_label">Crossplay (inicio de sesión en Steam al iniciar)</string>
     <string name="crossplay_hint">Experimental. Antes de cada inicio OxyDroid inicia sesión en Steam (apruébalo en Steam Mobile) y le da al juego un pase de un solo uso para el crossplay de Valheim. La contraseña no se guarda; la conexión con Steam se cierra unos minutos después de que el juego arranque.</string>
     <string name="crossplay_native_only">El crossplay solo funciona con el motor nativo: actívalo en los ajustes de esta instancia.</string>
@@ -84,7 +84,7 @@ En la nube: %2$s
     <string name="crossplay_step_achievements">Enviando logros…</string>
     <string name="card_steam_achievements">Logros de Steam</string>
     <string name="steam_achievements_label">Enviar logros a Steam</string>
-    <string name="steam_achievements_hint">El juego guarda en el teléfono los logros que consigues. Con esto activado, OxyDroid inicia sesión en Steam antes de cada inicio (apruébalo en Steam Mobile) y añade los nuevos a tu cuenta. Los logros solo se añaden, nunca se quitan. Solo con el motor nativo.</string>
+    <string name="steam_achievements_hint">El juego guarda en el teléfono los logros que consigues. Sincronizar envía los nuevos a tu cuenta de Steam y trae los de la cuenta: inicia sesión, apruébalo en Steam Mobile y listo. No hace falta abrir el juego. Los logros solo se añaden, nunca se quitan.</string>
     <string name="steam_achievements_sent">Steam: %1$d logros nuevos enviados</string>
     <string name="steam_achievements_failed">No se pudieron enviar los logros: %1$s</string>
     <string name="steam_achievements_show">Mis logros</string>
@@ -92,7 +92,7 @@ En la nube: %2$s
     <string name="steam_achievements_summary">Desbloqueados: %1$d de %2$d</string>
     <string name="steam_achievements_updated">actualizado %1$s</string>
     <string name="steam_achievements_pending">Por enviar: %1$d</string>
-    <string name="steam_achievements_never">La lista aparece tras el primer inicio de sesión en Steam al iniciar.</string>
+    <string name="steam_achievements_never">Aún sin sincronizar: pulsa Sincronizar con Steam.</string>
     <string name="steam_achievements_waiting">por enviar</string>
     <string name="crossplay_signin_title">Iniciar sesión en Steam</string>
     <string name="crossplay_signin_note">La contraseña solo se usa para este inicio de sesión y no se guarda.</string>
@@ -102,7 +102,7 @@ En la nube: %2$s
     <string name="crossplay_step_approve">Aprueba el inicio de sesión en la app Steam Mobile…</string>
     <string name="crossplay_step_ticket">Obteniendo el pase de crossplay…</string>
     <string name="crossplay_failed">No se pudo iniciar sesión en Steam: %1$s</string>
-    <string name="crossplay_keepalive">Sesión de Steam para crossplay</string>
+    <string name="crossplay_keepalive">Sesión de Steam: sincronizando logros</string>
     <string name="compat_mode_label">Modo de compatibilidad</string>
     <string name="compat_mode_hint">Actívalo si el juego no inicia (pantalla negra o se queda en la carga). Es un poco más lento, pero ayuda a que arranque en algunos dispositivos.</string>
     <string name="native_engine_preparing">Preparando el motor nativo…</string>
@@ -156,7 +156,7 @@ En la nube: %2$s
     <string name="launcher_empty_title">Por dónde empezar</string>
     <string name="launcher_empty_quick_start">Inicio rápido</string>
     <string name="launcher_empty_steam">Descargar de Steam</string>
-    <string name="launcher_empty_guide">Para empezar a jugar, crea una instancia: una copia instalada de Valheim. Añade los archivos del juego con el + de arriba, o descarga el juego directamente desde Steam con el botón de abajo: la instancia se crea sola.</string>
+    <string name="launcher_empty_guide">Para empezar a jugar, crea una instancia: una copia instalada de Oxygen Not Included. Añade los archivos del juego con el + de arriba, o descarga el juego directamente desde Steam con el botón de abajo: la instancia se crea sola.</string>
     <!-- Drawer footer icon labels (accessibility) -->
     <string name="link_x">RimDroid en X</string>
     <string name="link_reddit">OxyDroid en Reddit</string>
@@ -224,8 +224,8 @@ En la nube: %2$s
     <string name="install_content_go">Instalar</string>
 
     <!-- Download screen -->
-    <string name="download_game_title">Descargar Valheim desde Steam</string>
-    <string name="download_instance_hint">Nombre de la instancia (p. ej. Valheim)</string>
+    <string name="download_game_title">Descargar Oxygen Not Included desde Steam</string>
+    <string name="download_instance_hint">Nombre de la instancia (p. ej. ONI)</string>
     <string name="download_user_hint">Usuario de Steam</string>
     <string name="download_pass_hint">Contraseña de Steam</string>
     <string name="download_login_note">Tus datos se envían a Steam (igual que hace DepotDownloader) y NO se guardan. Aprueba el inicio de sesión en tu app Steam Mobile, o escribe el código de Steam Guard cuando se te pida.</string>
@@ -233,7 +233,7 @@ En la nube: %2$s
     <string name="new_instance_with_dlc">%1$s\n+ DLC: %2$d</string>
 
     <string name="nav_label_donate">Donar</string>
-    <string name="zomdroid_dialog_message">Zomdroid ejecuta Project Zomboid en Android igual que este lanzador ejecuta Valheim. Mismo autor, mismo enfoque.\n\nhttps://github.com/udarmolota/Zomdroid/releases</string>
+    <string name="zomdroid_dialog_message">Zomdroid ejecuta Project Zomboid en Android igual que este lanzador ejecuta Oxygen Not Included. Mismo autor, mismo enfoque.\n\nhttps://github.com/udarmolota/Zomdroid/releases</string>
     <string name="download_manifest_hint">Avanzado: ID de manifiesto — vacío = 1.5 recomendada</string>
     <string name="download_start">Descargar</string>
     <string name="download_tab_game">Juego</string>
@@ -327,7 +327,7 @@ En la nube: %2$s
     <string name="etc2_cache_header_expanded">Caché de texturas comprimidas ▾</string>
     <string name="etc2_label">Activar compresión ETC2</string>
     <string name="etc2_hint">Comprime las texturas a un formato que la GPU del teléfono lee de forma nativa, así ocupan unas cuatro veces menos memoria. En teléfonos más débiles y en Mali es la diferencia entre funcionar y quedarse sin memoria. Funciona con MobileGlues. Las texturas grandes además siempre se reducen.</string>
-    <string name="install_windows_build">Esta es la versión de Windows de Valheim, pero OxyDroid solo ejecuta la versión Linux (la que tiene valheim.x86_64). Si tienes el juego en Steam, la app descarga la versión correcta por ti: menú lateral → %1$s.</string>
+    <string name="install_windows_build">Esta es la versión de Windows de Oxygen Not Included, pero OxyDroid solo ejecuta la versión Linux (la que tiene el archivo OxygenNotIncluded). Si tienes el juego en Steam, la app descarga la versión correcta por ti: menú lateral → %1$s.</string>
     <string name="install_zip_damaged">Archivo dañado. Descárgalo de nuevo o vuelve a crearlo.</string>
     <string name="install_progress_title">Instalando el juego</string>
     <string name="install_phase_copy">Copiando el archivo</string>
@@ -436,7 +436,7 @@ En la nube: %2$s
     <string name="shader_cache_hint">Guarda los shaders compilados en el teléfono, así un enemigo o efecto nuevo solo da un tirón la primera vez que lo ves, no en cada sesión. Funciona con MobileGlues. Desactívalo si algo se ve mal. En GPU Mali viene desactivado: allí puede volver negra el agua.</string>
     <string name="news_title">Noticias de Oxygen Not Included</string>
     <string name="release_notes_title" translatable="false">Novedades de la v%1$s</string>
-    <string name="release_notes_body" translatable="false"><b>– Mods de Thunderstore en el launcher</b>\nEl botón Mods abajo: búsqueda, orden, categorías y la página de cada mod. Marca los mods que quieras e instálalos con todo lo que necesitan en la instancia que elijas. El catálogo se descarga solo con Wi-Fi y con datos móviles pregunta antes.\n\n<b>– Barra inferior</b>\nInicio, Juego, Mods, Importar y Proyectos a un toque.\n\n<b>– Importar / exportar en una pantalla</b>\nPartidas, mods, ajustes del juego y controles en pantalla de una instancia, todo en un sitio.\n\n<b>– Copiar mods a otra instancia</b>\nMods → Copiar a…: elige los mods y la instancia. Su configuración va con ellos.\n\n<b>– Proyectos</b>\nMis otros launchers, con sus últimas versiones.\n\n<b>– Correcciones</b>\nLos teclados Bluetooth con flechas vuelven a escribir en el juego (contaban como mando). Los mods que guardan sus archivos en una carpeta propia, como OdinShip, ahora cargan: vuelve a instalarlos.\n\n<b>– Comprobación de copia original</b>\nUna copia que no firmé yo lo avisa. Descarga OxyDroid solo desde GitHub.\n\n<b>– La consola funciona</b>\nActívala en los ajustes del juego, ábrela con L1 + L2 + Start en el mando o F5 en el teclado y escribe con el botón de teclado de OxyDroid.\n\n<b>– Consejo: ¿el teclado tapa el juego?</b>\nPon tu teclado en modo a una mano o flotante (en Gboard: el menú del teclado). Se hace más pequeño y el juego sigue a la vista.</string>
+    <string name="release_notes_body" translatable="false"><b>– Oxygen Not Included en Android</b>\nEl juego completo de PC funciona de forma nativa: tu propia copia, la simulación del propio juego, controles táctiles.\n\n<b>– Cómo conseguir el juego</b>\nDescárgalo desde Steam en el lanzador o importa un zip. Las colonias vienen de Steam Cloud o de un zip.\n\n<b>– Mods</b>\nInstala mods desde un zip en la pantalla de mods; el juego los carga solo. Al cambiar los mods en el juego, este se reinicia.\n\n<b>– Mali y otras GPU sin texturas BC</b>\nLas texturas del juego se convierten una vez a ASTC antes del primer inicio.\n\nVersión temprana: probada en un teléfono con Snapdragon 8 Elite. Los informes ayudan: menú lateral → Reportar un error.</string>
     <!-- Thunderstore screen (ThunderstoreFragment) -->
     <string name="ts_menu">Mods de Thunderstore</string>
     <string name="ts_open_a_mod">Toca ↓ en un mod para ponerlo en la cola, o el mod para ver su página.</string>
@@ -490,7 +490,7 @@ En la nube: %2$s
     <string name="transfer_saves">Partidas</string>
     <string name="transfer_saves_hint">Un zip con los mundos y personajes de esta instancia: para guardarlos o pasarlos a otra instancia o teléfono. Al importar se sustituyen los mundos y personajes con el mismo nombre. También se importan partidas de PC (las carpetas worlds_local y characters_local en un zip).</string>
     <string name="transfer_mods">Mods</string>
-    <string name="transfer_mods_hint">Importar: uno o varios .zip de mods (Thunderstore o Nexus). Exportar: todos los mods de esta instancia en un .zip, que se instala entero aquí o en otro teléfono.</string>
+    <string name="transfer_mods_hint">Importar: un .zip con uno o varios mods, o una copia de la carpeta mods de un PC (Documents/Klei/OxygenNotIncluded/mods). Exportar: todos los mods de esta instancia en un .zip.</string>
     <string name="transfer_mods_installing">Instalando mods…</string>
     <string name="transfer_mods_imported">Mods instalados: %1$d</string>
     <string name="transfer_mods_none">Esta instancia no tiene mods.</string>
@@ -513,4 +513,32 @@ En la nube: %2$s
     <string name="signature_warning_message">Está firmada con otra clave, así que puede estar modificada. El OxyDroid original está en GitHub. El juego se inicia igual que siempre.</string>
     <string name="signature_warning_github">Abrir GitHub</string>
     <string name="signature_warning_dont_show">No volver a mostrar</string>
+    <string name="game_restarting">Reiniciando %1$s…</string>
+    <string name="editor_move_toolbar">Arrastra para mover la barra</string>
+    <string name="editor_layout_default">Oxygen Not Included (predeterminado)</string>
+    <string name="controls_editor_default_loaded">Diseño predeterminado cargado</string>
+    <string name="control_element_no_outline">Sin marco</string>
+    <string name="control_element_no_label">Sin etiqueta</string>
+    <string name="cloud_saves_push_not_yet">Enviar partidas a la nube aún no está disponible. Traerlas desde la nube sí funciona.</string>
+    <string name="textures_converting_title">Convirtiendo texturas</string>
+    <string name="textures_converting_message">Convirtiendo las texturas del juego para esta GPU: %1$d%%. Se hace una sola vez y tarda unos minutos; mantén el lanzador abierto.</string>
+    <string name="oni_mods_import">Instalar mods desde un zip</string>
+    <string name="oni_mods_hint">La lista es la del propio juego, en orden de carga: las flechas mueven un mod y el interruptor lo activa. Cámbiala con el juego cerrado. Un mod recién importado aparece abajo; inicia el juego una vez y podrás activarlo aquí o en la pantalla de mods del juego.</string>
+    <string name="oni_mods_empty">Aún no hay mods. Instala un zip con uno o varios mods.</string>
+    <string name="oni_mods_new">nuevo: inicia el juego una vez</string>
+    <string name="oni_mods_missing">faltan archivos</string>
+    <string name="oni_mods_crashes">fallos: %1$d</string>
+    <string name="oni_mods_up">Antes en el orden de carga</string>
+    <string name="oni_mods_down">Después en el orden de carga</string>
+    <string name="oni_mods_delete">Eliminar</string>
+    <string name="oni_mods_delete_confirm">¿Eliminar %1$s? Su carpeta se borra de esta instancia.</string>
+    <string name="oni_mods_failed">No se pudieron cambiar los mods: %1$s</string>
+    <string name="oni_mods_exported">Se exportaron %1$d mods. El zip se vuelve a importar entero, aquí o en otro teléfono.</string>
+    <string name="oni_mods_imported_next">Inicia el juego una vez y luego activa los mods nuevos en la pantalla de mods.</string>
+    <string name="oni_mods_unrecognized">Instalado, pero sin señales de un mod de Oxygen Not Included dentro (ni mod_info.yaml, ni DLL, ni traducción). Puede que el juego no los cargue; los presets de ReShade y las partidas no son mods del juego:</string>
+    <string name="steam_achievements_sync">Sincronizar con Steam</string>
+    <string name="steam_achievements_sync_go">Iniciar sesión y sincronizar</string>
+    <string name="steam_achievements_sync_done">Listo. Logros nuevos enviados: %1$d. El teléfono ya tiene también los logros de tu cuenta.</string>
+    <string name="steam_achievements_sync_failed">No se pudo sincronizar: %1$s</string>
+    <string name="steam_achievements_close_game">Cierra el juego primero: mientras se ejecuta, los logros son suyos.</string>
 </resources>

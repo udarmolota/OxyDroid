@@ -22,7 +22,7 @@
     <string name="reverse_landscape_label">Поворот экрана на 180°</string>
     <string name="nav_cloud_saves">Сейвы из Steam Cloud</string>
     <string name="cloud_saves_title">Сейвы из Steam Cloud</string>
-    <string name="cloud_saves_hint">Если ты играешь в Valheim ещё и на ПК через Steam, твои сейвы синхронизируются в Steam Cloud — здесь их можно забрать на телефон.\n\nВход подтверждается через приложение Steam Mobile: в него нужно хотя бы раз войти и включить в нём Steam Guard. После нажатия кнопки Steam пришлёт туда запрос на подтверждение. Пароль уходит напрямую в Steam и здесь нигде не сохраняется.</string>
+    <string name="cloud_saves_hint">Если ты играешь в Oxygen Not Included ещё и на ПК через Steam, твои колонии синхронизируются в Steam Cloud — здесь их можно забрать на телефон.\n\nВход подтверждается через приложение Steam Mobile: в него нужно хотя бы раз войти и включить в нём Steam Guard. После нажатия кнопки Steam пришлёт туда запрос на подтверждение. Пароль уходит напрямую в Steam и здесь нигде не сохраняется.</string>
     <string name="cloud_saves_user">Логин Steam</string>
     <string name="cloud_saves_pass">Пароль Steam</string>
     <string name="cloud_saves_instance">Скопировать сейвы в</string>
@@ -73,7 +73,7 @@
     <string name="keep_running_bg_label">Не ставить на паузу в фоне</string>
     <string name="keep_running_bg_hint">Выключено: игра замирает (картинка, звук и мир), пока OxyDroid не на экране — экран погашен, «Домой», другое приложение — и продолжается, когда вернёшься. Включай, только если держишь мир для друзей.</string>
     <string name="keep_running_notice">Valheim работает в фоне</string>
-    <string name="nav_multiplayer">Онлайн и достижения</string>
+    <string name="nav_multiplayer">Достижения Steam</string>
     <string name="crossplay_label">Кроссплей (вход в Steam при запуске)</string>
     <string name="crossplay_hint">Экспериментально. Перед каждым запуском OxyDroid входит в Steam (подтвердите в Steam Mobile) и передаёт игре разовый пропуск для кроссплея Valheim. Пароль не сохраняется; соединение со Steam закрывается через несколько минут после запуска игры.</string>
     <string name="crossplay_native_only">Кроссплей работает только на нативном движке: включите его в настройках этого инстанса.</string>
@@ -81,7 +81,7 @@
     <string name="crossplay_step_achievements">Отправляю достижения…</string>
     <string name="card_steam_achievements">Достижения Steam</string>
     <string name="steam_achievements_label">Отправлять достижения в Steam</string>
-    <string name="steam_achievements_hint">Игра сохраняет полученные достижения на телефоне. Если включено, перед каждым запуском OxyDroid входит в Steam (подтвердите в Steam Mobile) и добавляет новые в ваш аккаунт. Достижения только добавляются, никогда не удаляются. Только для нативного движка.</string>
+    <string name="steam_achievements_hint">Игра хранит полученные достижения на телефоне. Синхронизация отправляет новые в твой аккаунт Steam и забирает оттуда остальные: вход, подтверждение в Steam Mobile, готово. Запускать игру не нужно. Достижения только добавляются и никогда не удаляются.</string>
     <string name="steam_achievements_sent">Steam: отправлено новых достижений: %1$d</string>
     <string name="steam_achievements_failed">Не удалось отправить достижения: %1$s</string>
     <string name="steam_achievements_show">Мои достижения</string>
@@ -89,7 +89,7 @@
     <string name="steam_achievements_summary">Открыто: %1$d из %2$d</string>
     <string name="steam_achievements_updated">обновлено %1$s</string>
     <string name="steam_achievements_pending">Ждут отправки: %1$d</string>
-    <string name="steam_achievements_never">Список появится после первого входа в Steam при запуске.</string>
+    <string name="steam_achievements_never">Ещё не синхронизировано: нажми «Синхронизировать со Steam».</string>
     <string name="steam_achievements_waiting">ждёт отправки</string>
     <string name="crossplay_signin_title">Вход в Steam</string>
     <string name="crossplay_signin_note">Пароль нужен только для этого входа и не сохраняется.</string>
@@ -99,7 +99,7 @@
     <string name="crossplay_step_approve">Подтвердите вход в приложении Steam Mobile…</string>
     <string name="crossplay_step_ticket">Получаю пропуск для кроссплея…</string>
     <string name="crossplay_failed">Не удалось войти в Steam: %1$s</string>
-    <string name="crossplay_keepalive">Сессия Steam для кроссплея</string>
+    <string name="crossplay_keepalive">Сессия Steam: синхронизация достижений</string>
     <string name="compat_mode_label">Режим совместимости</string>
     <string name="compat_mode_hint">Включи, если игра не запускается (чёрный экран / зависает на загрузке). Чуть медленнее, но помогает запуститься на некоторых устройствах.</string>
     <string name="native_engine_preparing">Подготовка нативного движка…</string>
@@ -153,13 +153,13 @@
     <string name="launcher_empty_title">С чего начать</string>
     <string name="launcher_empty_quick_start">Быстрый старт</string>
     <string name="launcher_empty_steam">Скачать из Steam</string>
-    <string name="launcher_empty_guide">Чтобы начать играть, создайте инстанс — установленную копию Valheim. Добавьте файлы игры кнопкой + сверху или скачайте игру прямо из Steam кнопкой ниже: инстанс создастся сам.</string>
+    <string name="launcher_empty_guide">Чтобы начать играть, создайте инстанс — установленную копию Oxygen Not Included. Добавьте файлы игры кнопкой + сверху или скачайте игру прямо из Steam кнопкой ниже: инстанс создастся сам.</string>
     <string name="link_x">RimDroid в X</string>
     <string name="link_reddit">OxyDroid на Reddit</string>
     <string name="link_support">Поддержать разработчика</string>
     <string name="link_soon">Скоро</string>
     <string name="nav_label_donate">Донат</string>
-    <string name="zomdroid_dialog_message">Zomdroid запускает Project Zomboid на Android так же, как этот лаунчер запускает Valheim. Тот же автор, тот же подход.\n\nhttps://github.com/udarmolota/Zomdroid/releases</string>
+    <string name="zomdroid_dialog_message">Zomdroid запускает Project Zomboid на Android так же, как этот лаунчер запускает Oxygen Not Included. Тот же автор, тот же подход.\n\nhttps://github.com/udarmolota/Zomdroid/releases</string>
     <string name="bug_report_subject">OXYDROID REPORT %1$s</string>
     <string name="bug_report_body">Hi, I have a new bug report.\n\nDescription: \n\n\n---\n%1$s</string>
     <string name="bug_report_no_mail">На устройстве нет почтового приложения.</string>
@@ -221,8 +221,8 @@
     <string name="install_content_go">Установить</string>
 
     <!-- Экран загрузки -->
-    <string name="download_game_title">Загрузка Valheim из Steam</string>
-    <string name="download_instance_hint">Имя инстанса (например, Valheim)</string>
+    <string name="download_game_title">Загрузка Oxygen Not Included из Steam</string>
+    <string name="download_instance_hint">Имя инстанса (например, ONI)</string>
     <string name="download_user_hint">Логин Steam</string>
     <string name="download_pass_hint">Пароль Steam</string>
     <string name="download_login_note">Логин отправляется в Steam (так же, как это делает DepotDownloader) и НЕ сохраняется. Подтвердите вход в приложении Steam Mobile или введите код Steam Guard, когда попросят.</string>
@@ -314,7 +314,7 @@
     <string name="hud_scale_hint">Делает полоски, панель предметов, миникарту, сообщения, чат и тексты крупнее, чем позволяет масштаб интерфейса самой игры (Настройки \u2192 Accessibility, до 115%). Меню и инвентарь остаются как в игре. Действует со следующего запуска.</string>
     <string name="news_title">Новости Oxygen Not Included</string>
     <string name="release_notes_title" translatable="false">Что нового в v%1$s</string>
-    <string name="release_notes_body" translatable="false"><b>– Моды Thunderstore в лаунчере</b>\nКнопка «Моды» внизу: поиск, сортировка, категории и страница каждого мода. Отметьте нужные моды и установите их вместе со всем, что им нужно, в выбранный инстанс. Каталог скачивается сам на Wi-Fi, а на мобильном интернете сначала спрашивает.\n\n<b>– Нижняя панель</b>\nГлавная, Игра, Моды, Импорт и Проекты в одно касание.\n\n<b>– Импорт / экспорт на одном экране</b>\nСохранения, моды, настройки игры и экранное управление инстанса в одном месте.\n\n<b>– Копирование модов в другой инстанс</b>\nМоды → Копировать…: выберите моды и инстанс. Их настройки переносятся вместе с ними.\n\n<b>– Проекты</b>\nМои другие лаунчеры и их последние версии.\n\n<b>– Исправления</b>\nBluetooth-клавиатуры со стрелками снова печатают в игре (они считались геймпадом). Моды, которые держат файлы в своей папке, например OdinShip, теперь загружаются: установите их заново.\n\n<b>– Проверка подлинности</b>\nКопия, подписанная не мной, сообщит об этом. Скачивайте OxyDroid только с GitHub.\n\n<b>– Консоль работает</b>\nВключите её в настройках игры, откройте L1 + L2 + Start на геймпаде или F5 на клавиатуре и печатайте через кнопку клавиатуры OxyDroid.\n\n<b>– Совет: клавиатура закрывает игру?</b>\nВключите в своей клавиатуре режим «одной рукой» или «плавающая» (в Gboard: меню клавиатуры). Она станет меньше, и игру будет видно.</string>
+    <string name="release_notes_body" translatable="false"><b>– Oxygen Not Included на Android</b>\nПолная версия игры для ПК работает нативно: твоя копия, собственная симуляция игры, сенсорное управление.\n\n<b>– Как получить игру</b>\nСкачай её из Steam прямо в лаунчере или импортируй zip. Колонии — из Steam Cloud или из zip.\n\n<b>– Моды</b>\nУстанавливай моды из zip на экране модов, игра загружает их сама. После смены модов в игре она перезапускается.\n\n<b>– Mali и другие GPU без BC-текстур</b>\nТекстуры игры один раз преобразуются в ASTC перед первым запуском.\n\nРанняя версия: проверено на телефоне со Snapdragon 8 Elite. Отчёты очень помогают: боковое меню → «Сообщить об ошибке».</string>
     <string name="instance_downloading">скачивается, дождитесь окончания</string>
     <string name="instance_incomplete">не докачано</string>
     <string name="instance_incomplete_hint">Загрузка прервалась, не закончившись. Откройте боковое меню → %1$s и скачайте заново с тем же именем инстанса — загрузка продолжится с места остановки.</string>
@@ -325,7 +325,7 @@
     <string name="etc2_cache_header_expanded">Кэш сжатых текстур ▾</string>
     <string name="etc2_label">Включить компрессию ETC2</string>
     <string name="etc2_hint">Сжимает текстуры в формат, который видеочип телефона понимает сам, — они занимают примерно вчетверо меньше памяти. На слабых телефонах и на Mali это разница между «работает» и «не хватает памяти». Действует на MobileGlues. Крупные текстуры вдобавок всегда уменьшаются.</string>
-    <string name="install_windows_build">Это Windows-версия Valheim, а OxyDroid запускает только Linux-версию (с файлом valheim.x86_64). Если игра есть у вас в Steam, приложение само скачает нужную: боковое меню → %1$s.</string>
+    <string name="install_windows_build">Это Windows-версия Oxygen Not Included, а OxyDroid запускает только Linux-версию (с файлом OxygenNotIncluded). Если игра есть у вас в Steam, приложение само скачает нужную: боковое меню → %1$s.</string>
     <string name="install_zip_damaged">Битый архив. Скачайте его заново или пересоздайте.</string>
     <string name="install_progress_title">Установка игры</string>
     <string name="install_phase_copy">Копирование архива</string>
@@ -530,4 +530,10 @@
     <string name="oni_mods_exported">Экспортировано модов: %1$d. Zip импортируется обратно целиком, здесь или на другом телефоне.</string>
     <string name="oni_mods_imported_next">Запустите игру один раз, затем включите новые моды на экране модов.</string>
     <string name="oni_mods_unrecognized">Установлено, но признаков мода Oxygen Not Included внутри нет (ни mod_info.yaml, ни DLL, ни перевода). Игра может их не загрузить; пресеты ReShade и сейвы — не моды игры:</string>
+    <string name="game_restarting">Перезапуск %1$s…</string>
+    <string name="steam_achievements_sync">Синхронизировать со Steam</string>
+    <string name="steam_achievements_sync_go">Войти и синхронизировать</string>
+    <string name="steam_achievements_sync_done">Готово. Отправлено новых достижений: %1$d. На телефоне теперь и достижения твоего аккаунта.</string>
+    <string name="steam_achievements_sync_failed">Не удалось синхронизировать: %1$s</string>
+    <string name="steam_achievements_close_game">Сначала закрой игру: пока она запущена, достижения у неё.</string>
 </resources>

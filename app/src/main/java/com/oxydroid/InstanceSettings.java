@@ -386,7 +386,7 @@ public class InstanceSettings {
     // for its PlayFab login (SteamTicketLogin). Off by default: every launch then asks for the Steam
     // sign-in and its Steam Mobile approval.
     public boolean isCrossplay() {
-        return p.getBoolean(pfx + "crossplay", false);
+        return false;   // Oxygen Not Included has no crossplay: the stored value is ignored
     }
 
     public void setCrossplay(boolean v) {

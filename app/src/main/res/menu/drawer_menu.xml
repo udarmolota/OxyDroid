@@ -7,16 +7,21 @@
             android:id="@+id/action_install_instance"
             android:icon="@drawable/mt_icon_add"
             android:title="@string/nav_new_instance" />
+        <!-- Custom Vulkan driver: hidden, the native engine uses the phone's own driver. The id
+             stays for LauncherActivity. -->
         <item
             android:id="@+id/action_custom_driver"
             android:icon="@drawable/mt_icon_settings"
-            android:title="@string/nav_custom_driver" />
+            android:title="@string/nav_custom_driver"
+            android:visible="false" />
         <!-- Mods (BepInEx): opens ModsFragment. The id is the old RimWorld "Install mod / DLC" one;
              that screen (InstallContentFragment) is no longer reachable from the menu. -->
+        <!-- Hidden: Mods is in the bottom bar. The id stays for LauncherActivity. -->
         <item
             android:id="@+id/action_install_content"
             android:icon="@drawable/mt_icon_mods"
-            android:title="@string/nav_mods" />
+            android:title="@string/nav_mods"
+            android:visible="false" />
         <!-- The Thunderstore catalog, the Steam download and Import / export are in the bottom bar
              (menu_bottom_nav.xml), so not here too. -->
     </group>
@@ -33,10 +38,13 @@
             android:id="@+id/action_icon_packs"
             android:icon="@drawable/mt_icon_stack"
             android:title="@string/nav_icon_packs" />
+        <!-- Gamepad mapping: hidden (the game reads its own controller input); the id stays for
+             LauncherActivity. -->
         <item
             android:id="@+id/action_gamepad_mapper"
             android:icon="@drawable/mt_icon_settings"
-            android:title="@string/gamepad_mapper_settings_btn" />
+            android:title="@string/gamepad_mapper_settings_btn"
+            android:visible="false" />
     </group>
 
     <!-- 3) Steam: cloud saves, multiplayer (the game download is the bottom bar's Game) -->
@@ -45,7 +53,7 @@
             android:id="@+id/action_cloud_saves"
             android:icon="@drawable/mt_icon_save"
             android:title="@string/nav_cloud_saves" />
-        <!-- Multiplayer: crossplay on/off per instance (MultiplayerFragment); its sign-in is Steam's, as the two above -->
+        <!-- Steam achievements per instance (MultiplayerFragment; crossplay was the previous game's) -->
         <item
             android:id="@+id/action_multiplayer"
             android:icon="@drawable/mt_icon_group"

@@ -85,11 +85,13 @@
             android:paddingTop="6dp"
             android:paddingBottom="6dp">
 
+            <!-- The wiki: hidden while its pages are still the previous game's. -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:visibility="gone">
 
                 <ImageButton
                     android:id="@+id/link_wiki"
