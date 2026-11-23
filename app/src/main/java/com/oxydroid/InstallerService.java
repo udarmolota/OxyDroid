@@ -249,9 +249,8 @@ public class InstallerService extends Service {
         if (macSimDll != null) //noinspection ResultOfMethodCallIgnored
             macSimDll.delete();
 
-        // Valheim needs a working Steam: Goldberg shim + steam_settings + PlayFab auto-login off.
-        // A failed shim download does not fail the install; the warning is passed on below.
-        String steamWarning = ValheimInstanceSetup.apply(instanceDir, this::broadcastProgress);
+        // No Steam set-up in the game folder: the native engine brings its own libsteam_api stand-in
+        // in the APK. (The previous game downloaded a Goldberg emulator into every instance here.)
 
         // The install-time save fix (Assembly-CSharp bspatch) used to run here. Removed entirely
         // 2026-08-28: the save-bug root (box64's broken Android qsort mis-building Mono IMT
@@ -274,10 +273,6 @@ public class InstallerService extends Service {
         }
 
         broadcastProgress("Instance installed.");
-        if (steamWarning != null) {
-            broadcastDone(false, "Instance '" + instanceName + "' installed, but: " + steamWarning);
-            return;
-        }
         broadcastDone(true, "Instance '" + instanceName + "' installed — ready to launch");
     }
 

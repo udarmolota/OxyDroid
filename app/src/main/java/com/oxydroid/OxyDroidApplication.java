@@ -37,9 +37,8 @@ public class OxyDroidApplication extends Application {
             RimWorldInstanceSetup.ensureGameFixAssets(OxyDroidApplication.this);
             RimWorldInstanceSetup.reconcileExistingInstances(
                     AppStorage.requireSingleton().getInstancesDir());
-            // Valheim: Steam shim, steam_settings and PlayFab auto-login off for every instance.
-            ValheimInstanceSetup.reconcileExistingInstances(
-                    AppStorage.requireSingleton().getInstancesDir());
+            // (The previous game's Steam emulator download into every instance at each start is gone:
+            // the native engine brings its own Steam stand-in.)
         }, "rd-player-reconcile").start();
         // Apply the user's theme choice (System / Light / Dark) before any activity is shown.
         androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
