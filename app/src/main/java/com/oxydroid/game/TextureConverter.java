@@ -112,17 +112,21 @@ public final class TextureConverter {
         String gpu = formats < 0 ? "GPU formats unknown"
                 : "GPU: BC " + ((formats & 1) != 0 ? "yes" : "NO") + ", ASTC " + ((formats & 2) != 0 ? "yes" : "NO");
         long pending = 0;
-        int unreadable = 0;
+        int unreadable = 0, checked = 0;
         File[] files = dataDir.listFiles();
         if (files != null) {
             for (File assets : files) {
                 if (!assets.isFile() || !assets.getName().endsWith(".assets")) continue;
                 File resS = new File(dataDir, assets.getName() + ".resS");
                 if (!resS.isFile()) continue;
+                checked++;
                 long n = nativePending(assets.getAbsolutePath(), resS.getAbsolutePath());
                 if (n < 0) unreadable++; else pending += n;
             }
         }
+        // After the first launch the big data files live only in the player's archive (NativeEngine
+        // moveIntoArchive): what they hold was settled by the conversion before that launch.
+        if (checked == 0) return "data files are in the player's archive (converted before the first launch if needed); " + gpu;
         return (pending == 0 ? "all converted to ASTC" : (pending >> 20) + " MB still in BC formats")
                 + (unreadable > 0 ? ", " + unreadable + " file(s) not readable" : "") + "; " + gpu;
     }
