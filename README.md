@@ -73,8 +73,9 @@ Android refuses to update your copy with the one from GitHub, your copy is not t
 ## Getting the game files
 
 **From Steam, inside the launcher.** Sign in with your Steam account on the download screen. The
-launcher fetches the Linux build of the game and the one file it needs from the macOS build. Your
-password and Steam Guard code go to Steam only.
+launcher fetches the Linux build of the game and the one file it needs from the macOS build. The
+sign-in is approved in the Steam Mobile app, so Steam Guard must be turned on there; Steam Guard
+codes are not supported. Your password goes to Steam only and is never stored.
 
 **From a zip.** Pack the Linux build of the game, and add the macOS build's simulation library as
 `macos/SimDLL` (in the macOS build it is
