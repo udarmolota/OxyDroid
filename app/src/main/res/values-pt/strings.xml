@@ -591,4 +591,5 @@ Na nuvem: %2$s
     <string name="download_mods_choose">Instalar os mods em</string>
     <string name="download_mods_installing">Instalando os mods…</string>
     <string name="download_mods_installed">Instalados em %1$s: %2$d mod(s). Eles são ativados na próxima vez que o jogo iniciar.</string>
+    <string name="oni_mods_build">build %1$d+</string>
 </resources>

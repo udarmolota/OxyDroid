@@ -606,4 +606,5 @@ In the cloud: %2$s
     <string name="download_mods_choose">Install the mods into</string>
     <string name="download_mods_installing">Installing the mods…</string>
     <string name="download_mods_installed">Installed into %1$s: %2$d mod(s). They are switched on at the next game start.</string>
+    <string name="oni_mods_build">build %1$d+</string>
 </resources>

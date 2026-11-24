@@ -67,6 +67,8 @@ public final class OniMods {
         public String id;         // the folder's name
         public String title;
         public String version;    // from mod_info.yaml, or null
+        /** The oldest game build the mod runs on (mod_info.yaml minimumSupportedBuild), or -1. */
+        public int minBuild = -1;
         public boolean listed;    // has an entry in mods.json
         public boolean enabled;
         public boolean installed; // the folder exists
@@ -102,7 +104,10 @@ public final class OniMods {
             m.crashes = intOf(e.get("crash_count"));
             File folder = new File(new File(mods, m.platform), m.id == null ? "" : m.id);
             m.installed = m.id != null && !m.id.isEmpty() && folder.isDirectory();
-            if (m.installed) m.version = yamlValue(new File(folder, "mod_info.yaml"), "version");
+            if (m.installed) {
+                m.version = yamlValue(new File(folder, "mod_info.yaml"), "version");
+                m.minBuild = intValue(yamlValue(new File(folder, "mod_info.yaml"), "minimumSupportedBuild"));
+            }
             if (m.title == null || m.title.isEmpty()) m.title = m.id;
             seen.add(m.platform + "/" + m.id);
             out.add(m);
@@ -119,6 +124,7 @@ public final class OniMods {
                 String title = yamlValue(new File(folder, "mod.yaml"), "title");
                 m.title = title == null || title.isEmpty() ? m.id : title;
                 m.version = yamlValue(new File(folder, "mod_info.yaml"), "version");
+                m.minBuild = intValue(yamlValue(new File(folder, "mod_info.yaml"), "minimumSupportedBuild"));
                 m.installed = true;
                 fresh.add(m);
             }
@@ -151,6 +157,11 @@ public final class OniMods {
         } catch (IOException e) {
             android.util.Log.w("OxyDroid/Mods", "enable list not written: " + e);
         }
+    }
+
+    private static int intValue(String s) {
+        if (s == null) return -1;
+        try { return Integer.parseInt(s.trim().replace("\"", "")); } catch (NumberFormatException e) { return -1; }
     }
 
     /** Switches a listed mod on (for the base game and Spaced Out) or off. */

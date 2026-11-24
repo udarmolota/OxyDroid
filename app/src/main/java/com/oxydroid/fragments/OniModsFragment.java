@@ -175,6 +175,7 @@ public class OniModsFragment extends Fragment {
             return;
         }
         final File userDir = gi.getUserDataDir();
+        final int gameBuild = gameBuild(gi);
         List<OniMods.Mod> mods = OniMods.list(userDir);
         tvEmpty.setVisibility(mods.isEmpty() ? View.VISIBLE : View.GONE);
         int listed = 0;
@@ -183,7 +184,7 @@ public class OniModsFragment extends Fragment {
         for (OniMods.Mod m : mods) {
             View row = inflater.inflate(R.layout.item_oni_mod, list, false);
             ((TextView) row.findViewById(R.id.tv_oni_mod_name)).setText(m.title);
-            ((TextView) row.findViewById(R.id.tv_oni_mod_sub)).setText(describe(m));
+            ((TextView) row.findViewById(R.id.tv_oni_mod_sub)).setText(describe(m, gameBuild));
 
             Switch sw = row.findViewById(R.id.sw_oni_mod);
             sw.setChecked(m.enabled);
@@ -211,14 +212,36 @@ public class OniModsFragment extends Fragment {
         }
     }
 
-    /** The line under a mod's title: where it is from, its version, and what stands in its way. */
-    private String describe(OniMods.Mod m) {
-        StringBuilder sb = new StringBuilder(m.platform);
-        if (m.version != null && !m.version.isEmpty()) sb.append(" · ").append(m.version);
-        if (!m.installed) sb.append(" · ").append(getString(R.string.oni_mods_missing));
-        else if (!m.listed) sb.append(" · ").append(getString(R.string.oni_mods_new));
-        if (m.crashes > 0) sb.append(" · ").append(getString(R.string.oni_mods_crashes, m.crashes));
-        return sb.toString();
+    /**
+     * The line under a mod's title: the oldest game build it runs on (green when the instance's game
+     * is that build or newer, red when it is older), its version, and what stands in its way. Where
+     * the mod comes from (Local/Steam/Dev) is not shown: mods installed here are all Local.
+     */
+    private CharSequence describe(OniMods.Mod m, int gameBuild) {
+        android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder();
+        if (m.minBuild > 0) {
+            sb.append(getString(R.string.oni_mods_build, m.minBuild));
+            if (gameBuild > 0)
+                sb.setSpan(new android.text.style.ForegroundColorSpan(gameBuild >= m.minBuild ? 0xFF43A047 : 0xFFE53935),
+                        0, sb.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        if (m.version != null && !m.version.isEmpty()) sep(sb).append(m.version);
+        if (!m.installed) sep(sb).append(getString(R.string.oni_mods_missing));
+        else if (!m.listed) sep(sb).append(getString(R.string.oni_mods_new));
+        if (m.crashes > 0) sep(sb).append(getString(R.string.oni_mods_crashes, m.crashes));
+        return sb;
+    }
+
+    private static android.text.SpannableStringBuilder sep(android.text.SpannableStringBuilder sb) {
+        return sb.length() == 0 ? sb : sb.append(" · ");
+    }
+
+    /** The instance's game build (764025 of "U60-764025"), from the game's own log; -1 before its first start. */
+    private static int gameBuild(GameInstance gi) {
+        String v = gi == null ? null : com.oxydroid.ReportInfo.shortGameVersion(gi);
+        if (v == null) return -1;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("-(\\d+)").matcher(v);
+        return m.find() ? Integer.parseInt(m.group(1)) : -1;
     }
 
     private interface Change {

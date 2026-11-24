@@ -8,19 +8,25 @@ using UnityEngine;
 namespace OxyDroid
 {
     // Mods the launcher has just installed (Mods screen, Workshop download) are switched on by
-    // themselves at the next start. The game lists a new mod folder only when it starts, and lists it
-    // switched off; the player then had to switch it on in the game's Mods menu as well, after doing so
-    // in the launcher. The launcher writes the new folders ("Local/<folder>", one per line) to the file
-    // OXYDROID_MODS_ENABLE names; right after the game has read its mod list and found the new folders
-    // (KMod's LoadModDBAndInitialize) and before it loads mod content, the listed mods are switched on
-    // and the list saved, so they load in this very start. The file is then removed.
+    // themselves. The game lists a new mod folder only when it starts, and lists it switched off; the
+    // player then had to switch it on in the game's Mods menu as well. The launcher writes the new
+    // folders ("Local/<folder>", one per line) to the file OXYDROID_MODS_ENABLE names, and here:
+    //   1. whenever the game adds a mod to its list (KMod.Manager.Subscribe) and right after it has read
+    //      its list (LoadModDBAndInitialize), the listed mods found there are switched on — early enough,
+    //      they load in this very start;
+    //   2. at the main menu, a listed mod that is still off (the game added it after loading mods) is
+    //      switched on and the game restarts once, the way the launcher restarts it after a change of
+    //      mods in the game (RestartPatch's flag), so it loads.
+    // The file keeps what is not found yet and is removed when every listed mod is on.
     //
     // Reached by reflection, like RestartPatch: if a step fails, the game is left as it is and the log
-    // says why.
+    // says why. The first attempt (2026-11-24) only looked after LoadModDBAndInitialize, where the new
+    // folders were not listed yet: "0 new mod(s) switched on".
     internal static class ModsEnable
     {
         static string s_File;
         static HashSet<string> s_Wanted;
+        static bool s_Restarted;
 
         internal static void Install()
         {
@@ -33,48 +39,31 @@ namespace OxyDroid
                 foreach (var line in File.ReadAllLines(s_File))
                     if (line.Trim().Length > 0) s_Wanted.Add(line.Trim());
                 if (s_Wanted.Count == 0)
-                    return;
-
-                MethodInfo target = null;
-                var asm = Type.GetType("KMod.Manager, Assembly-CSharp")?.Assembly;
-                if (asm != null)
-                    foreach (var t in asm.GetTypes())
-                    {
-                        target = t.GetMethod("LoadModDBAndInitialize", BindingFlags.Public | BindingFlags.NonPublic
-                                                                       | BindingFlags.Instance | BindingFlags.Static);
-                        if (target != null) break;
-                    }
-                var harmonyType = Type.GetType("HarmonyLib.Harmony, 0Harmony");
-                var harmonyMethodType = Type.GetType("HarmonyLib.HarmonyMethod, 0Harmony");
-                if (target == null || harmonyType == null || harmonyMethodType == null)
                 {
-                    Log("not installed: " + (target == null ? "LoadModDBAndInitialize" : "Harmony") + " not found");
+                    File.Delete(s_File);
                     return;
                 }
-                var postfix = typeof(ModsEnable).GetMethod(nameof(Postfix), BindingFlags.NonPublic | BindingFlags.Static);
-                object harmony = Activator.CreateInstance(harmonyType, "com.oxydroid.modsenable");
-                object harmonyPostfix = Activator.CreateInstance(harmonyMethodType, postfix);
-                MethodInfo patch = null;
-                foreach (var m in harmonyType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+                var managerType = Type.GetType("KMod.Manager, Assembly-CSharp");
+                var modType = Type.GetType("KMod.Mod, Assembly-CSharp");
+                if (managerType == null)
+                {
+                    Log("not installed: KMod.Manager not found");
+                    return;
+                }
+                const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+                int patched = 0;
+                var load = managerType.GetMethod("LoadModDBAndInitialize", all);
+                if (load != null && Patch(load, nameof(AfterManagerStep))) patched++;
+                foreach (var m in managerType.GetMethods(all))
                 {
                     var ps = m.GetParameters();
-                    if (m.Name == "Patch" && ps.Length >= 3 && ps[0].ParameterType == typeof(MethodBase)
-                        && ps[1].ParameterType == harmonyMethodType && ps[2].ParameterType == harmonyMethodType)
-                    {
-                        patch = m;
-                        break;
-                    }
+                    if (m.Name == "Subscribe" && ps.Length >= 1 && modType != null && ps[0].ParameterType == modType
+                        && Patch(m, nameof(AfterManagerStep))) patched++;
                 }
-                if (patch == null)
-                {
-                    Log("not installed: Harmony.Patch not found");
-                    return;
-                }
-                var args = new object[patch.GetParameters().Length];
-                args[0] = target;
-                args[2] = harmonyPostfix;   // (original, prefix, postfix, ...)
-                patch.Invoke(harmony, args);
-                Log("installed on " + target.DeclaringType.FullName + "." + target.Name + " for " + s_Wanted.Count + " mod(s)");
+                var mainMenu = Type.GetType("MainMenu, Assembly-CSharp");
+                var onMenu = mainMenu?.GetMethod("OnPrefabInit", all);
+                if (onMenu != null && Patch(onMenu, nameof(AtMainMenu))) patched++;
+                Log("installed on " + patched + " method(s) for " + s_Wanted.Count + " mod(s)");
             }
             catch (Exception e)
             {
@@ -83,42 +72,119 @@ namespace OxyDroid
             }
         }
 
-        static void Postfix(object __instance)
+        // ---- Harmony, by reflection ----
+
+        static object s_Harmony;
+        static Type s_HarmonyMethodType;
+        static MethodInfo s_Patch;
+
+        static bool Patch(MethodBase target, string postfixName)
         {
             try
             {
-                object manager = FindManager(__instance);
-                if (manager == null)
+                if (s_Patch == null)
                 {
-                    Log("the mod manager was not found: nothing switched on");
-                    return;
+                    var harmonyType = Type.GetType("HarmonyLib.Harmony, 0Harmony");
+                    s_HarmonyMethodType = Type.GetType("HarmonyLib.HarmonyMethod, 0Harmony");
+                    if (harmonyType == null || s_HarmonyMethodType == null) { Log("Harmony not found"); return false; }
+                    s_Harmony = Activator.CreateInstance(harmonyType, "com.oxydroid.modsenable");
+                    foreach (var m in harmonyType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+                    {
+                        var ps = m.GetParameters();
+                        if (m.Name == "Patch" && ps.Length >= 3 && ps[0].ParameterType == typeof(MethodBase)
+                            && ps[1].ParameterType == s_HarmonyMethodType && ps[2].ParameterType == s_HarmonyMethodType)
+                        {
+                            s_Patch = m;
+                            break;
+                        }
+                    }
+                    if (s_Patch == null) { Log("Harmony.Patch not found"); return false; }
                 }
+                var postfix = typeof(ModsEnable).GetMethod(postfixName, BindingFlags.NonPublic | BindingFlags.Static);
+                var args = new object[s_Patch.GetParameters().Length];
+                args[0] = target;
+                args[2] = Activator.CreateInstance(s_HarmonyMethodType, postfix);   // (original, prefix, postfix, ...)
+                s_Patch.Invoke(s_Harmony, args);
+                return true;
+            }
+            catch (Exception e)
+            {
+                var inner = e is TargetInvocationException && e.InnerException != null ? e.InnerException : e;
+                Log("cannot patch " + target.DeclaringType?.Name + "." + target.Name + ": " + inner.Message);
+                return false;
+            }
+        }
+
+        // ---- the postfixes ----
+
+        static void AfterManagerStep(object __instance)
+        {
+            TryEnable(FindManager(__instance), "early");
+        }
+
+        static void AtMainMenu()
+        {
+            if (s_Wanted == null || s_Wanted.Count == 0)
+                return;
+            int on = TryEnable(FindManager(null), "main menu");
+            if (on <= 0 || s_Restarted)
+                return;
+            // Switched on after the game had loaded its mods: they load at the next start.
+            s_Restarted = true;
+            string flag = Environment.GetEnvironmentVariable("OXYDROID_RESTART_FLAG");
+            if (string.IsNullOrEmpty(flag))
+            {
+                Log("switched on at the main menu: they load at the next start");
+                return;
+            }
+            try
+            {
+                File.WriteAllText(flag, DateTime.UtcNow.ToString("o"));
+                Log("switched on at the main menu: restarting once so they load");
+                Application.Quit();
+            }
+            catch (Exception e)
+            {
+                Log("cannot restart: " + e.Message);
+            }
+        }
+
+        /** Switches on the wanted mods the manager lists; returns how many it switched on now. */
+        static int TryEnable(object manager, string when)
+        {
+            if (s_Wanted == null || s_Wanted.Count == 0)
+                return 0;
+            int on = 0, listed = 0;
+            try
+            {
+                if (manager == null)
+                    return 0;
                 var mods = Member(manager, "mods") as IEnumerable;
                 if (mods == null)
-                {
-                    Log("the mod list was not found: nothing switched on");
-                    return;
-                }
-                int on = 0;
+                    return 0;
+                var found = new List<string>();
                 foreach (var mod in mods)
                 {
+                    listed++;
                     object label = Member(mod, "label");
                     string id = Member(label, "id") as string;
                     string platform = Member(label, "distribution_platform")?.ToString();
-                    if (id == null || platform == null || !s_Wanted.Contains(platform + "/" + id))
+                    string key = platform + "/" + id;
+                    if (id == null || platform == null || !s_Wanted.Contains(key))
                         continue;
-                    var isOn = mod.GetType().GetMethod("IsEnabledForActiveDlc", BindingFlags.Public | BindingFlags.Instance);
-                    if (isOn != null && isOn.GetParameters().Length == 0 && (bool)isOn.Invoke(mod, null))
+                    found.Add(key);
+                    var isOn = mod.GetType().GetMethod("IsEnabledForActiveDlc", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
+                    if (isOn != null && (bool)isOn.Invoke(mod, null))
                         continue;
                     var set = mod.GetType().GetMethod("SetEnabledForActiveDlc", BindingFlags.Public | BindingFlags.Instance);
                     if (set == null)
                     {
-                        Log("SetEnabledForActiveDlc not found: nothing switched on");
-                        return;
+                        Log("SetEnabledForActiveDlc not found");
+                        return on;
                     }
                     set.Invoke(mod, new object[] { true });
                     on++;
-                    Log("switched on " + platform + "/" + id);
+                    Log("switched on " + key + " (" + when + ")");
                 }
                 if (on > 0)
                 {
@@ -126,14 +192,18 @@ namespace OxyDroid
                                                            null, Type.EmptyTypes, null);
                     save?.Invoke(manager, null);
                 }
-                File.Delete(s_File);
-                Log(on + " new mod(s) switched on");
+                foreach (var key in found) s_Wanted.Remove(key);
+                if (s_Wanted.Count == 0) File.Delete(s_File);
+                else File.WriteAllLines(s_File, new List<string>(s_Wanted).ToArray());
+                if (found.Count > 0 || when == "main menu")
+                    Log(when + ": " + listed + " mod(s) listed, " + on + " switched on, " + s_Wanted.Count + " still to find");
             }
             catch (Exception e)
             {
                 var inner = e is TargetInvocationException && e.InnerException != null ? e.InnerException : e;
-                Log("failed: " + inner.GetType().Name + ": " + inner.Message);
+                Log("failed (" + when + "): " + inner.GetType().Name + ": " + inner.Message);
             }
+            return on;
         }
 
         /** KMod.Manager: the patched method's own object, or Global.Instance.modManager. */

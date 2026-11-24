@@ -584,4 +584,5 @@
     <string name="download_mods_choose">Установить моды в</string>
     <string name="download_mods_installing">Устанавливаю моды…</string>
     <string name="download_mods_installed">Установлено в %1$s: модов %2$d. Они включатся при следующем запуске игры.</string>
+    <string name="oni_mods_build">сборка %1$d+</string>
 </resources>
