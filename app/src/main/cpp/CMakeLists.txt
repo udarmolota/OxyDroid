@@ -201,6 +201,28 @@ target_link_libraries(oxydroidlinker PRIVATE
 target_link_options(oxydroidlinker PRIVATE "-Wl,-z,global")
 
 # ---------------------------------------------------------------------------
+# libsimx86 — Oxygen Not Included's x86-64 Linux SimDLL under box64, inside the game's
+# own process (simx86.c). The same box64 objects as liboxydroidlinker but no linker.c
+# and no -z global: nothing of box64 may take over the game process's dlopen/mmap.
+# ---------------------------------------------------------------------------
+add_library(simx86 SHARED simx86.c)
+target_include_directories(simx86 PRIVATE
+    ${BOX64_ROOT}/src/include
+    ${BOX64_ROOT}/src
+    ${BOX64_ROOT}/src/wrapped/generated
+)
+target_compile_definitions(simx86 PRIVATE DYNAREC ARM64)
+target_link_libraries(simx86 PRIVATE
+    c
+    log
+    dl
+    $<TARGET_OBJECTS:mainobj>
+    $<TARGET_OBJECTS:interpreter>
+    dynarec
+)
+target_link_options(simx86 PRIVATE "-Wl,--no-undefined")
+
+# ---------------------------------------------------------------------------
 # liboxydroid_exec.so — STANDALONE EXECUTABLE (not a library).
 # The "lib*.so" name is the Android packaging trick: the APK build extracts it
 # into the app's nativeLibraryDir with exec permission, so the Java launcher can

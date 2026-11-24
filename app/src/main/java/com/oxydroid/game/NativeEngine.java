@@ -113,7 +113,16 @@ public final class NativeEngine {
         // The simulation library exists for Linux as x86-64 only; the native engine runs the arm64 slice
         // of the macOS build's (unity/src/main/cpp/simdll). Say so here, not at the game's first tick.
         File simdll = macSimDll(gameDir);
-        if (!simdll.isFile())
+        // OXYDROID_SIMDLL=x86 in the environment field (a test for now): the Linux build's own x86-64
+        // SimDLL, run under box64 inside the game (app/src/main/cpp/simx86.c), instead of the macOS one.
+        File simdllX86 = null;
+        // Without the macOS file the Linux one runs emulated (the launcher has said so before the launch).
+        if ("x86".equals(userEnvironmentValue(instance.settings(), "OXYDROID_SIMDLL"))
+                || (!simdll.isFile() && linuxSimDll(dataDir).isFile())) {
+            simdllX86 = linuxSimDll(dataDir);
+            if (!simdllX86.isFile())
+                throw new IOException("the Linux SimDLL is missing: " + simdllX86);
+        } else if (!simdll.isFile())
             throw new IOException("the macOS SimDLL is missing: copy OxygenNotIncluded.app/Contents/PlugIns/"
                     + "SimDLL.bundle/Contents/MacOS/SimDLL from the macOS version of the same game build to "
                     + simdll);
@@ -143,7 +152,13 @@ public final class NativeEngine {
         env.add("OXYDROID_IL2MONO_CWD=" + gameDir.getAbsolutePath()); // steam_appid.txt lives here
         env.add("OXYDROID_IL2MONO_STREAMING_ASSETS=" + new File(dataDir, "StreamingAssets").getAbsolutePath());
         env.add("OXYDROID_IL2MONO_PERSISTENT_DATA=" + instance.getUserDataDir().getAbsolutePath());
-        env.add("OXYDROID_SIMDLL_MACHO=" + simdll.getAbsolutePath());
+        if (simdllX86 != null) {
+            env.add("OXYDROID_SIMDLL_X86=" + simdllX86.getAbsolutePath());
+            env.add("OXYDROID_SIMDLL_X86_LIBS=" + com.oxydroid.AppStorage.requireSingleton().getLibsLinuxX86Path());
+            Log.i(TAG, "simulation: the Linux x86-64 SimDLL under box64 (emulated)");
+        } else {
+            env.add("OXYDROID_SIMDLL_MACHO=" + simdll.getAbsolutePath());
+        }
         // The game restarts itself after a change of mods; the bridge (RestartPatch.cs) leaves this
         // note instead, and the launcher starts the game again when it finds it. A note from an
         // earlier run that was never picked up must not restart this one.
@@ -151,9 +166,20 @@ public final class NativeEngine {
         //noinspection ResultOfMethodCallIgnored
         restart.delete();
         env.add("OXYDROID_RESTART_FLAG=" + restart.getAbsolutePath());
+        // Mods installed since the last start, switched on by the bridge (OniMods.markForEnable).
+        env.add("OXYDROID_MODS_ENABLE=" + OniMods.enableList(instance.getUserDataDir()).getAbsolutePath());
 
         addMods(context, instance, gameDir, dataDir, env);
         env.add("OXYDROID_STEAM_STATS=" + steamStatsFile(instance).getAbsolutePath());
+        // The DLCs whose content was downloaded with an account that owns them (GameInstance.DLC_LIST):
+        // the Steam stand-in says they are owned and installed, and the game unlocks them.
+        List<Integer> dlcs = instance.dlcs();
+        if (!dlcs.isEmpty()) {
+            StringBuilder ids = new StringBuilder();
+            for (Integer id : dlcs) ids.append(ids.length() == 0 ? "" : ",").append(id);
+            env.add("OXYDROID_STEAM_DLCS=" + ids);
+            Log.i(TAG, "DLCs: " + ids);
+        }
         boolean crossplay = steam != null && steam.ticketFile != null;
         if (crossplay) {
             env.add("OXYDROID_STEAM_TICKET=" + steam.ticketFile.getAbsolutePath());
@@ -737,6 +763,11 @@ public final class NativeEngine {
      */
     public static File macSimDll(File gameDir) {
         return new File(new File(gameDir, "macos"), "SimDLL");
+    }
+
+    /** The Linux build's own simulation library, x86-64: run under box64 when asked (see prepare). */
+    public static File linuxSimDll(File dataDir) {
+        return new File(dataDir, "Plugins/x86_64/libSimDLL.so");
     }
 
     // ---- Mono config ----------------------------------------------------------------------------

@@ -17,10 +17,17 @@
  *
  * The list is the complete set of "SimDLL" DllImports in the game's managed code (Sim,
  * ConduitTemperatureManager, Klei.KProfilerPlugin), game build 26798728.
+ *
+ * Without the macOS file, the Linux build's own x86-64 libSimDLL.so can run under box64 instead
+ * (app/src/main/cpp/simx86.c, libsimx86.so): OXYDROID_SIMDLL_X86 names it and
+ * OXYDROID_SIMDLL_X86_LIBS the x86-64 libraries it needs. The simulation is then emulated.
  */
+#include <dlfcn.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../macho/logger.h"
 #include "../macho/macho_loader.h"
@@ -28,11 +35,51 @@
 #define LOG_TAG "oxydroid-simdll"
 
 static macho_lib_t* simdll_lib;
+static void* (*x86_resolve)(const char* name);
 static pthread_once_t simdll_once = PTHREAD_ONCE_INIT;
+
+/* libsimx86.so is in the APK beside this library: by name first, else by this library's own path. */
+static void* open_simx86(void) {
+    void* h = dlopen("libsimx86.so", RTLD_NOW | RTLD_LOCAL);
+    if (h) return h;
+    Dl_info info;
+    if (dladdr((void*)open_simx86, &info) && info.dli_fname) {
+        const char* slash = strrchr(info.dli_fname, '/');
+        if (slash) {
+            char path[4096];
+            snprintf(path, sizeof(path), "%.*s/libsimx86.so", (int)(slash - info.dli_fname), info.dli_fname);
+            h = dlopen(path, RTLD_NOW | RTLD_LOCAL);
+        }
+    }
+    if (!h) LOGE("libsimx86.so not loaded: %s", dlerror());
+    return h;
+}
+
+static void simdll_load_x86(const char* path) {
+    void* h = open_simx86();
+    if (!h) return;
+    int (*load)(const char*, const char*) = (int (*)(const char*, const char*))dlsym(h, "simx86_load");
+    void* (*resolve)(const char*) = (void* (*)(const char*))dlsym(h, "simx86_resolve");
+    if (!load || !resolve) {
+        LOGE("libsimx86.so lacks simx86_load/simx86_resolve");
+        return;
+    }
+    if (load(path, getenv("OXYDROID_SIMDLL_X86_LIBS")) != 0) {
+        LOGE("the x86-64 SimDLL at %s could not be loaded under box64", path);
+        return;
+    }
+    x86_resolve = resolve;
+    LOGI("simulation library loaded from %s, EMULATED (x86-64 under box64)", path);
+}
 
 static void simdll_load(void) {
     const char* path = getenv("OXYDROID_SIMDLL_MACHO");
     if (!path || !path[0]) {
+        const char* x86 = getenv("OXYDROID_SIMDLL_X86");
+        if (x86 && x86[0]) {
+            simdll_load_x86(x86);
+            return;
+        }
         LOGE("OXYDROID_SIMDLL_MACHO is not set: the macOS SimDLL file was not provided");
         return;
     }
@@ -45,7 +92,7 @@ static void simdll_load(void) {
  * move the crash somewhere less readable: stop with the reason in the log. */
 static void* simdll_resolve(const char* name) {
     pthread_once(&simdll_once, simdll_load);
-    void* f = simdll_lib ? macho_dlsym(simdll_lib, name) : NULL;
+    void* f = simdll_lib ? macho_dlsym(simdll_lib, name) : x86_resolve ? x86_resolve(name) : NULL;
     if (!f) {
         LOGE("SimDLL function %s is unavailable: stopping", name);
         abort();

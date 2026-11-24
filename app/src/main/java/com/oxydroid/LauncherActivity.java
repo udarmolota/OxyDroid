@@ -40,6 +40,11 @@ public class LauncherActivity extends AppCompatActivity {
     private ActivityLauncherBinding binding;
     private NavController navController;
     private AppBarConfiguration appBarConfiguration;
+    /** Switch to a tab of the bottom bar, as a tap on it would (not a screen pushed onto the current tab). */
+    public void openBottomTab(int destinationId) {
+        binding.bottomNav.setSelectedItemId(destinationId);
+    }
+
     /** The screens of the bottom bar (menu_bottom_nav.xml); the bar is shown on these only. */
     private static final int[] BOTTOM_NAV_DESTINATIONS = {
             R.id.launcher_fragment, R.id.download_fragment, R.id.mods_fragment,
@@ -81,6 +86,19 @@ public class LauncherActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(binding.launcherNv, navController);
         NavigationUI.setupWithNavController(binding.bottomNav, navController);
+        // Home always shows the instances: the bar restores each tab's last screen, and screens opened
+        // from the side menu while on Home (the Workshop, settings…) made Home come back as one of them.
+        binding.bottomNav.setOnItemSelectedListener(item -> {
+            if (item.getItemId() == R.id.launcher_fragment) {
+                if (!navController.popBackStack(R.id.launcher_fragment, false))
+                    navController.navigate(R.id.launcher_fragment);
+                return true;
+            }
+            return NavigationUI.onNavDestinationSelected(item, navController);
+        });
+        binding.bottomNav.setOnItemReselectedListener(item -> {
+            if (item.getItemId() == R.id.launcher_fragment) navController.popBackStack(R.id.launcher_fragment, false);
+        });
         // The bottom bar only on its own screens (as in Zomdroid and RimDroid): elsewhere it would eat height.
         navController.addOnDestinationChangedListener((c, dest, args) -> {
             boolean main = false;
@@ -101,6 +119,12 @@ public class LauncherActivity extends AppCompatActivity {
                 return true;
             } else if (id == R.id.action_cloud_saves) {
                 navController.navigate(R.id.action_cloud_saves);   // pull PC saves from Steam Cloud
+                return true;
+            } else if (id == R.id.action_gog) {
+                navController.navigate(R.id.action_gog);           // the game from GOG
+                return true;
+            } else if (id == R.id.action_workshop) {
+                navController.navigate(R.id.action_workshop);      // Workshop mods with the Steam account
                 return true;
             } else if (id == R.id.action_install_instance) {
                 navController.navigate(R.id.action_install_instance);

@@ -36,6 +36,12 @@ public class SettingsFragment extends Fragment {
     private TextView tvEtc2Cache;
     private View btnGfxUltra, btnGfxLow, btnGfxMinimal;
     private InstanceSettings inst;   // per-instance: renderer / driver / debug / scale / controls
+    private TextView tvSimDllStatus;
+
+    /** Additional files: the macOS SimDLL, in whatever shape the player has it (MacSimDll.install). */
+    private final androidx.activity.result.ActivityResultLauncher<String[]> simDllPicker =
+            registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+                    this::onSimDllPicked);
     private String instanceName;     // the instance this page edits
 
     @Override
@@ -60,6 +66,10 @@ public class SettingsFragment extends Fragment {
         instanceName = instName;
         inst = new InstanceSettings(instName);
         requireActivity().setTitle(getString(R.string.nav_settings) + " — " + instName);
+
+        tvSimDllStatus = view.findViewById(R.id.tv_simdll_status);
+        view.findViewById(R.id.btn_simdll_add).setOnClickListener(v -> simDllPicker.launch(new String[]{"*/*"}));
+        showSimDllStatus();
 
         Switch swDebug        = view.findViewById(R.id.sw_debug);
         Switch swReverse      = view.findViewById(R.id.sw_reverse_landscape);
@@ -688,4 +698,43 @@ public class SettingsFragment extends Fragment {
             });
         }, "Etc2CacheClear").start();
     }
+
+    /** Which simulation library this instance runs: the macOS one natively, or the Linux one emulated. */
+    private void showSimDllStatus() {
+        if (tvSimDllStatus == null) return;
+        GameInstance gi = new GameInstance(instanceName);
+        java.io.File gameDir = new java.io.File(gi.getGamePath());
+        int text;
+        if (com.oxydroid.game.MacSimDll.present(gameDir)) text = R.string.extra_files_simdll_native;
+        else if (com.oxydroid.game.NativeEngine.linuxSimDll(new java.io.File(gameDir, gi.getDataDirectoryName())).isFile())
+            text = R.string.extra_files_simdll_emulated;
+        else text = R.string.extra_files_simdll_none;
+        tvSimDllStatus.setText(text);
+    }
+
+    private void onSimDllPicked(android.net.Uri uri) {
+        if (uri == null || !isAdded()) return;
+        final android.content.Context app = requireContext().getApplicationContext();
+        final java.io.File gameDir = new java.io.File(new GameInstance(instanceName).getGamePath());
+        new Thread(() -> {
+            String error = null;
+            try {
+                com.oxydroid.game.MacSimDll.install(app, uri, gameDir);
+            } catch (Exception e) {
+                error = e.getMessage() == null ? e.toString() : e.getMessage();
+            }
+            final String err = error;
+            android.app.Activity act = getActivity();
+            if (act == null) return;
+            act.runOnUiThread(() -> {
+                if (!isAdded()) return;
+                if (err != null)
+                    android.widget.Toast.makeText(app, getString(R.string.simdll_failed, err), android.widget.Toast.LENGTH_LONG).show();
+                else
+                    android.widget.Toast.makeText(app, getString(R.string.simdll_added, instanceName), android.widget.Toast.LENGTH_SHORT).show();
+                showSimDllStatus();
+            });
+        }, "SimDllSettings").start();
+    }
 }
+

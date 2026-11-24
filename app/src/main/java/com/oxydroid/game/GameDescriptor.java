@@ -20,10 +20,10 @@ public final class GameDescriptor {
                     "OxygenNotIncluded_Data/Managed/Assembly-CSharp.dll",
                     "OxygenNotIncluded_Data/Managed/Assembly-CSharp-firstpass.dll",
                     "OxygenNotIncluded_Data/Managed/mscorlib.dll",
-                    "OxygenNotIncluded_Data/MonoBleedingEdge/x86_64/libmonobdwgc-2.0.so",
-                    "OxygenNotIncluded_Data/MonoBleedingEdge/x86_64/libmono-native.so",
-                    "OxygenNotIncluded_Data/MonoBleedingEdge/x86_64/libMonoPosixHelper.so",
-                    "OxygenNotIncluded_Data/Plugins/x86_64/libSimDLL.so"
+                    // Not the x86-64 Mono libraries: the native engine brings its own ARM64 Mono.
+                    // Not the SimDLL either: the macOS one (macos/SimDLL) or the Linux one under
+                    // emulation will do, and the launch checks for those (LauncherFragment).
+                    "OxygenNotIncluded_Data/Managed/System.dll"
             });
 
     private final String executable;

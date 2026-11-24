@@ -320,10 +320,13 @@ public class LauncherFragment extends Fragment {
                     name.setText(gi.getName() + "  ⤓ " + getString(R.string.instance_downloading));
                 } else {
                     // The one-word tag alone ("not finished") left players guessing what to do, so add
-                    // a smaller second line that says how to resume from Steam Downloads.
-                    String hint = getString(R.string.instance_incomplete_hint, getString(R.string.nav_download_game));
+                    // a smaller second line. A download that stopped can be resumed; a copy that is
+                    // simply missing files (an import of the wrong or a damaged copy) cannot.
+                    boolean unfinished = gi.isDownloadUnfinished();
+                    String hint = getString(unfinished ? R.string.instance_incomplete_hint : R.string.instance_damaged_hint);
                     android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder(
-                            gi.getName() + "  ⚠ " + getString(R.string.instance_incomplete) + "\n");
+                            gi.getName() + "  ⚠ " + getString(unfinished ? R.string.instance_incomplete
+                                    : R.string.instance_damaged) + "\n");
                     int start = sb.length();
                     sb.append(hint);
                     sb.setSpan(new android.text.style.RelativeSizeSpan(0.8f), start, sb.length(),
@@ -484,13 +487,36 @@ public class LauncherFragment extends Fragment {
             box.show();
             return;
         }
-        // The native engine runs the macOS build's simulation library: without it, ask for it here
-        // instead of failing at the start of the game.
+        // The native engine runs the macOS build's simulation library natively. Without it, the
+        // Linux build's own one runs under emulation (simx86): say so and let the player start, or
+        // add the file. With neither, ask for the macOS one.
         if (!com.oxydroid.game.MacSimDll.present(new File(gi.getGamePath()))) {
-            askForSimDll(gi, true);
+            if (hasLinuxSimDll(gi)) askEmulatedStart(gi);
+            else askForSimDll(gi, true);
             return;
         }
         startGame(gi);
+    }
+
+    private static boolean hasLinuxSimDll(GameInstance gi) {
+        return com.oxydroid.game.NativeEngine.linuxSimDll(
+                new File(gi.getGamePath(), gi.getDataDirectoryName())).isFile();
+    }
+
+    /** No macOS SimDLL: the simulation will run emulated. Start, or add the file first. */
+    private void askEmulatedStart(GameInstance gi) {
+        if (!isAdded()) return;
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.simdll_emulated_title)
+                .setMessage(R.string.simdll_emulated_message)
+                .setPositiveButton(R.string.simdll_emulated_start, (d, w) -> startGame(gi))
+                .setNeutralButton(R.string.simdll_add_file, (d, w) -> {
+                    simDllFor = gi.getName();
+                    simDllThenLaunch = true;
+                    simDllPicker.launch(new String[]{"*/*"});
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     /**
@@ -886,7 +912,10 @@ public class LauncherFragment extends Fragment {
                 String last = LauncherPreferences.requireSingleton().getLastInstanceName();
                 if (last != null && !last.isEmpty()) {
                     GameInstance gi = new GameInstance(last);
-                    if (gi.isComplete() && !com.oxydroid.game.MacSimDll.present(new File(gi.getGamePath())))
+                    // Only when the game could not run at all: with the Linux SimDLL it runs emulated,
+                    // and the launch says so (askEmulatedStart).
+                    if (gi.isComplete() && !com.oxydroid.game.MacSimDll.present(new File(gi.getGamePath()))
+                            && !hasLinuxSimDll(gi))
                         askForSimDll(gi, false);
                 }
             } else if (InstallerService.BROADCAST_ERROR.equals(action)) {

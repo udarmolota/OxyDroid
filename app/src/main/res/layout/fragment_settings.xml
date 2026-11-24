@@ -247,6 +247,52 @@
       </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- ============================ ADDITIONAL FILES ============================ -->
+    <!-- The simulation library: the macOS build's SimDLL runs natively; without it the Linux one runs
+         emulated. Says which one this instance uses, and adds the macOS file (MacSimDll.install). -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="2dp">
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="vertical"
+          android:padding="16dp">
+
+        <TextView
+            style="@style/AppTheme.CardHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/extra_files_title"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:id="@+id/tv_simdll_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/extra_files_hint"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btn_simdll_add"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/extra_files_add_simdll" />
+      </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
     <!-- ============================ RESOLUTION ============================ -->
     <!-- Render resolution (re-enabled 2026-06-28; the "flicker" hold reason was the missing-mods grey, not a render bug) -->
     <com.google.android.material.card.MaterialCardView
