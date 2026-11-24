@@ -283,8 +283,8 @@ public class LauncherActivity extends AppCompatActivity {
                 ? navController.getCurrentDestination().getId() : 0;
     }
 
-    /** The wiki's pages are still Valheim's: its buttons are hidden until they are rewritten. */
-    public static final boolean WIKI_READY = false;
+    /** The wiki (assets/wiki/index*.html), rewritten for Oxygen Not Included on 2026-11-24. */
+    public static final boolean WIKI_READY = true;
 
     /** The wiki section that explains the screen the "?" was pressed on. */
     private static String wikiSectionFor(int destinationId) {
@@ -292,11 +292,14 @@ public class LauncherActivity extends AppCompatActivity {
         if (destinationId == R.id.download_fragment)        return "steam-in-app";
         if (destinationId == R.id.install_content_fragment
                 || destinationId == R.id.mods_fragment
-                || destinationId == R.id.thunderstore_fragment) return "mods";
+                || destinationId == R.id.thunderstore_fragment
+                || destinationId == R.id.workshop_fragment) return "mods";
+        if (destinationId == R.id.gog_download_fragment)    return "gog";
+        if (destinationId == R.id.multiplayer_fragment)     return "achievements";
         if (destinationId == R.id.cloud_saves_fragment
                 || destinationId == R.id.transfer_fragment)  return "saves";
         if (destinationId == R.id.settings_fragment
-                || destinationId == R.id.driver_fragment)   return "renderers";
+                || destinationId == R.id.driver_fragment)   return "picture";
         return "quick-start";   // the main screen, app settings, and any screen added later
     }
 

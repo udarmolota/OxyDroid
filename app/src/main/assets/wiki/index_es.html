@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wiki</title>
     <style>
+        /* One size below the WebView default (16px): long pages read better a little smaller. */
+        body {
+            font-size: 15px;
+        }
+
         @media (prefers-color-scheme: dark) {
             body {
                 color: #E2E2E9;
@@ -13,20 +18,6 @@
             a {
                 color: #8AB4F8;
             }
-        }
-
-        details > summary {
-            font-style: italic;
-        }
-
-        p + details,
-        div + details,
-        body > details {
-            margin-top: 1em;
-        }
-
-        .details-content {
-            padding-top: 0.5em;
         }
 
         code {
@@ -46,20 +37,20 @@
         <a href="#get-game">Cómo conseguir el juego</a>
         <ol>
             <li><a href="#steam-in-app">Desde Steam, en la app</a></li>
+            <li><a href="#gog">Desde GOG</a></li>
             <li><a href="#zip-archive">Desde un archivo .zip</a></li>
         </ol>
     </li>
-    <li><a href="#picture">Imagen y fotogramas</a></li>
-    <li><a href="#controls">Controles</a></li>
-    <li><a href="#saves">Partidas guardadas</a></li>
-    <li><a href="#engine">Motor</a></li>
-    <li><a href="#renderers">Controladores gráficos</a></li>
+    <li><a href="#simdll">El archivo de simulación (SimDLL)</a></li>
+    <li><a href="#dlc">DLC</a></li>
     <li><a href="#mods">Mods</a></li>
-    <li><a href="#online">Online y logros</a></li>
-    <li><a href="#compat-mode">Ajustes avanzados</a></li>
-    <li><a href="#performance">Sacar el máximo rendimiento</a></li>
+    <li><a href="#controls">Controles</a></li>
+    <li><a href="#saves">Partidas guardadas y Steam Cloud</a></li>
+    <li><a href="#achievements">Logros de Steam</a></li>
+    <li><a href="#picture">Imagen y fluidez</a></li>
+    <li><a href="#performance">Rendimiento y temperatura</a></li>
     <li><a href="#known-issues">Problemas conocidos</a></li>
-    <li><a href="#report">Informar de un problema</a></li>
+    <li><a href="#report">Cómo reportar un problema</a></li>
 </ul>
 
 <hr>
@@ -67,28 +58,30 @@
 <section id="quick-start">
     <h2>Inicio rápido</h2>
     <p>
-        OxyDroid es un lanzador: ejecuta <b>tu propia copia</b> de Valheim en Android. El juego no
-        viene incluido.
+        OxyDroid es un launcher: ejecuta <b>tu propia copia</b> de Oxygen Not Included en Android.
+        El juego no viene incluido.
     </p>
     <ol>
-        <li>Necesitas <b>tu propia copia</b> de Valheim, por ejemplo comprada en <b>Steam</b>.
-            OxyDroid ejecuta la versión <b>Linux</b> del juego.</li>
-        <li>Mete el juego en la app: toca <b>Juego</b> en la barra inferior (Descargas de Steam). El
-            juego se descarga directamente en una instancia lista. La otra vía es
-            <a href="#zip-archive">un archivo .zip</a> preparado en un PC.</li>
-        <li>Una <b>instancia</b> es una copia instalada del juego. Tiene su propia tarjeta en la
-            pantalla principal y sus ajustes tras el <b>icono del engranaje</b>.</li>
-        <li>Al crear una instancia, OxyDroid detecta la GPU del teléfono y elige un controlador
-            gráfico adecuado.</li>
-        <li>Toca el botón <b>▶</b> de la tarjeta. El primer arranque tarda más porque el juego
-            prepara sus archivos. No pulses Atrás mientras carga.</li>
+        <li>Para jugar necesitas tu propia copia del juego, por ejemplo comprada en <b>Steam</b> (o en
+            <a href="#gog">GOG</a>). OxyDroid ejecuta la versión de <b>Linux</b> del juego de forma nativa:
+            el propio reproductor de Unity para Android la dibuja con Vulkan, y el código del juego corre sobre un Mono ARM64.</li>
+        <li>Mete el juego en la app. Con Steam, toca <b>Juego</b> en la barra inferior, inicia sesión y
+            descárgalo: la instancia se crea sola. Para las otras formas, mira
+            <a href="#get-game">Cómo conseguir el juego</a>.</li>
+        <li>Una <b>instancia</b> es una copia instalada del juego. Cada una tiene su propia tarjeta en la
+            pantalla principal y sus propios ajustes detrás del <b>icono del engranaje</b>.</li>
+        <li>Toca <b>▶</b> en la tarjeta. El primer inicio de una instancia tarda más mientras el juego
+            prepara sus archivos (en algunos móviles también se convierten sus texturas una vez, mira
+            <a href="#picture">Imagen y fluidez</a>).</li>
     </ol>
     <p>
-        Necesitas Android 11 o superior, un teléfono de 64 bits con GPU <b>Adreno</b> (Snapdragon) y
-        al menos <b>8 GB de RAM</b>, además de unos 8 GB libres. Otras GPU no se han probado.
+        Necesitas Android 11 o superior, un móvil de 64 bits con Vulkan y unos 8 GB libres para
+        la primera instalación (después, una instancia instalada ocupa unos 3,5 GB).
+        Mínimo: gama Snapdragon 865 / Dimensity 1000–1100. Recomendado: Snapdragon 8 Gen 1 /
+        Dimensity 8100 o superior. En móviles más débiles el juego puede arrancar, pero no son el objetivo.
     </p>
-    <p>La <b>?</b> de la parte superior de cada pantalla abre esta página por su sección.</p>
-    <p>¿Algo ha ido mal? Mira <a href="#report">Informar de un problema</a>.</p>
+    <p>El <b>?</b> de la parte superior de una pantalla abre esta página en la sección sobre esa pantalla.</p>
+    <p>¿Algo salió mal? Mira <a href="#report">Cómo reportar un problema</a>.</p>
 </section>
 
 <hr>
@@ -96,333 +89,109 @@
 <section id="get-game">
     <h2>Cómo conseguir el juego</h2>
     <p>
-        OxyDroid necesita la <b>versión Linux</b> de Valheim. La descarga dentro de la app la toma de
-        la cuenta de Steam que tiene el juego; la otra vía es un archivo que prepares tú.
-    </p>
-    <p>
-        Si tienes el juego en Steam, es lo más cómodo: se descarga dentro de la app, se actualiza
-        desde el teléfono sin PC, y las partidas van por <b>Steam Cloud</b>, compartidas con tu
-        PC: puedes seguir en el teléfono un mundo del PC y al revés.
+        OxyDroid necesita la <b>versión de Linux</b> de Oxygen Not Included, en la versión actual del juego.
+        Una versión antigua, la versión de Windows o un repack no funcionarán. Elige una de las formas de abajo.
     </p>
 
     <section id="steam-in-app">
         <h3>1. Desde Steam, en la app</h3>
         <ol>
-            <li>Toca <b>Juego</b> en la barra inferior (Descargas de Steam), pestaña
-                <b>Juego</b>.</li>
-            <li>Escribe un nombre para la nueva instancia.</li>
-            <li>Inicia sesión con tu cuenta de Steam. Tus datos van solo a Steam y no se guardan
-                aquí. Aprueba el inicio de sesión en la app Steam Mobile o introduce el código de
-                Steam Guard.</li>
-            <li>Toca <b>Descargar</b>. La compilación pública más reciente va directa a una
-                instancia nueva: son unos 4 GB, mejor con Wi-Fi. Puedes usar otras apps mientras
-                tanto.</li>
-            <li>Si la descarga se corta, vuelve a iniciarla con el <b>mismo nombre de instancia</b>
-                y continuará donde se quedó.</li>
-            <li>Cuando la barra llega al 100%, la app empaqueta el juego en un <b>archivo de
-                respaldo</b> en la carpeta Descargas. Para varios GB son unos minutos más y la app
-                debe seguir abierta: parece que no pasa nada, pero está trabajando. Luego puedes
-                borrar el archivo si necesitas espacio.</li>
+            <li>Toca <b>Juego</b> en la barra inferior, pestaña <b>Juego</b>.</li>
+            <li>Inicia sesión con tu cuenta de Steam. El inicio de sesión se aprueba en la app <b>Steam Mobile</b>,
+                así que Steam Guard tiene que estar activado ahí; los códigos de Steam Guard no son compatibles. Tus datos
+                de acceso solo van a Steam y nunca se guardan.</li>
+            <li>Toca <b>Descargar</b>. La instancia se crea sola, con la versión de Linux, el único
+                archivo que necesita de la versión de macOS (<a href="#simdll">SimDLL</a>) y los DLC que tiene
+                tu cuenta.</li>
+            <li>Después de la descarga se empaqueta una copia de seguridad del juego en <b>Download/OxyDroid</b>
+                (para esto hace falta <b>Acceso a todos los archivos</b>). Tarda unos minutos después de que la barra llegue al 100%:
+                deja la app abierta. Con ese ZIP puedes crear más instancias más adelante sin volver
+                a descargar.</li>
+            <li>Si la descarga se detiene, vuelve a iniciarla con el mismo nombre de instancia: sigue desde donde
+                se quedó.</li>
+        </ol>
+    </section>
+
+    <section id="gog">
+        <h3>2. Desde GOG</h3>
+        <ol>
+            <li>Menú lateral → <b>Descargar de GOG</b>.</li>
+            <li>Inicia sesión en la propia página de GOG. OxyDroid nunca ve tu contraseña.</li>
+            <li>La app busca Oxygen Not Included en tu biblioteca de GOG y te ofrece su instalador
+                de Linux. Se guarda en <b>Download/OxyDroid</b>.</li>
+            <li>Toca <b>Crear una instancia</b>: el juego se saca directamente del instalador.</li>
         </ol>
         <p>
-            Para obtener una compilación concreta en vez de la más reciente, escribe su
-            <b>Manifest ID</b> en el campo avanzado (los IDs están en SteamDB). Si no, déjalo
-            vacío.
-        </p>
-        <p>
-            <b>Actualizar el juego.</b> Cuando salga una versión nueva en Steam, inicia la descarga
-            otra vez con el <b>mismo nombre de instancia</b>: se baja la versión nueva y tus
-            partidas y ajustes se quedan donde están. Por ahora esto vuelve a descargar el juego
-            entero, unos 4 GB.
+            Si GOG no tiene el archivo de macOS para la simulación nativa, una copia de GOG ejecuta la simulación
+            emulada (mira <a href="#simdll">El archivo de simulación</a>). Además, GOG puede ir por detrás de Steam
+            con las actualizaciones del juego; una versión que la app no admite no arrancará.
         </p>
     </section>
 
     <section id="zip-archive">
-        <h3>2. Desde un archivo .zip</h3>
+        <h3>3. Desde un archivo .zip</h3>
         <p>
-            Abre el menú lateral y toca <b>Añadir instancia</b>, o el <b>+</b> de la parte superior
-            de la pantalla principal. Escribe un nombre, toca <b>Elegir archivo ZIP</b>, selecciona
-            el archivo y toca <b>Instalar</b>.
+            Si ya tienes la versión de Linux del juego en un PC, comprime su carpeta en un ZIP, cópiala al
+            móvil y añádela con <b>+</b> en la pantalla principal.
         </p>
-        <ul>
-            <li>El .zip debe contener la versión <b>Linux</b> de Valheim, la que tiene el archivo
-                <code>valheim.x86_64</code>. Da igual si hay una carpeta alrededor, OxyDroid lo
-                encuentra.</li>
-            <li>La versión de <b>Windows</b> (la que tiene <code>valheim.exe</code>) no funciona:
-                tiene que ser la versión Linux.</li>
-            <li>Mantén internet activado durante la instalación: el lanzador descarga una pequeña
-                biblioteca para el juego.</li>
-            <li>En un PC puedes crear ese archivo con
-                <a href="https://github.com/SteamRE/DepotDownloader" target="_blank">DepotDownloader</a>:
-                <code>DepotDownloader -app 892970 -depot 892971 -os linux</code>, y después
-                comprimir el resultado.</li>
-            <li>Usa un nombre corto: letras latinas y números, hasta 40 caracteres.</li>
-            <li><b>¿El archivo no aparece en «Descargas»?</b> Esa sección solo muestra los archivos
-                que el sistema conoce, y los que se colocaron sin pasar por él (con adb, Termux o
-                algunos administradores de archivos) pueden faltar. En el selector abre
-                <b>Almacenamiento interno → Download</b>: ahí la carpeta se lee directamente del
-                disco. Si esa opción no aparece, actívala en el menú del selector: <b>Mostrar
-                almacenamiento interno</b>.</li>
-        </ul>
+        <p>Para descargar la versión de Linux en un PC, usa la consola de tu propio cliente de Steam:</p>
+        <ol>
+            <li>Abre <code>steam://open/console</code> en un navegador.</li>
+            <li>Ejecuta <code>download_depot 457140 457143</code> (la versión de Linux) y, para la simulación
+                nativa, <code>download_depot 457140 457142</code> (la versión de macOS). Steam te dice
+                dónde los guardó.</li>
+            <li>Comprime la carpeta de la versión de Linux en un ZIP, cópiala al móvil y añádela con <b>+</b>.</li>
+        </ol>
+        <p>
+            Si el ZIP no trae el SimDLL de macOS, el juego funciona igual, con la simulación emulada. Puedes
+            añadir el archivo cuando quieras (mira abajo). Si la app dice <b>A esta copia le faltan archivos del juego</b>,
+            el ZIP no es la versión de Linux actual completa.
+        </p>
     </section>
 </section>
 
 <hr>
 
-<section id="picture">
-    <h2>Imagen y fotogramas</h2>
-    <p>Todo esto está en los ajustes de la instancia (icono de engranaje).</p>
+<section id="simdll">
+    <h2>El archivo de simulación (SimDLL)</h2>
+    <p>
+        Oxygen Not Included calcula los gases, los líquidos y la temperatura en una biblioteca aparte, SimDLL,
+        compilada para cada plataforma. La versión de Linux solo la trae para procesadores Intel/AMD. La
+        <b>versión de macOS</b> la trae también para procesadores ARM, como los de un móvil, así que OxyDroid ejecuta esa
+        de forma <b>nativa</b>.
+    </p>
     <ul>
-        <li><b>Resolución de renderizado</b> (su propia tarjeta) fija el tamaño de la imagen del
-            juego. Las opciones se muestran en píxeles para tu pantalla; una más pequeña da más FPS
-            y una interfaz más grande. <b>Bordes negros 1280×720</b> mantiene una imagen clásica
-            16:9 con franjas a los lados.</li>
-        <li><b>Gráficos</b>: el perfil con más FPS es <b>Mínima</b> en el motor nativo y <b>Muy
-            baja</b> en el motor box64, y una partida nueva empieza con él. <b>Muy baja</b> no
-            tiene teselación, sombras ni distancia de dibujado extra; <b>Baja</b> mantiene
-            antialiasing, bloom y rayos de sol; <b>Mínima</b>, para GPU débiles, además baja la
-            imagen 3D (pixelada) y, en el motor nativo, hace las texturas 4 veces más pequeñas y
-            quita las sombras. Después puedes ajustar los gráficos en los ajustes del propio juego;
-            el lanzador ya no los toca. <b>Aplicar</b> vuelve a poner un perfil en el siguiente
-            inicio; un botón gris significa que ya está puesto.</li>
-        <li>Las texturas se <b>reducen automáticamente</b>: las más grandes se encogen para ahorrar
-            memoria de vídeo. No hay nada que ajustar.</li>
-        <li><b>Caché de shaders</b> (tarjeta <b>Compresión de texturas</b>, activada por defecto)
-            guarda los shaders compilados en el teléfono, así un enemigo o efecto nuevo solo da
-            tirones la primera vez que lo ves, no en cada sesión. Desactívala si algo se dibuja mal.
-            Pertenece a MobileGlues, igual que <b>Activar compresión ETC2</b> a su lado.</li>
-        <li><b>En pantalla durante el juego</b> (tarjeta <b>Fluidez</b>): <b>No</b>, <b>FPS</b> (los
-            fotogramas en la esquina superior izquierda) o <b>Info completa</b> (una barra arriba
-            con los fotogramas y un gráfico, la carga de GPU y CPU, la memoria y la
-            temperatura).</li>
-        <li><b>Límite de FPS</b> (tarjeta <b>Fluidez</b>): <b>Sin límite</b>, <b>Económico
-            (~30)</b>, <b>Equilibrado (~40)</b> o <b>Fluido (~60)</b>. El número exacto se elige
-            según tu pantalla y se muestra debajo. Un ritmo estable se siente más suave que uno que
-            salta, y el teléfono se calienta menos y mantiene su velocidad más tiempo.</li>
+        <li><b>Con el archivo de macOS</b> (la descarga de Steam lo trae): la simulación es nativa.</li>
+        <li><b>Sin él</b>: el archivo de Linux funciona emulado. El juego arranca y se puede jugar, pero
+            la simulación va más lenta, sobre todo en colonias grandes y a velocidad alta. Antes de iniciar,
+            la app te avisa: <b>Iniciar</b> juega con emulación, <b>Añadir archivo</b> elige el archivo de macOS.</li>
     </ul>
     <p>
-        Cambia la resolución en el <b>lanzador</b>, no en el juego: el lanzador inicia Valheim en
-        el tamaño elegido, así que la lista de resoluciones del juego no tiene efecto (y muestra
-        <code>0x0</code>). Estos ajustes se aplican a cualquier <a href="#engine">motor</a>.
+        Ajustes de la instancia → <b>Archivos adicionales</b> muestra cuál usa la instancia y permite añadir el archivo de macOS
+        más tarde. Puede ser el propio archivo
+        (<code>OxygenNotIncluded.app/Contents/PlugIns/SimDLL.bundle/Contents/MacOS/SimDLL</code>) o un ZIP
+        del juego de macOS, de <code>OxygenNotIncluded.app</code> o de <code>SimDLL.bundle</code>. Tiene que
+        ser de la misma versión del juego que los archivos de Linux.
     </p>
 </section>
 
 <hr>
 
-<section id="controls">
-    <h2>Controles</h2>
-
-    <h3>Controles en pantalla</h3>
+<section id="dlc">
+    <h2>DLC</h2>
     <p>
-        Una instancia nueva empieza con el diseño de <b>mando</b>. Maneja un mando virtual de Xbox,
-        así que para el juego tienes un mando de verdad en las manos, con sus propios iconos de
-        botones. La interfaz de mando de Valheim se encarga entonces del inventario, la construcción
-        y los menús con botones, y nunca tienes que apuntar con un cursor a casillas pequeñas en la
-        pantalla del teléfono.
+        Los DLC que tiene tu cuenta de Steam (Spaced Out! y los packs) funcionan en OxyDroid. La descarga
+        del juego desde Steam los trae sola. Para una instancia creada de otra forma:
     </p>
-    <ul>
-        <li>El diseño <b>Mando</b>: <b>dos sticks</b>, una <b>cruceta</b>, <b>A/B/X/Y</b>,
-            <b>LB/RB</b>, <b>LT/RT</b>, <b>Back</b> y <b>Start</b>, y los clics de stick <b>L3</b> y
-            <b>R3</b>.</li>
-        <li>El segundo diseño incluido, <b>Teclado y panel táctil</b>, está en <b>Diseños</b>
-            dentro del editor. Con él se juega con teclas y ratón: un <b>stick WASD</b> para
-            caminar, un <b>stick de ratón</b> para la cámara y el cursor, <b>ATK/R</b> (clic
-            izquierdo: atacar), <b>BLK/L</b> (clic derecho: bloquear), <b>ALT</b> (clic central:
-            ataque secundario), <b>JUMP</b>, <b>RUN</b> (Shift; sigue activo hasta que lo vuelvas a
-            tocar), <b>CROUCH</b> (Ctrl), <b>USE/E</b>, <b>R</b>, <b>F</b>, <b>AUTO</b> (Q, correr
-            automático), <b>Esc</b>, <b>INV</b> (Tab), <b>MAP</b> (M) y las teclas de la barra
-            rápida <b>1</b>–<b>8</b>.</li>
-        <li>Los dos diseños tienen <b>V</b>, que oculta y muestra los controles, y <b>KB</b>, que
-            abre el teclado de Android para escribir.</li>
-        <li>Los elementos de teclado y de mando pueden convivir en un mismo diseño: el juego acepta
-            ambos a la vez.</li>
-    </ul>
-
-    <h3>Cámara y cursor</h3>
-    <ul>
-        <li>Jugando, el <b>panel táctil</b> y el <b>stick de ratón</b> giran la cámara tanto como se
-            mueve tu dedo, y se detienen en cuanto se detiene. En los menús y el inventario mueven el
-            cursor.</li>
-        <li>Un toque en el panel táctil es un clic izquierdo. Se puede desactivar en los ajustes del
-            panel táctil (<b>Toque = clic izquierdo</b>), para que un toque sin querer no pulse
-            nada.</li>
-        <li>Un <b>ratón</b> físico también sirve para mirar alrededor: jugando, la app lo captura, así
-            que la cámara gira libremente en vez de pararse en el borde de la pantalla.</li>
-    </ul>
-
-    <h3>Tipos de elementos</h3>
-    <ul>
-        <li><b>Botón</b>, rectangular o redondo. Estilos: <b>Contorno</b>, <b>Relleno</b> y
-            <b>Cristal</b>. Puede mostrar una imagen tuya (un PNG) en lugar de texto, con <b>Mantener
-            los colores originales</b> si la imagen no debe teñirse. <b>Alternar</b> lo deja
-            enclavado: un toque mantiene la tecla y el siguiente la suelta. Asigna varias teclas a un
-            botón para hacer una combinación.</li>
-        <li><b>Cruceta</b>.</li>
-        <li><b>Stick</b>: un stick de mando, o cuatro teclas a tu elección.</li>
-        <li><b>Stick WASD</b>: pulsa W, A, S y D.</li>
-        <li><b>Stick de ratón</b> y <b>panel táctil</b>: la cámara y el cursor.</li>
-        <li><b>Barra de desplazamiento</b>: la rueda del ratón.</li>
-        <li><b>Menú radial</b>: pon el dedo en el centro y deslízalo hacia uno de los cuatro
-            sectores; cada sector tiene su propia acción.</li>
-    </ul>
-
-    <h3>Editor de controles</h3>
-    <p>
-        En los ajustes de la instancia (engranaje), tarjeta <b>Controles</b>, toca <b>Editar
-        controles en pantalla</b>.
-    </p>
-    <ul>
-        <li><b>Toca un elemento</b> para abrir sus ajustes: tamaño, opacidad (<b>A todos</b> la
-            aplica a todos los elementos), sensibilidad, texto, alternar, estilo, imagen, las
-            asignaciones (puedes añadir y quitar), el tipo de entrada y <b>Eliminar
-            elemento</b>.</li>
-        <li><b>Arrastra</b> un elemento para moverlo.</li>
-        <li><b>Mantén pulsado un sitio vacío</b>, o toca <b>Añadir</b>, para añadir un
-            elemento.</li>
-        <li><b>Diseños</b> carga uno de los dos diseños incluidos en lugar del actual.</li>
-        <li><b>Fondo</b> pone una imagen detrás del diseño — una captura del juego, por ejemplo —
-            para colocar los botones sobre ella. <b>Sin fondo</b> la quita. El fondo es solo para el
-            editor; el juego nunca lo muestra.</li>
-        <li><b>Cuadrícula</b>: mientras está activada, el elemento se ajusta a la cuadrícula al
-            soltarlo.</li>
-        <li><b>Listo</b> cierra el editor. Los cambios se guardan solos.</li>
-    </ul>
-
-    <h3>Guardar y compartir diseños</h3>
-    <ul>
-        <li>Cada instancia guarda su propio diseño.</li>
-        <li><b>Importar / exportar</b> (el botón <b>Importar</b> de la barra inferior), tarjeta
-            <b>Controles en pantalla</b>, guarda y carga un diseño como .zip, con sus imágenes dentro.</li>
-        <li>Los diseños de versiones anteriores de OxyDroid no se pueden importar: crea uno nuevo en
-            el editor.</li>
-    </ul>
-
-    <h3>Mando físico, ratón y teclado</h3>
-    <ul>
-        <li>Un <b>mando</b> físico funciona y alimenta el mismo mando virtual. Mientras esté
-            conectado, los elementos de mando en pantalla se ocultan; los botones de ayuda de
-            teclado y ratón permanecen.</li>
-        <li>El <b>ratón y el teclado</b> físicos también funcionan. Shift se mantiene pulsado
-            mientras pulsas y sueltas otras teclas, así que correr ya no se corta; Retroceso, Supr y
-            las flechas se repiten al mantenerlas; las teclas del teclado numérico, su Intro
-            incluido, funcionan.</li>
-        <li>Cualquier tecla se puede poner en un botón en pantalla, incluidos Retroceso, la coma, el
-            punto, Ctrl, Alt y Shift derecho.</li>
-        <li>El gesto o el botón <b>Atrás</b> de Android funciona como <b>Esc</b>: abre el menú de
-            Valheim en vez de cerrar el juego.</li>
-        <li>El juego siempre va en horizontal. <b>Girar la imagen (180°)</b> la voltea para soportes
-            o mandos que sujetan el teléfono al revés. Se aplica en el siguiente arranque.</li>
-    </ul>
-</section>
-
-<hr>
-
-<section id="saves">
-    <h2>Partidas guardadas</h2>
-    <p>
-        Valheim guarda un mundo en dos archivos (<code>.fwl</code> y <code>.db</code>) y un
-        personaje en uno (<code>.fch</code>).
-    </p>
-    <ul>
-        <li><b>Importar / exportar</b> (el botón <b>Importar</b> de la barra inferior) saca y mete
-            las partidas de una instancia como un .zip: para una copia de seguridad o para llevarlas a
-            otra instancia o a otro teléfono. La misma pantalla hace los mods, los ajustes del juego y
-            los controles en pantalla.</li>
-        <li><b>Partidas en Steam Cloud</b>: si también juegas a Valheim en un PC por Steam, esto
-            trae tus mundos y personajes de la nube al teléfono y envía los del teléfono de vuelta.
-            El inicio de sesión se aprueba en la app Steam Mobile, así que Steam Guard debe estar
-            activado. Si el mismo nombre existe en ambos lados, tú eliges cuál conservar. Cierra el
-            juego antes de enviar.</li>
-        <li>La nube de Valheim funciona <b>por mundo y por personaje</b>: en el PC hay que mover
-            cada partida a la nube desde el menú del propio juego. Una partida que nunca se movió
-            allí no está en la nube, y la lista se verá vacía.</li>
-    </ul>
-</section>
-
-<hr>
-
-<section id="engine">
-    <h2>Motor</h2>
-    <p>
-        En los ajustes de la instancia (icono de engranaje), la primera tarjeta, <b>Motor</b>.
-        Decide cómo se ejecuta el juego y, con ello, cuáles de los demás ajustes se aplican.
-    </p>
-    <ul>
-        <li><b>box64 + Mono nativo</b> — se emula el motor Unity, pero el código del propio juego
-            (todo lo escrito en C#) se ejecuta directamente en el procesador del teléfono. Mucho más
-            rápido en zonas cargadas; los mods funcionan.</li>
-        <li><b>Motor nativo (experimental)</b> — no se emula nada: el propio motor Android de Unity
-            ejecuta el juego. El más rápido, y la imagen es más nítida porque las texturas no se
-            vuelven a comprimir. Solo aparece en las versiones que lo incluyen.</li>
-    </ul>
-    <p>
-        Una instancia nueva empieza con el motor nativo. Las instancias de versiones anteriores
-        conservan lo que usaban. Las partidas, los ajustes del propio juego, los controles en pantalla y los mods
-        son los mismos en los tres, así que puedes cambiar cuando quieras sin perder nada.
-    </p>
-    <h3>Motor nativo</h3>
-    <p>
-        En la mayoría de los teléfonos es la mejor opción: el juego carga más rápido, hay más
-        fotogramas y más estables, y la batería dura más que con el motor box64.
-    </p>
-    <ul>
-        <li>Siempre dibuja con <b>Vulkan</b>, con el controlador del propio teléfono. Mientras está
-            elegido, el renderizador y el controlador Vulkan (tarjeta <b>Vídeo</b>), las cachés de
-            shaders y ETC2 y el modo de compatibilidad aparecen en gris: no se aplican a él.</li>
-        <li>La resolución, el modo de fotogramas, el panel de rendimiento, la imagen invertida y los
-            controles en pantalla funcionan como siempre. Las texturas siempre se reducen un
-            nivel (dos en <b>Mínima</b>).</li>
-        <li>El primer inicio después de instalar o actualizar OxyDroid tarda unos segundos más: el
-            lanzador prepara los datos del juego para él (unos 100 MB).</li>
-        <li>Los mods funcionan, salvo las partes de un mod que traen sus propias bibliotecas x86
-            (archivos .so): sin emulación no se pueden cargar.</li>
-        <li>Aquí el límite es la <b>GPU</b>, no el procesador. Si los fotogramas bajan en escenas
-            pesadas, desactiva primero en el juego el SSAO, las sombras de luces puntuales y los
-            rayos de sol.</li>
-        <li>Funciona en GPU Snapdragon (Adreno) y Mali. Si la imagen se congela en el logo o en el
-            menú mientras el juego sigue, pon <b>Compatibilidad Vulkan</b> (tarjeta <b>Motor</b>) en
-            <b>Activada</b>: algunos controladores Mali pierden la GPU sin ella.</li>
-    </ul>
-</section>
-
-<hr>
-
-<section id="renderers">
-    <h2>Controladores gráficos</h2>
-    <p>
-        El renderizador se elige en los ajustes de la instancia (engranaje), tarjeta <b>Vídeo</b>.
-        Hay dos.
-    </p>
-    <p>
-        Estos ajustes se aplican al motor con box64. El <a href="#engine">motor nativo</a>
-        siempre dibuja con Vulkan, con el controlador del propio teléfono.
-    </p>
-    <ul>
-        <li><b>MobileGlues</b> — el predeterminado. El juego usa OpenGL y MobileGlues lo traduce al
-            vuelo a los gráficos del teléfono. Vulkan no interviene: trabaja el controlador propio
-            de tu GPU. En Snapdragon eso es aproximadamente el doble de fotogramas que por Vulkan,
-            y un nivel de ajustes más alto. En GPU Mali es la única opción que funciona, porque no
-            existe un controlador Vulkan abierto para ellas.</li>
-        <li><b>Zink ZFA</b> — el juego va por <b>Vulkan</b> directamente. Más lento, pero es el
-            recurso de reserva si MobileGlues dibuja mal o no arranca.</li>
-    </ul>
-    <p>
-        Los ajustes de abajo pertenecen a <b>Zink ZFA</b>: eligen el controlador Vulkan. Con
-        MobileGlues no cambian nada.
-    </p>
-    <ul>
-        <li>Al crear una instancia, OxyDroid elige un controlador para tu GPU, y <b>Controlador
-            recomendado (detectar GPU)</b> lo vuelve a hacer. Si la imagen se ve mal o queda en
-            negro, prueba otro.</li>
-        <li><b>Turnip</b>: controlador de código abierto para GPU Snapdragon (Adreno), compilado
-            para la generación indicada en la lista (6xx, 7xx, 8xx, 830/840). Es con el que se puso
-            en marcha Valheim.</li>
-        <li><b>Sistema (controlador del teléfono)</b>: el propio del teléfono. Es la única opción en
-            teléfonos sin GPU Adreno, y Valheim no se ha probado en ellos.</li>
-        <li><b>Controlador propio (importado)</b>: el tuyo. Se importa en el menú lateral,
-            <b>Controlador Vulkan propio</b> (un archivo .so o un .zip de AdrenoTools), y queda
-            disponible para todas las instancias.</li>
-    </ul>
+    <ol>
+        <li>Barra inferior <b>Juego</b>, pestaña <b>DLC</b>, inicia sesión, <b>Descargar mis DLC</b>.</li>
+        <li>El contenido de los DLC se guarda como un solo ZIP en <b>Download/OxyDroid</b>
+            (<code>OxygenNotIncluded_DLC_…_build….zip</code>).</li>
+        <li><b>Añadir los DLC descargados a una instancia</b>. Más adelante, para una instancia nueva, usa
+            <b>Añadir DLC desde un ZIP…</b> con el mismo archivo.</li>
+    </ol>
+    <p>El ZIP debe ser de la misma build del juego que la instancia: su nombre indica la build.</p>
+    <p>Barra inferior <b>Importar</b> → <b>DLC</b>: instala un ZIP de DLC en la instancia elegida o exporta sus DLC a uno, para otra instancia u otro teléfono.</p>
 </section>
 
 <hr>
@@ -430,105 +199,132 @@
 <section id="mods">
     <h2>Mods</h2>
     <p>
-        Los mods se instalan por instancia: abre el menú lateral y toca <b>Mods</b>.
+        Oxygen Not Included carga los mods con su propio cargador, como en un PC: los mods con código (DLL) también funcionan.
+        Para los mods no hace falta iniciar sesión en Steam.
     </p>
+    <h3>Desde el Workshop de Steam</h3>
+    <ol>
+        <li>Menú lateral → <b>Workshop de Steam</b>: el Workshop del juego, con el buscador propio de Steam.</li>
+        <li>Añade mods a la cola con el botón de sus tarjetas o desde la página de un mod.</li>
+        <li><b>Descargar</b> abre la pestaña <b>Mods</b> de la página Juego con los mods ya puestos.
+            Toca <b>Descargar mods</b>: cada uno se guarda como un ZIP en <b>Download/OxyDroid</b>.</li>
+        <li><b>Instalar los mods descargados en una instancia</b>.</li>
+    </ol>
+    <p>También puedes pegar tú mismo enlaces o números del Workshop en la pestaña Mods.</p>
+    <h3>Desde un ZIP</h3>
+    <p>
+        Barra inferior <b>Mods</b> → <b>Instalar mods desde un zip</b>. Sirve un mod, varios o una copia de la
+        carpeta de mods de un PC.
+    </p>
+    <h3>Activación y orden de carga</h3>
     <ul>
-        <li>Elige la instancia arriba y activa <b>Soporte de mods (BepInEx)</b>: carga BepInEx al
-            iniciar el juego y, con él, los mods activados abajo.</li>
-        <li>Los mods funcionan con <b>box64 + Mono nativo</b> y con el <b>motor nativo</b> (ver <a href="#engine">Motor</a>).</li>
-        <li>Para instalar un mod, toca <b>Elegir archivo del mod (zip)</b>, selecciona el .zip y toca
-            <b>Instalar</b>.</li>
-        <li>Cada mod instalado tiene su propio interruptor para activarlo o desactivarlo.</li>
-        <li>Para eliminar un mod, toca la <b>papelera</b> de su fila y confirma. Los archivos del
-            juego que el mod reemplazó se restauran.</li>
+        <li>Los mods nuevos se <b>activan solos</b> en el siguiente inicio del juego. Puede que el juego se reinicie
+            solo una vez para que se carguen.</li>
+        <li>La pantalla <b>Mods</b> muestra la propia lista del juego en orden de carga: activa y desactiva mods,
+            muévelos arriba y abajo, bórralos. Haz los cambios mientras el juego no está en marcha.</li>
+        <li>Debajo de cada mod: la build más antigua del juego en la que funciona, en <b>verde</b> si tu juego es esa build
+            o más nueva, en <b>rojo</b> si el juego es más antiguo; y la versión del mod.</li>
+        <li>Si cambias los mods dentro del juego, se reinicia solo.</li>
     </ul>
 </section>
 
 <hr>
 
-<section id="online">
-    <h2>Online y logros</h2>
+<section id="controls">
+    <h2>Controles</h2>
+    <h3>Directamente en la pantalla</h3>
+    <ul>
+        <li><b>Un dedo</b> usa la herramienta seleccionada: un toque es un clic, arrastrar es arrastrar con el botón izquierdo (excavar, construir,
+            fregar, cualquier herramienta de área).</li>
+        <li><b>Mantener pulsado</b>: clic derecho.</li>
+        <li><b>Dos dedos</b> mueven el mapa; <b>pellizcar</b> hace zoom.</li>
+    </ul>
+    <h3>Controles en pantalla</h3>
+    <ul>
+        <li><b>Panel táctil</b> (abajo a la derecha): mueve el cursor del ratón como el touchpad de un portátil; un toque
+            corto sobre él hace clic donde está el cursor.</li>
+        <li><b>Stick flotante</b> (abajo a la izquierda): mueve la cámara. Toda su zona, el área tenue, recoge
+            los toques: pon un dedo en cualquier parte de ella y el stick aparece bajo el dedo. Los toques en
+            esa zona no llegan al juego.</li>
+        <li>Botones: clic izquierdo y derecho, Esc, pausa, velocidad, zoom, el teclado (<b>KB</b>) y uno
+            que oculta los botones.</li>
+    </ul>
     <p>
-        Menú lateral → <b>Online y logros</b>, y elige la instancia arriba. Ambos necesitan el
-        <a href="#engine">motor nativo</a>, Valheim comprado en Steam y la app <b>Steam Mobile</b> con
-        <b>Steam Guard</b> activado: antes de que arranque el juego, OxyDroid inicia sesión en Steam y tú
-        lo apruebas en Steam Mobile. La contraseña solo se usa para ese inicio de sesión y nunca se
-        guarda.
+        Menú lateral → <b>Editar controles en pantalla</b> cambia la distribución: posición, tamaño, opacidad, la zona
+        de un stick flotante, la sensibilidad del panel táctil y si un panel táctil muestra su contorno y su etiqueta.
+        <b>Iconos de botones</b> pone un conjunto de iconos en los botones.
     </p>
-
-    <h3>Crossplay</h3>
-    <ul>
-        <li>Activa <b>Crossplay</b>. El juego entra solo en el crossplay de Valheim y juegas en línea
-            como en PC.</li>
-        <li>Solo se puede entrar en <b>servidores y mundos con el crossplay activado</b>: desde la lista
-            de servidores o con el código de invitación de 6 cifras. Un servidor solo de Steam
-            (sin crossplay) no es accesible desde el teléfono; su dueño activa el crossplay en el panel
-            del hosting o con <code>-crossplay</code>.</li>
-        <li><b>Alojar desde el teléfono:</b> Empezar → tu mundo → marca <b>Servidor público</b> y
-            <b>Crossplay</b>, pon una contraseña (5 caracteres o más) y da a tus amigos el código de
-            invitación que muestra el juego.</li>
-        <li>No hace falta configurar el router: la conexión pasa por los servidores de Microsoft, con
-            Wi-Fi o datos móviles.</li>
-    </ul>
-
-    <h3>Logros de Steam</h3>
-    <ul>
-        <li>El juego guarda en el teléfono los logros que consigues. Activa <b>Enviar logros a
-            Steam</b> y en cada inicio el inicio de sesión añade los nuevos a tu cuenta. Solo se
-            añaden, nunca se quitan.</li>
-        <li>Sin crossplay, el inicio de sesión es solo para los logros y termina en unos segundos.</li>
-        <li><b>Mis logros</b> los muestra todos: desbloqueados (con la fecha), por enviar y bloqueados.
-            La lista se actualiza en cada inicio de sesión.</li>
-        <li>Las horas de juego en Steam aún no se cuentan.</li>
-    </ul>
 </section>
 
 <hr>
 
-<section id="compat-mode">
-    <h2>Ajustes avanzados</h2>
-    <p>
-        En los ajustes de la instancia, tarjeta <b>Avanzado</b> (toca su título para abrirla).
-    </p>
+<section id="saves">
+    <h2>Partidas guardadas y Steam Cloud</h2>
+    <h3>Steam Cloud</h3>
+    <p>Menú lateral → <b>Partidas en Steam Cloud</b>, elige la instancia e inicia sesión.</p>
     <ul>
-        <li><b>Modo de compatibilidad</b>: actívalo si el juego no arranca — pantalla negra o
-            atascado en la carga. Con él el juego va algo más lento, así que déjalo apagado si no lo
-            necesitas.</li>
-        <li><b>Modo de depuración</b> escribe un registro más detallado.</li>
-        <li><b>Variables de entorno</b> es un campo para ajustes de arranque que quizá te pidamos
-            probar. Déjalo vacío salvo que estés probando algo.</li>
+        <li><b>Desde la nube</b>: todas las colonias de tu cuenta llegan al móvil. Si una colonia ya está
+            en el móvil, se guarda una copia de seguridad antes de reemplazarla.</li>
+        <li><b>A la nube</b>: elige colonias (cada una con la fecha de su último guardado). Van a donde
+            las encuentra el juego del PC. Si la nube tiene una colonia en otra versión, se te pregunta una vez;
+            nunca se borra nada de la nube. Cierra el juego en el PC antes de enviar.</li>
+    </ul>
+    <h3>Importar y exportar</h3>
+    <p>
+        Barra inferior <b>Importar</b>: partidas, ajustes del juego, controles y mods de una instancia, como archivos ZIP,
+        para sacarlos y volver a meterlos.
+    </p>
+</section>
+
+<hr>
+
+<section id="achievements">
+    <h2>Logros de Steam</h2>
+    <p>
+        Los logros que consigues se guardan en el móvil. Menú lateral → <b>Logros de Steam</b> →
+        <b>Sincronizar con Steam</b> envía los nuevos a tu cuenta y trae los de la cuenta. No hace falta
+        que el juego esté en marcha.
+    </p>
+</section>
+
+<hr>
+
+<section id="picture">
+    <h2>Imagen y fluidez</h2>
+    <ul>
+        <li><b>Resolución de renderizado</b> (ajustes de la instancia): el juego dibuja por debajo de la resolución de la pantalla
+            y la imagen se escala hacia arriba. Más baja significa más rápido y menos calor.</li>
+        <li><b>Fluidez</b>: unos 60 FPS por defecto. Oxygen Not Included gana poco por encima de 60, y una
+            tasa más alta mantiene el móvil trabajando a tope.</li>
+        <li><b>Texturas</b>: las texturas del juego están hechas para gráficas de PC. En GPU sin esos formatos
+            (Mali, PowerVR) se convierten una vez antes del primer inicio de una instancia; una ventana de progreso
+            lo muestra. Las instancias nuevas también usan las propias texturas de baja resolución del juego y una
+            interfaz más grande, pensada para la pantalla de un móvil.</li>
+        <li><b>Compatibilidad Vulkan</b>: déjala en Auto. Se activa en las GPU cuyo driver la necesita.</li>
     </ul>
 </section>
 
 <hr>
 
 <section id="performance">
-    <h2>Sacar el máximo rendimiento</h2>
+    <h2>Rendimiento y temperatura</h2>
     <p>
-        Todo el motor Unity se emula, así que el límite es el <b>procesador</b>, no la GPU. Todo lo
-        que añade objetos o pasadas a un fotograma — sombras, teselación, distancia de dibujado,
-        vegetación — cuesta mucho más que la resolución o el tamaño de las texturas.
-    </p>
-    <p>
-        Esto se refiere al motor con box64. Con el <a href="#engine">motor nativo</a> no se
-        emula nada y el límite pasa a ser la GPU: baja primero los efectos pesados (SSAO, sombras de
-        luces puntuales, rayos de sol).
+        Oxygen Not Included es un juego pesado: su simulación trabaja en todos los núcleos. Un móvil que se calienta
+        baja sus frecuencias por sí solo, y los FPS bajan con ellas.
     </p>
     <ul>
-        <li>Comprueba primero el <b>perfil de rendimiento</b> del teléfono. En Samsung, un perfil
-            como <i>Ligero</i> en los ajustes de batería limita el procesador y la GPU a casi la
-            mitad, y eso solo ya puede costarte la mitad de los fotogramas. Ponlo en
-            <b>Estándar</b> y activa el modo juego del teléfono para OxyDroid: Samsung Game Booster,
-            Xiaomi/POCO Game Turbo, Realme/OPPO/OnePlus Game Space, vivo/iQOO Ultra Game Mode,
-            Infinix/Tecno Game Mode.</li>
-        <li>Usa el preajuste <b>Gráficos</b> (su propia tarjeta). Si prefieres ajustarlo en el juego, lo
-            primero que hay que desactivar es la <b>teselación</b>.</li>
-        <li>Baja la <b>Resolución de renderizado</b> — los tamaños aparecen en píxeles; los del medio son un buen equilibrio — y pon un
-            <b>Límite de FPS</b> para que la tasa se mantenga estable.</li>
-        <li>El teléfono se calienta, y cualquier teléfono se frena a sí mismo cuando eso pasa. Uno
-            frío puede ir bastante más rápido que ese mismo teléfono veinte minutos después; quitar
-            la funda y estar en una habitación fresca ayuda más de lo que parece.</li>
-        <li>Cierra las apps en segundo plano, sobre todo otros juegos y navegadores.</li>
+        <li>Mantén los FPS en unos 60 y baja la resolución de renderizado si el móvil se calienta.</li>
+        <li>Cierra otras apps: el juego necesita unos 2–3 GB de memoria.</li>
+        <li>En los móviles que lo admiten, OxyDroid le pide a Android que mantenga el juego en sus núcleos rápidos
+            (performance hints). En los móviles sin eso, los hilos más ocupados del juego se fijan a los
+            núcleos grandes.</li>
+        <li>La simulación nativa (SimDLL de macOS) es varias veces más ligera que la emulada.</li>
+    </ul>
+    <p>Para testers, en ajustes de la instancia → variables de entorno:</p>
+    <ul>
+        <li><code>OXYDROID_ADPF=0</code> desactiva los performance hints.</li>
+        <li><code>OXYDROID_PIN_BIG=0</code> desactiva la fijación, <code>=1</code> fija incluso con hints.</li>
+        <li><code>OXYDROID_SIMDLL=x86</code> ejecuta la simulación emulada incluso con el archivo de macOS.</li>
     </ul>
 </section>
 
@@ -536,71 +332,26 @@
 
 <section id="known-issues">
     <h2>Problemas conocidos</h2>
-
-    <h3>Alojar: mantén el juego en pantalla</h3>
-    <p>
-        Mientras alojas un mundo, mantén OxyDroid en pantalla: con el motor nativo el juego se pausa en
-        cuanto pasa a segundo plano y tus amigos se desconectan.
-    </p>
-
-    <h3>La lista de resoluciones del juego muestra 0x0</h3>
-    <p>
-        Es lo esperado. El lanzador inicia el juego al tamaño de su propia ventana, y ese tamaño no
-        es uno de los modos estándar de Valheim. Cambia la resolución con <b>Resolución de
-        renderizado</b> en los ajustes de la instancia; la lista del juego no hace nada.
-    </p>
-
-    <h3>Sonido con chasquidos bajo carga</h3>
-    <p>
-        El sonido puede chasquear durante la carga o en escenas pesadas, y se calma después. Aún sin
-        arreglar.
-    </p>
-
-    <h3>Pantalla negra al volver a iniciar el juego</h3>
-    <p>
-        Si sales del juego mientras sigue en marcha y vuelves a tocar <b>▶</b>, la pantalla puede
-        quedarse negra. Vuelve al juego en marcha desde la pantalla de apps recientes. Si ya está
-        negra, cierra OxyDroid del todo (deslízalo en recientes) y ábrelo otra vez.
-    </p>
-
-    <h3>Imagen cortada por los lados (OPPO y otros teléfonos con ColorOS)</h3>
-    <p>
-        El ajuste de pantalla por app <b>Ocultar cámara</b> encoge el juego y corta los lados.
-        <b>Solución:</b> desactiva <b>Ocultar cámara</b> para OxyDroid, deja <b>Pantalla
-        completa</b> activado, cierra la app del todo y vuelve a abrirla. Los nombres de estos
-        ajustes cambian entre teléfonos; busca "pantalla completa" en los ajustes.
-    </p>
-
-    <h3>Teléfonos sin GPU Adreno</h3>
-    <p>
-        Valheim se puso en marcha primero en teléfonos Snapdragon (Adreno). Ahora también funciona
-        en Mali, mejor con el <a href="#engine">motor nativo</a>. En otras GPU puede no arrancar o
-        mostrar una imagen incorrecta. Envíanos un informe con <a href="#report">Reportar un
-        error</a>.
-    </p>
-
-    <h3>Suelo negro en algunas GPU Mali</h3>
-    <p>
-        En algunas GPU Mali (por ejemplo, la Mali-G615) el suelo puede verse negro. Estamos
-        trabajando en ello. Envíanos un informe con <a href="#report">Reportar un error</a>: nos
-        ayuda a arreglarlo.
-    </p>
+    <ul>
+        <li>El teclado en pantalla solo escribe letras latinas.</li>
+        <li>El zoom con pellizco es lento.</li>
+        <li>Los vídeos de introducción del juego no se muestran.</li>
+        <li>Los móviles por debajo del mínimo y las GPU Mali todavía se han probado poco: los reportes son bienvenidos.</li>
+        <li>Android puede cerrar el juego si se queda mucho tiempo en segundo plano.</li>
+    </ul>
 </section>
 
 <hr>
 
 <section id="report">
-    <h2>Informar de un problema</h2>
+    <h2>Cómo reportar un problema</h2>
     <p>
-        Abre el menú lateral y toca <b>Reportar un error</b>, luego elige la instancia donde pasó
-        el problema. OxyDroid adjunta sus registros, tus ajustes gráficos y los datos del teléfono a
-        un mensaje para nosotros: elige tu app de correo, describe el problema y envíalo. Informa
-        justo después de que ocurra, mientras el registro aún lo contiene.
+        Menú lateral → <b>Reportar un error</b> empaqueta el log del propio juego, el log del launcher y los datos de tu móvil
+        en un solo ZIP, para enviarlo por correo o guardarlo como archivo. Envíalo justo después del problema:
+        los logs solo guardan las últimas ejecuciones. Un reporte también muestra minuto a minuto los FPS, los hilos más ocupados y
+        el estado térmico del móvil, así que incluso un reporte de «va lento» dice por qué.
     </p>
-    <p>
-        Los iconos de la parte superior del menú lateral llevan a las nuevas versiones en GitHub y
-        al autor en X y Reddit.
-    </p>
+    <p>Issues: <a href="https://github.com/udarmolota/OxyDroid/issues">github.com/udarmolota/OxyDroid/issues</a></p>
 </section>
 </body>
 </html>

@@ -506,7 +506,7 @@ public class LauncherFragment extends Fragment {
     /** No macOS SimDLL: the simulation will run emulated. Start, or add the file first. */
     private void askEmulatedStart(GameInstance gi) {
         if (!isAdded()) return;
-        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext(), R.style.ThemeOverlay_OxyDroid_Dialog_Buttons)
                 .setTitle(R.string.simdll_emulated_title)
                 .setMessage(R.string.simdll_emulated_message)
                 .setPositiveButton(R.string.simdll_emulated_start, (d, w) -> startGame(gi))

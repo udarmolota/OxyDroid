@@ -607,4 +607,9 @@ In the cloud: %2$s
     <string name="download_mods_installing">Installing the mods…</string>
     <string name="download_mods_installed">Installed into %1$s: %2$d mod(s). They are switched on at the next game start.</string>
     <string name="oni_mods_build">build %1$d+</string>
+    <string name="transfer_dlc">DLC</string>
+    <string name="transfer_dlc_hint">A DLC ZIP (from the DLC download on the Game page or an export) into this instance, or this instance\'s DLCs out as one.</string>
+    <string name="transfer_dlc_none">This instance has no DLC</string>
+    <string name="transfer_dlc_unrecorded">This instance\'s DLC files were installed before the launcher recorded them: install its DLCs again once (from Steam or a DLC ZIP) to export them</string>
+    <string name="transfer_dlc_exported">DLC exported: %1$s</string>
 </resources>

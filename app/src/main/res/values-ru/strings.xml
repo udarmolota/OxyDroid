@@ -585,4 +585,9 @@
     <string name="download_mods_installing">Устанавливаю моды…</string>
     <string name="download_mods_installed">Установлено в %1$s: модов %2$d. Они включатся при следующем запуске игры.</string>
     <string name="oni_mods_build">сборка %1$d+</string>
+    <string name="transfer_dlc">DLC</string>
+    <string name="transfer_dlc_hint">DLC-ZIP (из скачивания DLC на странице «Игра» или экспорта) — в этот экземпляр, или DLC этого экземпляра — в ZIP.</string>
+    <string name="transfer_dlc_none">В этом экземпляре нет DLC</string>
+    <string name="transfer_dlc_unrecorded">DLC в этом экземпляре установлены до того, как лаунчер начал записывать их файлы: поставь DLC заново один раз (из Steam или DLC-ZIP), тогда их можно будет экспортировать</string>
+    <string name="transfer_dlc_exported">DLC экспортированы: %1$s</string>
 </resources>

@@ -308,6 +308,7 @@ public class GogDownloadFragment extends Fragment implements GogDownloadQueue.Li
             List<GogLibrary.Product> oni = new ArrayList<>();
             List<GogLibrary.Product> anyLinux = new ArrayList<>();
             Throwable error = null;
+            boolean searched = false;
             try {
                 try {
                     for (Long id : GogLibrary.searchOwned(SEARCH_QUERY)) {
@@ -315,10 +316,13 @@ public class GogDownloadFragment extends Fragment implements GogDownloadQueue.Li
                         if (p == null || !hasLinux(p)) continue;
                         if (isOni(p.title)) oni.add(p);
                     }
+                    searched = true;
                 } catch (Exception searchFailed) {
                     Log.w(TAG, "library search failed, walking the library instead", searchFailed);
                 }
-                List<Long> owned = oni.isEmpty() ? GogLibrary.ownedIds() : new ArrayList<>();
+                // The library is walked only when the search itself failed: a search that answered
+                // "none" means the account has no Oxygen Not Included, however many games it owns.
+                List<Long> owned = oni.isEmpty() && !searched ? GogLibrary.ownedIds() : new ArrayList<>();
                 int of = Math.min(owned.size(), SCAN_LIMIT);
                 int scanned = 0;
                 for (Long id : owned) {
@@ -337,9 +341,8 @@ public class GogDownloadFragment extends Fragment implements GogDownloadQueue.Li
                 error = t;
             }
 
-            final Scan scan = oni.isEmpty()
-                    ? new Scan(anyLinux, new ArrayList<>(), !anyLinux.isEmpty())
-                    : split(oni);
+            // Only Oxygen Not Included is offered: other games of the library are of no use here.
+            final Scan scan = oni.isEmpty() ? new Scan(new ArrayList<>(), new ArrayList<>(), false) : split(oni);
             final Throwable err = error;
             if (err == null && !scan.games.isEmpty()) lastScan = scan;
             Log.i(TAG, "library scan: " + oni.size() + " oni product(s), " + scan.dlcs.size()
@@ -351,7 +354,7 @@ public class GogDownloadFragment extends Fragment implements GogDownloadQueue.Li
                             String.valueOf(err.getMessage())));
                     return;
                 }
-                if (scan.games.isEmpty()) { status.setText(R.string.gog_nothing_linux); return; }
+                if (scan.games.isEmpty()) { status.setText(R.string.gog_no_game); return; }
                 status.setText(scan.fellBack ? getString(R.string.gog_no_game) : "");
                 render(scan);
             });

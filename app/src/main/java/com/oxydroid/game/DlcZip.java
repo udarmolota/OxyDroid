@@ -47,10 +47,11 @@ public final class DlcZip {
         File gameDir = new File(gi.getGamePath());
         String root = gameDir.getCanonicalPath() + File.separator;
         byte[] buf = new byte[1 << 16];
+        List<String> written = new ArrayList<>();
         try (ZipInputStream zin = open(context, uri)) {
             for (ZipEntry e; (e = zin.getNextEntry()) != null; ) {
                 String rel = name(e);
-                if (rel.isEmpty() || rel.equals(GameInstance.DLC_LIST)) continue;
+                if (rel.isEmpty() || rel.equals(GameInstance.DLC_LIST) || rel.equals(GameInstance.DLC_FILES)) continue;
                 File out = new File(gameDir, rel);
                 if (!out.getCanonicalPath().startsWith(root)) throw new IOException("unsafe entry " + rel);
                 if (e.isDirectory()) {
@@ -64,11 +65,43 @@ public final class DlcZip {
                 try (OutputStream os = new FileOutputStream(out)) {
                     for (int n; (n = zin.read(buf)) > 0; ) os.write(buf, 0, n);
                 }
+                written.add(rel);
             }
         }
+        GameInstance.addDlcFiles(gameDir, written);
         TreeSet<Integer> all = new TreeSet<>(gi.dlcs());
         all.addAll(ids);
         GameInstance.writeDlcList(gameDir, all);
+        return ids;
+    }
+
+    /**
+     * The instance's DLCs (their files, GameInstance.DLC_FILES, and their list) as a DLC ZIP, the same
+     * shape as a DLC download's, for install() into this or another instance. Returns the DLC ids.
+     */
+    public static List<Integer> export(GameInstance gi, OutputStream rawOut) throws IOException {
+        List<Integer> ids = gi.dlcs();
+        List<String> files = gi.dlcFiles();
+        if (ids.isEmpty() || files.isEmpty())
+            throw new IOException("this instance has no recorded DLC files: install its DLCs again (from Steam or a DLC ZIP) to export them");
+        File gameDir = new File(gi.getGamePath());
+        byte[] buf = new byte[1 << 16];
+        try (java.util.zip.ZipOutputStream zip = new java.util.zip.ZipOutputStream(new java.io.BufferedOutputStream(rawOut, 1 << 16))) {
+            StringBuilder list = new StringBuilder();
+            for (Integer id : ids) list.append(id).append('\n');
+            zip.putNextEntry(new ZipEntry(GameInstance.DLC_LIST));
+            zip.write(list.toString().getBytes(StandardCharsets.UTF_8));
+            zip.closeEntry();
+            for (String rel : files) {
+                File f = new File(gameDir, rel);
+                if (!f.isFile()) continue;
+                zip.putNextEntry(new ZipEntry(rel));
+                try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {
+                    for (int n; (n = in.read(buf)) > 0; ) zip.write(buf, 0, n);
+                }
+                zip.closeEntry();
+            }
+        }
         return ids;
     }
 

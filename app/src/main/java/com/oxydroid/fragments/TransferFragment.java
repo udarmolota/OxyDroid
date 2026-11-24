@@ -46,7 +46,7 @@ import java.util.List;
  */
 public class TransferFragment extends Fragment {
 
-    private static final int NONE = 0, SAVES = 1, MODS = 2, SETTINGS = 3, CONTROLS = 4;
+    private static final int NONE = 0, SAVES = 1, MODS = 2, SETTINGS = 3, CONTROLS = 4, DLC = 5;
     private static final String STATE_PENDING = "pending";
     private static final String[] ZIP_TYPES = {"application/zip", "application/x-zip-compressed", "application/octet-stream"};
 
@@ -92,6 +92,8 @@ public class TransferFragment extends Fragment {
 
         v.findViewById(R.id.btn_transfer_saves_import).setOnClickListener(b -> startImport(SAVES));
         v.findViewById(R.id.btn_transfer_saves_export).setOnClickListener(b -> startExport(SAVES));
+        v.findViewById(R.id.btn_transfer_dlc_import).setOnClickListener(b -> startImport(DLC));
+        v.findViewById(R.id.btn_transfer_dlc_export).setOnClickListener(b -> startExport(DLC));
         v.findViewById(R.id.btn_transfer_mods_import).setOnClickListener(b -> startImport(MODS));
         v.findViewById(R.id.btn_transfer_mods_export).setOnClickListener(b -> startExport(MODS));
         v.findViewById(R.id.btn_transfer_settings_import).setOnClickListener(b -> startImport(SETTINGS));
@@ -142,6 +144,7 @@ public class TransferFragment extends Fragment {
         int what = pending;
         pending = NONE;
         if (uri == null || gi == null || !isAdded()) return;
+        if (what == DLC) { importDlc(uri, gi); return; }   // adds, overwrites nothing of the player's
         String file = displayName(uri);
         if (file == null) file = uri.getLastPathSegment();
         String text = what == CONTROLS ? getString(R.string.controls_transfer_import_confirm, gi.getName(), file)
@@ -251,16 +254,38 @@ public class TransferFragment extends Fragment {
 
     // ---- export ----
 
+    /** A DLC ZIP into the instance (DlcZip.install), off the UI thread; then what it brought. */
+    private void importDlc(Uri uri, GameInstance gi) {
+        final Context app = requireContext().getApplicationContext();
+        Toast.makeText(app, R.string.download_dlc_installing, Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            String msg;
+            try {
+                List<Integer> ids = com.oxydroid.game.DlcZip.install(app, uri, gi);
+                msg = app.getString(R.string.download_dlc_added, gi.getName(), ids.toString());
+            } catch (Exception e) {
+                msg = app.getString(R.string.download_dlc_failed, String.valueOf(e.getMessage()));
+            }
+            toastLater(msg);
+        }, "transfer-dlc").start();
+    }
+
     private void startExport(int what) {
         GameInstance gi = currentOrToast();
         if (gi == null) return;
+        if (what == DLC && (gi.dlcs().isEmpty() || gi.dlcFiles().isEmpty())) {
+            Toast.makeText(requireContext(), gi.dlcs().isEmpty() ? R.string.transfer_dlc_none
+                    : R.string.transfer_dlc_unrecorded, Toast.LENGTH_LONG).show();
+            return;
+        }
         if (what == MODS && com.oxydroid.game.OniMods.list(gi.getUserDataDir()).isEmpty()) {
             Toast.makeText(requireContext(), R.string.transfer_mods_none, Toast.LENGTH_SHORT).show();
             return;
         }
         exportFor = gi;
         pending = what;
-        String kind = what == SAVES ? "saves" : what == MODS ? "mods" : what == SETTINGS ? "settings" : "controls";
+        String kind = what == SAVES ? "saves" : what == MODS ? "mods" : what == SETTINGS ? "settings"
+                : what == DLC ? "dlc" : "controls";
         exportZip.launch("oxydroid_" + kind + "_" + gi.getName().replaceAll("[^A-Za-z0-9._-]", "_") + "_"
                 + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(new java.util.Date())
                 + ".zip");
@@ -283,6 +308,9 @@ public class TransferFragment extends Fragment {
                 } else if (what == MODS) {
                     int count = com.oxydroid.game.OniMods.exportZip(gi.getUserDataDir(), out);
                     msg = app.getString(R.string.oni_mods_exported, count);
+                } else if (what == DLC) {
+                    List<Integer> ids = com.oxydroid.game.DlcZip.export(gi, out);
+                    msg = app.getString(R.string.transfer_dlc_exported, ids.toString());
                 } else {
                     String part = what == SAVES ? GameDataTransfer.SAVES : GameDataTransfer.CONFIG;
                     GameDataTransfer.Result r = GameDataTransfer.export(instanceDir, out, new String[]{part});

@@ -592,4 +592,9 @@ Na nuvem: %2$s
     <string name="download_mods_installing">Instalando os mods…</string>
     <string name="download_mods_installed">Instalados em %1$s: %2$d mod(s). Eles são ativados na próxima vez que o jogo iniciar.</string>
     <string name="oni_mods_build">build %1$d+</string>
+    <string name="transfer_dlc">DLC</string>
+    <string name="transfer_dlc_hint">Um ZIP de DLC (do download de DLC na página Jogo ou de uma exportação) para esta instância, ou os DLCs desta instância para um ZIP.</string>
+    <string name="transfer_dlc_none">Esta instância não tem DLC</string>
+    <string name="transfer_dlc_unrecorded">Os DLCs desta instância foram instalados antes de o launcher registrar os arquivos: instale-os de novo (da Steam ou de um ZIP de DLC) para poder exportá-los</string>
+    <string name="transfer_dlc_exported">DLCs exportados: %1$s</string>
 </resources>

@@ -138,6 +138,43 @@ public class GameInstance {
         }
     }
 
+    /**
+     * The game files the DLCs brought (paths in the game folder, one per line): recorded at every DLC
+     * install (Steam download, DLC ZIP), so the DLCs can be exported again (DlcZip.export).
+     */
+    public static final String DLC_FILES = "oxydroid_dlc_files.txt";
+
+    public static void addDlcFiles(File gameDir, java.util.Collection<String> rels) {
+        if (rels == null || rels.isEmpty()) return;
+        java.util.TreeSet<String> all = new java.util.TreeSet<>(readLines(new File(gameDir, DLC_FILES)));
+        all.addAll(rels);
+        StringBuilder sb = new StringBuilder();
+        for (String r : all) sb.append(r).append('\n');
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(new File(gameDir, DLC_FILES))) {
+            out.write(sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (java.io.IOException e) {
+            android.util.Log.w("OxyDroid/Instance", "DLC file list not written: " + e);
+        }
+    }
+
+    /** The files the DLCs brought (DLC_FILES); empty when none were recorded. */
+    public java.util.List<String> dlcFiles() {
+        return readLines(new File(getGamePath(), DLC_FILES));
+    }
+
+    private static java.util.List<String> readLines(File f) {
+        java.util.List<String> out = new ArrayList<>();
+        if (!f.isFile()) return out;
+        try {
+            for (String line : new String(java.nio.file.Files.readAllBytes(f.toPath()),
+                    java.nio.charset.StandardCharsets.UTF_8).split("\n"))
+                if (!line.trim().isEmpty()) out.add(line.trim());
+        } catch (java.io.IOException e) {
+            android.util.Log.w("OxyDroid/Instance", "unreadable " + f + ": " + e);
+        }
+        return out;
+    }
+
     /** The DLCs of this instance (see DLC_LIST); empty when none were downloaded. */
     public java.util.List<Integer> dlcs() {
         java.util.List<Integer> out = new ArrayList<>();

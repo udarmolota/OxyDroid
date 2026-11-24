@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="gog_dl_menu">Descargar de GOG</string>
-    <string name="gog_title">Descargar Oxygen Not Included de GOG</string>
+    <string name="gog_title">Descargar ONI</string>
     <string name="gog_login_note">Inicia sesión con tu correo y contraseña de GOG. El inicio de sesión con una cuenta vinculada no se completa dentro de una app: si sueles entrar así, primero crea una contraseña de GOG en gog.com → Sign in → Password reset.</string>
     <string name="gog_disclaimer_title">Aviso</string>
     <string name="gog_disclaimer_text">OxyDroid nunca ve tu contraseña: la escribes en la propia página de GOG. El token de acceso solo se guarda en memoria y desaparece al cerrar la app; las cookies de inicio de sesión se quedan en el almacenamiento privado de la app para no pedírtela cada vez, y cerrar sesión borra ambas cosas.</string>
@@ -14,7 +14,7 @@
     <string name="gog_checking">Leyendo la biblioteca…</string>
     <string name="gog_probe_failed">No se pudo leer la biblioteca: %1$s</string>
     <string name="gog_scanning">Revisando tu biblioteca — %1$d de %2$d</string>
-    <string name="gog_no_game">Esta cuenta no tiene Oxygen Not Included: se muestran todos los juegos con instalador para Linux.</string>
+    <string name="gog_no_game">Esta cuenta de GOG no tiene Oxygen Not Included.</string>
     <string name="gog_nothing_linux">Ningún juego de esta cuenta tiene instalador para Linux.</string>
     <string name="gog_download">Descargar</string>
     <string name="gog_queued">En cola</string>

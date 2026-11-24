@@ -787,6 +787,16 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
             return false;
         }
 
+        if (!game) {
+            // A DLC's files, so its content can be exported again later (GameInstance.DLC_FILES).
+            List<String> rels = new ArrayList<>();
+            for (FileData f : files) {
+                String rel = sanitizeRel(f.getFileName());
+                if (rel != null && !f.getFlags().contains(EDepotFileFlag.Directory)) rels.add(rel);
+            }
+            com.oxydroid.game.GameInstance.addDlcFiles(outDir, rels);
+        }
+
         // Resume: names already written in full during an earlier run of this same build.
         File doneListFile = new File(outDir, ".oxydroid_complete_" + depot + "_" + Long.toUnsignedString(gid));
         Set<String> doneSet = loadDoneSet(doneListFile);

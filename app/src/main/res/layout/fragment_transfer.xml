@@ -71,6 +71,41 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- DLC: a DLC ZIP into the instance, or the instance's DLCs out as one -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/AppTheme.TransferCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/AppTheme.TransferCardTitle"
+                    android:text="@string/transfer_dlc" />
+
+                <TextView
+                    style="@style/AppTheme.TransferCardHint"
+                    android:text="@string/transfer_dlc_hint" />
+
+                <LinearLayout style="@style/AppTheme.TransferButtonRow">
+
+                    <Button
+                        android:id="@+id/btn_transfer_dlc_import"
+                        style="@style/AppTheme.TransferButton"
+                        android:text="@string/transfer_import" />
+
+                    <Button
+                        android:id="@+id/btn_transfer_dlc_export"
+                        style="@style/AppTheme.TransferButton.Outlined"
+                        android:text="@string/transfer_export" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Mods -->
         <com.google.android.material.card.MaterialCardView
             style="@style/AppTheme.TransferCard"

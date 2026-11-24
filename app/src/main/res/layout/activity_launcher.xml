@@ -86,13 +86,12 @@
             android:paddingTop="6dp"
             android:paddingBottom="6dp">
 
-            <!-- The wiki: hidden while its pages are still the previous game's. -->
+            <!-- The wiki, first in the row (assets/wiki, rewritten for Oxygen Not Included). -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical"
-                android:visibility="gone">
+                android:orientation="vertical">
 
                 <ImageButton
                     android:id="@+id/link_wiki"
