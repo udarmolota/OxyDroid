@@ -176,9 +176,15 @@ public class InstanceSettings {
      * An older fixed cap maps over: 30 -> Economy, 60 -> Smooth.
      */
     public int getFpsMode() {
-        if (p.contains(pfx + "fps_mode")) return p.getInt(pfx + "fps_mode", FpsPlanner.OFF);
-        int old = p.getInt(pfx + "fps_cap", 0);
-        return old == 30 ? FpsPlanner.ECONOMY : old == 60 ? FpsPlanner.SMOOTH : FpsPlanner.OFF;
+        if (p.contains(pfx + "fps_mode")) return p.getInt(pfx + "fps_mode", FpsPlanner.SMOOTH);
+        if (p.contains(pfx + "fps_cap")) {
+            int old = p.getInt(pfx + "fps_cap", 0);
+            return old == 30 ? FpsPlanner.ECONOMY : old == 60 ? FpsPlanner.SMOOTH : FpsPlanner.OFF;
+        }
+        // Smooth (~60) unless the player chose otherwise: uncapped, the game ran its main thread flat
+        // out for the screen's 120 Hz, and the phone heated up and throttled within two minutes
+        // (OXYPERF, S25, 2026-11-24). Oxygen Not Included gains little above 60.
+        return FpsPlanner.SMOOTH;
     }
 
     public void setFpsMode(int mode) {

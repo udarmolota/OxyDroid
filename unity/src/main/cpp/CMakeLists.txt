@@ -48,7 +48,7 @@ endif()
 enable_language(CXX)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../../app/src/main/cpp/liblinkernsbypass
                  ${CMAKE_CURRENT_BINARY_DIR}/linkernsbypass)
-add_library(vkshim SHARED vkshim/vkshim.c vkshim/driver.c)
+add_library(vkshim SHARED vkshim/vkshim.c vkshim/driver.c vkshim/perf.c)
 target_compile_options(vkshim PRIVATE -std=c11 -fvisibility=hidden -Wall -Wextra -Wno-unused-parameter)
 target_link_libraries(vkshim vulkan log dl linkernsbypass)
 set_target_properties(vkshim PROPERTIES LINKER_LANGUAGE CXX)

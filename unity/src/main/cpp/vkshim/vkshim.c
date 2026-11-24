@@ -16,6 +16,7 @@
 // Always: which texture compression formats the GPU samples (BC, ETC2, ASTC) and which ones the engine
 // turned on: a game built for a PC ships BC textures, which a GPU without BC gets decompressed.
 // Written for the Mali phones where Unity keeps rendering but no frame reaches the screen.
+#include "perf.h"
 #include <android/log.h>
 #include <dlfcn.h>
 #include <pthread.h>
@@ -804,6 +805,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL shim_QueuePresentKHR(VkQueue queue, const 
     VkResult r = device_fns(queue)->present(queue, info);
     uint64_t ms = (now_ns() - t0) / 1000000;
     leave(s);
+    oxy_perf_frame();   // frame timing, the 10 s OXYPERF lines and the ADPF session (perf.c)
     count(&c_present, r);
     bool per_swapchain_problem = false;
     for (uint32_t i = 0; info->pResults && i < info->swapchainCount; i++)
