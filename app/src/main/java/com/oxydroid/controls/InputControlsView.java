@@ -207,6 +207,8 @@ public class InputControlsView extends View {
     protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
         if (isEditMode && snapToGrid) drawGrid(canvas);
+        for (AbstractControlElement controlElement : controlElements)
+            if (controlElement.isVisible() && showsZoneInsteadOfStick(controlElement)) drawFloatZoneFill(canvas, controlElement);
         for (AbstractControlElement controlElement : controlElements) {
             if (!controlElement.isVisible()) continue;
             // 0% opacity hides the element in the game completely: some elements draw a shadow or a
@@ -312,12 +314,38 @@ public class InputControlsView extends View {
 
     private final android.graphics.RectF floatZoneRect = new android.graphics.RectF();
 
-    /** The capture zone of a floating stick: a square around its home position, cut to the view. */
+    /**
+     * The capture zone of a floating stick: a rectangle around its home position, cut to the view. At
+     * the default zone size it is exactly a touchpad at scale 1, so the two sit as mirror images (the
+     * default layout: the stick bottom left, the touchpad bottom right); the zone setting scales it.
+     */
     private void floatZoneRect(AbstractControlElement el, android.graphics.RectF out) {
-        float half = el.getFloatZoneHalfSize();
+        float k = el.getFloatZone() / ControlElementDescription.DEFAULT_FLOAT_ZONE;
+        float halfW = TouchpadControlElement.BASE_WIDTH * pixelScale * k / 2f;
+        float halfH = TouchpadControlElement.BASE_HEIGHT * pixelScale * k / 2f;
         float cx = el.getCenterX(), cy = el.getCenterY();
-        out.set(Math.max(0f, cx - half), Math.max(0f, cy - half),
-                Math.min(getWidth(), cx + half), Math.min(getHeight(), cy + half));
+        out.set(Math.max(0f, cx - halfW), Math.max(0f, cy - halfH),
+                Math.min(getWidth(), cx + halfW), Math.min(getHeight(), cy + halfH));
+    }
+
+    /**
+     * In the game a floating stick shows its zone, not a circle: the whole zone takes the touch, so it
+     * is drawn as the touchpad is, a faint white fill without an outline, at the stick's opacity.
+     * The stick itself is drawn only while a finger holds it.
+     */
+    private void drawFloatZoneFill(Canvas c, AbstractControlElement el) {
+        floatZoneRect(el, floatZoneRect);
+        float cr = 16f * pixelScale;
+        floatZonePaint.setStyle(Paint.Style.FILL);
+        floatZonePaint.setPathEffect(null);
+        floatZonePaint.setColor(0xFFFFFFFF);
+        floatZonePaint.setAlpha(el.getAlpha() / 3);
+        c.drawRoundRect(floatZoneRect, cr, cr, floatZonePaint);
+    }
+
+    /** A floating stick at rest in the game: its zone is drawn instead of it (drawFloatZoneFill). */
+    boolean showsZoneInsteadOfStick(AbstractControlElement el) {
+        return !isEditMode && el.isFloating() && isFloatZoneActive(el);
     }
 
     /**

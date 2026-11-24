@@ -182,6 +182,8 @@ public class WasdStickControlElement extends AbstractControlElement {
 
     @Override
     public void draw(Canvas canvas) {
+        // A floating stick at rest is its zone (InputControlsView.drawFloatZoneFill); drawn only while held.
+        if (pointerId == -1 && parentView.showsZoneInsteadOfStick(this)) return;
         if (style == ControlElementDescription.Style.CONSOLE) {
             drawable.drawConsole(canvas, pointerId != -1 && !parentView.isEditMode());
         } else {

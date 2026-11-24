@@ -15,8 +15,9 @@ public class TouchpadControlElement extends AbstractControlElement {
 
     private static final String TAG = "OxyDroid/Touchpad";
 
-    private static final float BASE_WIDTH  = 560f;
-    private static final float BASE_HEIGHT = 370f;
+    /** The touchpad at scale 1, in px of a 2560-wide view; a floating stick's zone has the same size. */
+    static final float BASE_WIDTH  = 560f;
+    static final float BASE_HEIGHT = 370f;
     // A tap: the finger did not move, however long it stayed. Players press a menu item or a chest
     // button for half a second and more; a time limit (250 ms once) threw those presses away. The
     // movement limit is the system's touch slop (~8 dp): a resting finger drifts more than 12 px.

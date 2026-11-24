@@ -224,6 +224,8 @@ public class StickControlElement extends AbstractControlElement {
 
     @Override
     public void draw(Canvas canvas) {
+        // A floating stick at rest is its zone (InputControlsView.drawFloatZoneFill); drawn only while held.
+        if (this.pointerId == -1 && this.parentView.showsZoneInsteadOfStick(this)) return;
         drawable.draw(canvas);
     }
 
