@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="workshop_open_a_mod">Нажми ↓ на моде, чтобы добавить его в очередь.</string>
+    <string name="workshop_add_to_queue">В очередь</string>
+    <string name="workshop_remove_from_queue">Убрать</string>
+    <string name="workshop_item_id">Предмет Workshop %1$d</string>
+    <string name="workshop_download_queue">Скачать</string>
+    <string name="workshop_download_n">Скачать (%1$d)</string>
+    <string name="workshop_download_busy">Загрузка из Steam уже идёт. Дождись её окончания.</string>
+    <string name="workshop_download_title">Скачать: %1$d шт.?</string>
+    <string name="workshop_signin_message">%1$s\n\nМоды сохранятся ZIP-ами в Download/OxyDroid, потом их можно установить в экземпляр. Вход в Steam не нужен.</string>
+    <string name="workshop_download_many">⚠ Это %1$d модов. Они качаются по одному, это может занять много времени и места.</string>
+    <string name="workshop_continue">Продолжить</string>
+    <string name="workshop_text_smaller">Мельче текст</string>
+    <string name="workshop_text_larger">Крупнее текст</string>
+    <string name="workshop_offline">Нет подключения к Steam. Workshop работает только онлайн.</string>
+    <string name="workshop_retry">Повторить</string>
+</resources>

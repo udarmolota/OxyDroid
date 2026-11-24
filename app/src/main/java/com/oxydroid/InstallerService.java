@@ -29,6 +29,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import com.oxydroid.game.GameDescriptor;
+import com.oxydroid.gog.GogInstallerExtractor;
 
 public class InstallerService extends Service {
 
@@ -170,9 +171,23 @@ public class InstallerService extends Service {
         // game binary somewhere. Otherwise we'd extract some other archive and leave an orphaned
         // instance folder that the launcher silently hides (fails isInstalled()).
         broadcastProgress("Checking archive...");
+        // Three shapes: the game's Linux ZIP, GOG's Linux installer (a shell script with the game
+        // ZIP appended, handed over by path from the GOG downloader), or a ZIP wrapping such
+        // installers, which is what the file picker can deliver. Sniff the content, not the name.
+        final boolean gogInstaller = GogInstallerExtractor.isMakeselfInstaller(zipFile);
+        boolean gogBundle = false;
         boolean hasBinary;
         try {
-            hasBinary = zipContainsEntry(zipFile, GameDescriptor.ONI.executable());
+            if (gogInstaller) {
+                hasBinary = GogInstallerExtractor.containsGameFile(zipFile, GameDescriptor.ONI.executable());
+                if (!hasBinary) throw new Exception(getString(R.string.gog_install_not_oni));
+            } else {
+                hasBinary = zipContainsEntry(zipFile, GameDescriptor.ONI.executable());
+                if (!hasBinary) {
+                    gogBundle = GogInstallerExtractor.isInstallerBundle(zipEntryNames(zipFile));
+                    hasBinary = gogBundle;   // checked for real after extraction (re-root below)
+                }
+            }
         } catch (java.util.zip.ZipException | java.io.EOFException e) {
             throw damagedArchive(e);
         }
@@ -193,7 +208,22 @@ public class InstallerService extends Service {
         // check above then blocks the retry with the same name. Nothing of the player's is in it yet
         // (we just created it), so remove it before reporting the error.
         try {
-            extractZip(zipFile, instanceDir);
+            if (gogInstaller) {
+                broadcastProgress(getString(R.string.gog_extracting));
+                GogInstallerExtractor.extractInstaller(zipFile, instanceDir,
+                        (done, total) -> broadcastPhase(PHASE_EXTRACT, done, total));
+            } else if (gogBundle) {
+                broadcastProgress(getString(R.string.gog_extracting));
+                File cache = new File(getCacheDir(), "gog-install");
+                try {
+                    GogInstallerExtractor.extractBundle(zipFile, instanceDir, cache,
+                            (done, total) -> broadcastPhase(PHASE_EXTRACT, done, total));
+                } finally {
+                    deleteDir(cache);
+                }
+            } else {
+                extractZip(zipFile, instanceDir);
+            }
         } catch (java.util.zip.ZipException | java.io.EOFException e) {
             deleteDir(instanceDir);
             throw damagedArchive(e);
@@ -249,6 +279,28 @@ public class InstallerService extends Service {
         if (macSimDll != null) //noinspection ResultOfMethodCallIgnored
             macSimDll.delete();
 
+        // GOG expansion installers handed over with the game (GogDownloadFragment). Their payload is
+        // game-relative like the game's own, so each goes on top of the instance root. One that
+        // fails does not undo the game: it is reported and the instance stays usable.
+        java.util.List<String> extraFailures = new java.util.ArrayList<>();
+        if (extraInstallers != null) {
+            for (String path : extraInstallers) {
+                if (path == null || path.isEmpty()) continue;
+                File extra = new File(path);
+                try {
+                    if (!GogInstallerExtractor.isMakeselfInstaller(extra))
+                        throw new IOException("not a GOG Linux installer");
+                    broadcastProgress(getString(R.string.gog_extracting) + " " + extra.getName());
+                    GogInstallerExtractor.extractInstaller(extra, instanceDir,
+                            (done, total) -> broadcastPhase(PHASE_EXTRACT, done, total));
+                } catch (IOException | RuntimeException e) {
+                    Log.e(TAG, "expansion installer failed: " + extra.getName(), e);
+                    extraFailures.add(extra.getName() + ": " + e.getMessage());
+                }
+            }
+            broadcastPhase(PHASE_SETUP, -1, -1);
+        }
+
         // No Steam set-up in the game folder: the native engine brings its own libsteam_api stand-in
         // in the APK. (The previous game downloaded a Goldberg emulator into every instance here.)
 
@@ -267,12 +319,18 @@ public class InstallerService extends Service {
         java.util.List<String> missing =
                 new com.oxydroid.game.GameInstance(instanceName).missingCoreFiles();
         if (!missing.isEmpty()) {
-            broadcastDone(false, "Instance '" + instanceName + "' is INCOMPLETE — this copy of the game "
-                    + "is missing: " + String.join(", ", missing) + ". Use a complete Valheim Linux copy.");
+            // The screen that started the import shows this in a window (NewInstanceFragment): the
+            // files are listed small there, for a screenshot or a report.
+            broadcastDone(false, String.join("\n", missing));
             return;
         }
 
         broadcastProgress("Instance installed.");
+        if (!extraFailures.isEmpty()) {
+            broadcastDone(true, "Instance '" + instanceName + "' installed, but some DLC could not be "
+                    + "added: " + String.join("; ", extraFailures));
+            return;
+        }
         broadcastDone(true, "Instance '" + instanceName + "' installed — ready to launch");
     }
 
@@ -398,6 +456,16 @@ public class InstallerService extends Service {
         return zipContainsEntry(zipFile, fileName, false);
     }
 
+    /** Every entry name in the archive, from the central directory. */
+    private java.util.List<String> zipEntryNames(File zipFile) throws IOException {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        try (java.util.zip.ZipFile zf = new java.util.zip.ZipFile(zipFile)) {
+            java.util.Enumeration<? extends ZipEntry> en = zf.entries();
+            while (en.hasMoreElements()) out.add(en.nextElement().getName());
+        }
+        return out;
+    }
+
     private boolean zipContainsEntry(File zipFile, String fileName, boolean ignoreCase) throws IOException {
         try (java.util.zip.ZipFile zf = new java.util.zip.ZipFile(zipFile)) {
             java.util.Enumeration<? extends ZipEntry> en = zf.entries();
@@ -493,7 +561,9 @@ public class InstallerService extends Service {
 
     private void broadcastDone(boolean success, String msg) {
         Log.i(TAG, msg);
-        toast("✓ " + msg);   // ✓ — always visible, even on other screens
+        // Always visible, even on other screens. A copy missing files gets a window on the import
+        // screen, so the toast only names the problem.
+        toast(success ? "✓ " + msg : getString(R.string.import_incomplete_title));
         Intent i = new Intent(BROADCAST_DONE);
         i.setPackage(getPackageName());
         i.putExtra(EXTRA_SUCCESS, success);

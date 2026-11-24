@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Download from GOG" (GogDownloadFragment) and the GOG installer path in InstallerService. -->
+<resources>
+    <string name="gog_dl_menu">Download from GOG</string>
+    <string name="gog_title">Download Oxygen Not Included from GOG</string>
+    <string name="gog_login_note">Sign in with your GOG e-mail and password. Signing in through a linked account does not complete inside an app — if that is how you normally log in, set a GOG password first: gog.com → Sign in → Password reset.</string>
+    <string name="gog_disclaimer_title">Disclaimer</string>
+    <string name="gog_disclaimer_text">OxyDroid never sees your password — you type it on GOG\'s own page. The access token is kept in memory only and is gone when the app closes; the sign-in cookies stay in this app\'s private storage so you are not asked every time, and signing out clears both.</string>
+    <string name="gog_login_finishing">Completing sign-in…</string>
+    <string name="gog_login_ok">Signed in to GOG</string>
+    <string name="gog_login_failed">Sign-in failed: %1$s</string>
+    <string name="gog_user_id">User ID: %1$s</string>
+    <string name="gog_check_library">Check library</string>
+    <string name="gog_sign_out">Sign out</string>
+    <string name="gog_checking">Reading the library…</string>
+    <string name="gog_probe_failed">Library check failed: %1$s</string>
+    <string name="gog_scanning">Checking your library — %1$d of %2$d</string>
+    <string name="gog_no_game">No Oxygen Not Included in this account — showing every game that has a Linux installer.</string>
+    <string name="gog_nothing_linux">Nothing in this account has a Linux installer.</string>
+    <string name="gog_download">Download</string>
+    <string name="gog_queued">Queued</string>
+    <string name="gog_downloading">Downloading…</string>
+    <string name="gog_percent">%1$d%%</string>
+    <string name="gog_create_instance">Create an instance</string>
+    <string name="gog_item_installer">%1$s · %2$s</string>
+    <string name="gog_item_dlc">DLC · %1$s</string>
+    <string name="gog_dlc_ready">Downloaded</string>
+    <string name="gog_dlc_with_game">%1$s\nInstalled together with the game when you create the instance.</string>
+    <string name="gog_dlc_pending_title">DLC still downloading</string>
+    <string name="gog_dlc_pending_message">Some DLC has not finished downloading and would be left out of the new instance. Create the instance anyway?</string>
+    <string name="gog_create_anyway">Create anyway</string>
+    <string name="gog_keepalive">Downloading from GOG — you can switch to other apps</string>
+    <string name="gog_download_interrupted">The download was interrupted. Tap “%1$s” again to continue.</string>
+    <string name="gog_download_failed">Download failed: %1$s</string>
+    <string name="gog_extracting">Unpacking the GOG installer…</string>
+    <string name="gog_install_not_oni">This GOG installer does not contain Oxygen Not Included for Linux.</string>
+    <string name="gog_storage_title">Storage access needed</string>
+    <string name="gog_storage_message">GOG installers are saved into the public Download/OxyDroid folder so you can see, share and reuse them. Please grant \"All files access\" to OxyDroid, then tap Download again.</string>
+    <string name="gog_storage_grant">Grant</string>
+</resources>

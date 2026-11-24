@@ -137,6 +137,12 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
     private final long manifestId;        // 0 = default to the recommended 1.5 build; >0 = pin this build
     private final List<Long> workshopIds; // MODS mode (non-null) → download these Workshop items (logged-in)
     private final Listener listener;
+    /** DLC mode: only the content of the DLCs the account owns, into an instance that has the game. */
+    private boolean dlcOnly;
+    /** Workshop mode with an instance: the items are installed into its mods (OniMods), not zipped to Download. */
+    private File modsUserDataDir;
+    /** The depot the pipeline is downloading now (the game's Linux depot, or a DLC's). */
+    private volatile int currentDepot = LINUX_DEPOT;
 
     private SteamClient steamClient;
     private CallbackManager manager;
@@ -196,6 +202,49 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
     public static SteamDownloadSpike forMods(String username, String password, List<Long> workshopIds, Listener listener) {
         return new SteamDownloadSpike(username, password, workshopIds, listener);
     }
+
+    /**
+     * Steam Workshop items of Oxygen Not Included, with the player's account (the Workshop gives an
+     * item's files only to an account that owns the game), installed straight into the mods of the
+     * instance whose game data folder is {@code userDataDir}, as the Mods screen's ZIP import does.
+     */
+    public static SteamDownloadSpike forWorkshop(String username, String password, List<Long> workshopIds,
+                                                 File userDataDir, Listener listener) {
+        SteamDownloadSpike d = new SteamDownloadSpike(username, password, workshopIds, listener);
+        d.modsUserDataDir = userDataDir;
+        return d;
+    }
+
+    /** DLC mode ctor: the content is downloaded into a work folder, not an instance. */
+    private SteamDownloadSpike(String username, String password, File workDir, Listener listener) {
+        this.username = username;
+        this.password = password;
+        this.instanceName = null;
+        this.installDir = workDir.getAbsolutePath();
+        this.manifestOnly = false;
+        this.manifestId = 0L;
+        this.workshopIds = null;
+        this.listener = listener;
+    }
+
+    /**
+     * DLC mode: the content of the DLCs the account owns, packed into one ZIP in /Download/OxyDroid
+     * (lastDlcZip), with the list of its DLCs inside. The player adds it to an instance afterwards (now
+     * or for a new instance later: game.DlcZip). The game download puts the owned DLCs straight into
+     * its instance instead, and its backup ZIP has them.
+     */
+    public static SteamDownloadSpike forDlcs(String username, String password, Listener listener) {
+        File work = new File(AppStorage.requireSingleton().getCachePath(), "dlc_download");
+        SteamDownloadSpike d = new SteamDownloadSpike(username, password, work, listener);
+        d.dlcOnly = true;
+        return d;
+    }
+
+    /** The mod ZIPs the last Workshop download made (for the Game page's "install into an instance"). */
+    public static final java.util.List<File> lastModZips = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    /** The DLC ZIP the last DLC download made (for the screen's "add to an instance"), or null. */
+    public static volatile File lastDlcZip;
 
     private void progress(String m) {
         Log.i(TAG, m);
@@ -382,8 +431,9 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
         File tmpRoot = new File(storage.getCachePath(), "mod_work");
         List<License> licenses = licenseList != null ? licenseList : Collections.emptyList();
         int ok = 0, skipped = 0;
+        if (modsUserDataDir == null) lastModZips.clear();
         try {
-            if (!downloadsDir.exists() && !downloadsDir.mkdirs()) {
+            if (modsUserDataDir == null && !downloadsDir.exists() && !downloadsDir.mkdirs()) {
                 done("Cannot create downloads folder: " + downloadsDir + " (grant All-files access?)");
                 running = false;
                 return;
@@ -396,32 +446,50 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
                 if (!work.mkdirs()) { progress("✗ " + id + ": cannot create work dir"); skipped++; continue; }
                 lastError = null;
                 boolean got = false;
-                try (DepotDownloader dd = new DepotDownloader(steamClient, licenses, /* debug */ true,
-                        /* useLanCache */ false, /* maxDownloads */ 4, /* maxDecompress */ 2)) {
-                    dd.addListener(this);
-                    PubFileItem item = new PubFileItem(
-                            /* appId */ APP_ID,
-                            /* pubFile */ id,
-                            /* installToGameNameDirectory */ false,
-                            /* installDirectory */ work.getAbsolutePath(),
-                            /* verify */ false,
-                            /* downloadManifestOnly */ false);
-                    dd.add(item);
-                    dd.finishAdding();
-                    dd.getCompletion().get(20, TimeUnit.MINUTES);
-                    dd.removeListener(this);
-                    got = lastError == null && containsAboutXml(work);
-                } catch (java.util.concurrent.TimeoutException te) {
-                    progress("✗ " + id + ": timed out (20 min) — skipping");
-                    lastError = te;
+                String title = null;
+                // Our own pipeline, as for the game: JavaSteam's DepotDownloader skips Oxygen Not
+                // Included's Workshop items ("unsupported file type First", i.e. Community) and then
+                // waits out its 20 minutes (2026-11-24).
+                try {
+                    SteamAnonModDownloader.PubInfo info = SteamAnonModDownloader.resolvePublishedFile(id);
+                    title = info.title;
+                    if (!info.ok || info.hcontentFile == 0) {
+                        progress("✗ " + id + ": not found, or no content on Steam.");
+                    } else {
+                        progress("'" + info.title + "'…");
+                        got = downloadWorkshopItem(info.hcontentFile, work) && hasFiles(work);
+                    }
                 } catch (Throwable t) {
                     Log.e(TAG, "mod " + id + " download crashed", t);
                     lastError = t;
                 }
-                if (got) {
+                if (got && modsUserDataDir != null) {
+                    File zip = new File(tmpRoot, "workshop_" + id + ".zip");
                     try {
-                        File zip = new File(downloadsDir, "workshop_" + id + ".zip");
+                        deleteRecursive(new File(work, ".DepotDownloader"));
                         ZipUtil.zipDir(work, zip);
+                        List<String> odd = new ArrayList<>();
+                        List<String> names = com.oxydroid.game.OniMods.importZip(zip, modsUserDataDir, String.valueOf(id), odd);
+                        progress("✓ mod " + id + " installed: " + String.join(", ", names)
+                                + (odd.isEmpty() ? "" : " (no mod.yaml / DLL found: the game may not load it)"));
+                        ok++;
+                    } catch (Throwable t) {
+                        Log.e(TAG, "install failed for mod " + id, t);
+                        progress("✗ " + id + ": install failed — " + describe(t));
+                        skipped++;
+                    } finally {
+                        //noinspection ResultOfMethodCallIgnored
+                        zip.delete();
+                    }
+                } else if (got) {
+                    try {
+                        // "<Title>_<id>.zip": readable in the Download folder, the id keeps it unique.
+                        File zip = new File(downloadsDir, (title == null ? "workshop"
+                                : SteamAnonModDownloader.sanitizeFileName(title)) + "_" + id + ".zip");
+                        deleteRecursive(new File(work, ".DepotDownloader"));
+                        ZipUtil.zipDir(work, zip);
+                        AppStorage.requireSingleton().publishToMediaIndex(zip, "application/zip");
+                        lastModZips.add(zip);
                         progress("✓ mod " + id + " → " + zip.getAbsolutePath());
                         ok++;
                     } catch (Throwable t) {
@@ -436,7 +504,9 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
                 }
                 deleteRecursive(work);
             }
-            done("Mods done: " + ok + " packed, " + skipped + " skipped. Saved to " + downloadsDir);
+            done(modsUserDataDir != null
+                    ? "Workshop: " + ok + " installed, " + skipped + " failed."
+                    : "Mods done: " + ok + " packed, " + skipped + " skipped. Saved to " + downloadsDir);
         } catch (Throwable t) {
             Log.e(TAG, "downloadMods crashed", t);
             done("Mods error: " + describe(t));
@@ -445,6 +515,86 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
             downloadInProgress = false;
             try { steamUser.logOff(); } catch (Throwable ignored) {}
         }
+    }
+
+    /**
+     * One Workshop item's content (its manifest is the item's hcontent_file) from the game's Workshop
+     * depot into {@code work}, with the signed-in session: Klei's items are given only to owners.
+     */
+    private boolean downloadWorkshopItem(long manifestGid, File work) throws Exception {
+        SteamApps apps = steamClient.getHandler(SteamApps.class);
+        SteamContent content = steamClient.getHandler(SteamContent.class);
+        KeyValue app = appInfo();
+        int depot = app == null ? APP_ID : app.get("depots").get("workshopdepot").asInteger(APP_ID);
+        byte[] key = getDepotKey(apps, depot, APP_ID);
+        if (key == null) { progress("✗ no key for the Workshop depot — is the game owned on this account?"); return false; }
+        List<Server> servers = awaitDeferred(content.getServersForSteamPipe(null, null, GlobalScope.INSTANCE), 30000);
+        if (servers == null || servers.isEmpty()) { progress("✗ no CDN servers"); return false; }
+        long requestCode = awaitDeferred(
+                content.getManifestRequestCode(depot, APP_ID, manifestGid, "public", null, GlobalScope.INSTANCE), 30000);
+        Client cdn = new Client(steamClient);
+        Map<String, String> tokens = new HashMap<>();
+        DepotManifest manifest = null;
+        Exception lastErr = null;
+        int cursor = 0;
+        for (int i = 0; i < servers.size() && manifest == null; i++) {
+            Server srv = servers.get(i);
+            try {
+                manifest = cdn.downloadManifestFuture(depot, manifestGid, requestCode, srv, key, null,
+                        cdnTokenFor(content, depot, srv, tokens)).get(90, TimeUnit.SECONDS);
+                cursor = i;
+            } catch (Exception e) {
+                lastErr = e;
+                Log.w(TAG, "workshop manifest via " + srv.getHost() + " failed: " + describe(e));
+            }
+        }
+        if (manifest == null) { progress("✗ manifest download failed: " + describe(lastErr)); return false; }
+        for (FileData f : manifest.getFiles()) {
+            if (!running) return false;
+            String rel = sanitizeRel(f.getFileName());
+            if (rel == null) continue;
+            File out = new File(work, rel);
+            if (f.getFlags().contains(EDepotFileFlag.Directory)) { //noinspection ResultOfMethodCallIgnored
+                out.mkdirs(); continue; }
+            File parent = out.getParentFile();
+            if (parent != null) //noinspection ResultOfMethodCallIgnored
+                parent.mkdirs();
+            try (RandomAccessFile raf = new RandomAccessFile(out, "rw")) {
+                raf.setLength(f.getTotalSize());
+                for (ChunkData chunk : f.getChunks()) {
+                    byte[] dest = new byte[Math.max(chunk.getCompressedLength(), chunk.getUncompressedLength())];
+                    int written = -1;
+                    Exception chunkErr = null;
+                    for (int t = 0; t < MAX_CHUNK_TRIES && written < 0; t++) {
+                        if (!running) return false;
+                        Server srv = servers.get(Math.floorMod(cursor++, servers.size()));
+                        try {
+                            written = cdn.downloadDepotChunkFuture(depot, chunk, srv, dest, key, null,
+                                    cdnTokenFor(content, depot, srv, tokens)).get(120, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            chunkErr = e;
+                            Log.w(TAG, "workshop chunk via " + srv.getHost() + " failed: " + describe(e));
+                            try { Thread.sleep(500L); } catch (InterruptedException ie) { return false; }
+                        }
+                    }
+                    if (written < 0) throw chunkErr != null ? chunkErr : new java.io.IOException("chunk download failed");
+                    raf.seek(chunk.getOffset());
+                    raf.write(dest, 0, written);
+                }
+            }
+        }
+        return true;
+    }
+
+    /** True if {@code dir} holds at least one file besides DepotDownloader's own state. */
+    private static boolean hasFiles(File dir) {
+        File[] kids = dir.listFiles();
+        if (kids == null) return false;
+        for (File f : kids) {
+            if (f.getName().equals(".DepotDownloader")) continue;
+            if (f.isFile() || hasFiles(f)) return true;
+        }
+        return false;
     }
 
     /** True if {@code dir} contains an About/About.xml anywhere — proof a real mod/DLC was downloaded. */
@@ -487,8 +637,10 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
         // on another network). The earlier hard-crash was the orphaned SteamClient (fixed in run()'s
         // finally), not this cache, so wiping here would only cost the user their progress.
         // Mark the instance as "being downloaded" until finalizeInstance clears it, so the launcher
-        // does not offer a ▶ button on a copy that is still missing most of its assets.
-        try {
+        // does not offer a ▶ button on a copy that is still missing most of its assets. Not for a DLC
+        // download: that goes to a work folder and never reaches finalizeInstance (an earlier version
+        // downloaded DLCs into the instance and left the marker there: "not finished" on a complete game).
+        if (!dlcOnly) try {
             File marker = new File(installDir, GameInstance.DOWNLOAD_MARKER);
             marker.getParentFile().mkdirs();
             if (!marker.isFile()) new java.io.FileOutputStream(marker).close();
@@ -540,14 +692,6 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
         SteamApps apps = steamClient.getHandler(SteamApps.class);
         SteamContent content = steamClient.getHandler(SteamContent.class);
 
-        long gid = (manifestId > 0) ? manifestId : resolveManifestGid(LINUX_DEPOT);
-        if (gid == 0L) { done("Could not resolve a build to download."); running = false; return; }
-        progress("Depot " + LINUX_DEPOT + ", manifest " + Long.toUnsignedString(gid)
-                + (buildId > 0 ? (", build " + buildId) : ""));
-
-        byte[] depotKey = getDepotKey(apps, LINUX_DEPOT, APP_ID);
-        if (depotKey == null) { done("No depot key — is Oxygen Not Included owned on this account?"); running = false; return; }
-
         File outDir = new File(installDir);
         if (!outDir.isDirectory() && !outDir.mkdirs()) {
             done("Cannot create the instance folder: " + outDir);
@@ -559,26 +703,76 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
                 content.getServersForSteamPipe(null, null, GlobalScope.INSTANCE), 30000);
         if (servers == null || servers.isEmpty()) { done("No CDN servers available."); running = false; return; }
 
-        long requestCode = awaitDeferred(
-                content.getManifestRequestCode(LINUX_DEPOT, APP_ID, gid, "public", null, GlobalScope.INSTANCE), 30000);
+        if (!dlcOnly) {
+            long gid = (manifestId > 0) ? manifestId : resolveManifestGid(LINUX_DEPOT);
+            if (gid == 0L) { done("Could not resolve a build to download."); running = false; return; }
+            progress("Depot " + LINUX_DEPOT + ", manifest " + Long.toUnsignedString(gid)
+                    + (buildId > 0 ? (", build " + buildId) : ""));
+            if (!downloadDepot(apps, content, cdn, servers, LINUX_DEPOT, gid, outDir, true)) return;
 
-        Map<String, String> tokenCache = new HashMap<>();
+            fetchMacSimDll(apps, content, cdn, servers, outDir);
+            if (!running) { done("Download cancelled."); return; }
+        }
+
+        String dlcs = downloadDlcs(apps, content, cdn, servers, outDir);
+        if (!running) { done("Download cancelled."); return; }
+
+        downloadCompleted = true;
+        if (dlcOnly) {
+            File zip = packDlcZip(outDir);
+            done(zip == null ? "DLCs: " + dlcs + "." : "DLCs saved: " + zip.getName() + " (" + dlcs + ").");
+        } else {
+            finalizeInstance();
+            done("Instance '" + instanceName + "' downloaded — ready to launch.");
+        }
+        running = false;
+        try { steamUser.logOff(); } catch (Throwable ignored) {}
+    }
+
+    /**
+     * One depot's files into {@code outDir}: manifest, then every file through a small worker pool.
+     *
+     * A free worker first takes a CHUNK of a file already started, and only with none left opens the
+     * next file: most of the game's bytes sit in a few big files, which one worker per file would
+     * fetch over a single connection. Few files are open at a time for the same reason. Resume stays
+     * per file: a name is recorded as done only once the whole file is written. A file already on
+     * the phone with the manifest's SHA-1 is kept, so an update fetches only what changed.
+     * Chunk requests round-robin over Steam's CDN servers on every attempt, so the workers spread
+     * over the edge nodes instead of hammering one (which is what makes a node start refusing).
+     *
+     * Returns false when it stopped with its own terminal message (no key, no manifest, cancelled,
+     * manifest only); a failed chunk throws, for the download's retry.
+     */
+    private boolean downloadDepot(SteamApps apps, SteamContent content, Client cdn, List<Server> servers,
+                                  int depot, long gid, File outDir, boolean game) throws Exception {
+        currentDepot = depot;
+        byte[] depotKey = getDepotKey(apps, depot, APP_ID);
+        if (depotKey == null) {
+            done(game ? "No depot key — is Oxygen Not Included owned on this account?"
+                    : "No key for the DLC depot " + depot + " — is the DLC owned on this account?");
+            running = false; return false;
+        }
+
+        long requestCode = awaitDeferred(
+                content.getManifestRequestCode(depot, APP_ID, gid, "public", null, GlobalScope.INSTANCE), 30000);
+
+        Map<String, String> tokenCache = new HashMap<>();   // CDN tokens are per depot
         DepotManifest manifest = null;
         Exception lastErr = null;
         int serverIdx = 0;
         for (int i = 0; i < servers.size(); i++) {
             Server srv = servers.get(i);
             try {
-                manifest = cdn.downloadManifestFuture(LINUX_DEPOT, gid, requestCode, srv, depotKey, null,
-                        cdnTokenFor(content, LINUX_DEPOT, srv, tokenCache)).get(120, TimeUnit.SECONDS);
+                manifest = cdn.downloadManifestFuture(depot, gid, requestCode, srv, depotKey, null,
+                        cdnTokenFor(content, depot, srv, tokenCache)).get(120, TimeUnit.SECONDS);
                 serverIdx = i;
                 break;
             } catch (Exception e) {
                 lastErr = e;
-                Log.w(TAG, "manifest via " + srv.getHost() + " failed: " + describe(e));
+                Log.w(TAG, "manifest of " + depot + " via " + srv.getHost() + " failed: " + describe(e));
             }
         }
-        if (manifest == null) { done("Manifest download failed: " + describe(lastErr)); running = false; return; }
+        if (manifest == null) { done("Manifest download failed: " + describe(lastErr)); running = false; return false; }
 
         List<FileData> files = manifest.getFiles();
         long totalBytes = 0;
@@ -590,11 +784,11 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
             done("Manifest fetched OK (no content downloaded).");
             running = false;
             try { steamUser.logOff(); } catch (Throwable ignored) {}
-            return;
+            return false;
         }
 
         // Resume: names already written in full during an earlier run of this same build.
-        File doneListFile = new File(outDir, ".oxydroid_complete_" + LINUX_DEPOT + "_" + Long.toUnsignedString(gid));
+        File doneListFile = new File(outDir, ".oxydroid_complete_" + depot + "_" + Long.toUnsignedString(gid));
         Set<String> doneSet = loadDoneSet(doneListFile);
 
         final AtomicLong doneBytes = new AtomicLong(0);
@@ -685,16 +879,157 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
         }
         for (OpenFile o : open) o.close();   // what a failure or a cancel left half written
         if (firstError.get() != null) throw new Exception(describe(firstError.get()), firstError.get());
-        if (!running) { done("Download cancelled."); return; }
+        if (!running) { done("Download cancelled."); return false; }
+        return true;
+    }
 
-        fetchMacSimDll(apps, content, cdn, servers, outDir);
-        if (!running) { done("Download cancelled."); return; }
+    /**
+     * The DLCs of the game this account owns, and the content of each: every depot of the game whose
+     * "dlcappid" is an owned DLC, for Linux or for every system, goes into the instance like the game's
+     * own depot (the DLC content lives inside the game folder). A DLC without such a depot ships with
+     * the game. The owned DLCs whose content is in place are written to the instance's DLC list
+     * (GameInstance.DLC_LIST), which the launch hands to the game's Steam stand-in. Returns a summary.
+     */
+    private String downloadDlcs(SteamApps apps, SteamContent content, Client cdn, List<Server> servers,
+                                File outDir) throws Exception {
+        KeyValue app = appInfo();
+        if (app == null) { progress("DLCs: the game's Steam data could not be read; skipped."); return "not checked"; }
+        if (buildId == 0) buildId = app.get("depots").get("branches").get("public").get("buildid").asLong(0L);
+        java.util.Set<Integer> dlcs = new java.util.TreeSet<>();
+        String list = app.get("extended").get("listofdlc").asString();
+        for (String id : (list == null ? "" : list).split(",")) {
+            try { if (!id.trim().isEmpty()) dlcs.add(Integer.parseInt(id.trim())); } catch (NumberFormatException ignored) { }
+        }
+        java.util.Set<Integer> owned = ownedApps();
+        if (owned == null) { progress("DLCs: the account's purchases could not be read; skipped."); return "not checked"; }
+        dlcs.retainAll(owned);
+        if (dlcs.isEmpty()) {
+            progress("DLCs on this account: none.");
+            com.oxydroid.game.GameInstance.writeDlcList(outDir, dlcs);
+            return "none on this account";
+        }
+        progress("DLCs on this account: " + dlcs + ".");
 
-        downloadCompleted = true;
-        finalizeInstance();
-        done("Instance '" + instanceName + "' downloaded — ready to launch.");
-        running = false;
-        try { steamUser.logOff(); } catch (Throwable ignored) {}
+        java.util.Set<Integer> ready = new java.util.TreeSet<>(dlcs);
+        KeyValue depots = app.get("depots");
+        for (KeyValue d : depots.getChildren()) {
+            int depot;
+            try { depot = Integer.parseInt(d.getName()); } catch (Exception e) { continue; }
+            int dlc = d.get("dlcappid").asInteger(0);
+            if (dlc == 0 || !dlcs.contains(dlc)) continue;
+            String os = d.get("config").get("oslist").asString();
+            if (os != null && !os.isEmpty() && !os.contains("linux")) continue;
+            String gidText = d.get("manifests").get("public").get("gid").asString();
+            if (gidText == null || gidText.isEmpty()) continue;
+            String name = d.get("name").asString();
+            progress("DLC " + dlc + ": depot " + depot + (name == null || name.isEmpty() ? "" : " (" + name + ")") + "…");
+            boolean ok;
+            try {
+                ok = downloadDepot(apps, content, cdn, servers, depot, Long.parseUnsignedLong(gidText), outDir, false);
+            } catch (Exception e) {
+                if (!running) throw e;
+                progress("DLC " + dlc + ": depot " + depot + " failed — " + describe(e));
+                ok = false;
+            }
+            if (!running) return "cancelled";
+            if (!ok) {
+                ready.remove(dlc);
+                if (doneEmitted) {
+                    // downloadDepot ended the download with its own message: keep what is complete.
+                    com.oxydroid.game.GameInstance.writeDlcList(outDir, ready);
+                    return "stopped";
+                }
+            }
+        }
+        com.oxydroid.game.GameInstance.writeDlcList(outDir, ready);
+        return ready.isEmpty() ? "none ready" : ready.size() + " ready " + ready;
+    }
+
+    /**
+     * DLC mode: the downloaded DLC content (entries relative to the game folder) and its DLC list into
+     * /Download/OxyDroid/OxygenNotIncluded_DLC_&lt;ids&gt;_build&lt;build&gt;.zip; the work folder is then
+     * removed. Null when there is nothing to pack or packing failed (said in the log).
+     */
+    private File packDlcZip(File workDir) {
+        List<Integer> ids = new ArrayList<>();
+        File list = new File(workDir, com.oxydroid.game.GameInstance.DLC_LIST);
+        try {
+            if (list.isFile())
+                for (String line : new String(java.nio.file.Files.readAllBytes(list.toPath()),
+                        java.nio.charset.StandardCharsets.UTF_8).split("\n"))
+                    if (!line.trim().isEmpty()) ids.add(Integer.parseInt(line.trim()));
+        } catch (Exception e) {
+            Log.w(TAG, "DLC list unreadable", e);
+        }
+        if (ids.isEmpty()) return null;
+        File[] kids = workDir.listFiles();
+        if (kids != null)
+            for (File k : kids)
+                if (k.isFile() && k.getName().startsWith(".oxydroid_complete_")) //noinspection ResultOfMethodCallIgnored
+                    k.delete();
+        StringBuilder name = new StringBuilder("OxygenNotIncluded_DLC");
+        for (Integer id : ids) name.append('_').append(id);
+        name.append('_').append(buildId > 0 ? "build" + buildId : "unknown").append(".zip");
+        AppStorage storage = AppStorage.requireSingleton();
+        File zip = new File(storage.getDownloadsDir(), name.toString());
+        try {
+            progress("Packing the DLC copy: " + zip.getAbsolutePath());
+            ZipUtil.zipDir(workDir, zip);
+            storage.publishToMediaIndex(zip, "application/zip");
+            lastDlcZip = zip;
+            progress("DLC copy saved: " + zip.getName() + " (" + (zip.length() / (1024 * 1024)) + " MB).");
+            deleteRecursive(workDir);
+            return zip;
+        } catch (Throwable t) {
+            Log.e(TAG, "DLC zip failed", t);
+            progress("DLC copy not saved: " + describe(t) + " (grant All-files access?)");
+            return null;
+        }
+    }
+
+    /** The game's PICS app data (depots, DLC list), or null. */
+    private KeyValue appInfo() {
+        try {
+            SteamApps apps = steamClient.getHandler(SteamApps.class);
+            long token = 0L;
+            try {
+                PICSTokensCallback tk = apps.picsGetAccessTokens(List.of(APP_ID), Collections.emptyList())
+                        .toFuture().get(20, TimeUnit.SECONDS);
+                Long t = tk.getAppTokens().get(APP_ID);
+                if (t != null) token = t;
+            } catch (Throwable ignored) { }
+            AsyncJobMultiple.ResultSet<PICSProductInfoCallback> rs =
+                    apps.picsGetProductInfo(List.of(new PICSRequest(APP_ID, token)), Collections.emptyList())
+                            .toFuture().get(40, TimeUnit.SECONDS);
+            for (PICSProductInfoCallback cb : rs.getResults()) {
+                PICSProductInfo info = cb.getApps().get(APP_ID);
+                if (info != null) return info.getKeyValues();
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "app info failed", t);
+        }
+        return null;
+    }
+
+    /** Every app id the account's licenses (packages) grant, or null when they cannot be read. */
+    private java.util.Set<Integer> ownedApps() {
+        try {
+            List<PICSRequest> packages = new ArrayList<>();
+            if (licenseList != null)
+                for (License l : licenseList) packages.add(new PICSRequest(l.getPackageID(), l.getAccessToken()));
+            if (packages.isEmpty()) return new java.util.HashSet<>();
+            SteamApps apps = steamClient.getHandler(SteamApps.class);
+            AsyncJobMultiple.ResultSet<PICSProductInfoCallback> rs =
+                    apps.picsGetProductInfo(Collections.emptyList(), packages).toFuture().get(60, TimeUnit.SECONDS);
+            java.util.Set<Integer> owned = new java.util.HashSet<>();
+            for (PICSProductInfoCallback cb : rs.getResults())
+                for (PICSProductInfo pkg : cb.getPackages().values())
+                    for (KeyValue a : pkg.getKeyValues().get("appids").getChildren()) owned.add(a.asInteger(0));
+            return owned;
+        } catch (Throwable t) {
+            Log.w(TAG, "owned apps failed", t);
+            return null;
+        }
     }
 
     /**
@@ -900,8 +1235,8 @@ public class SteamDownloadSpike implements Runnable, IDownloadListener, Cancella
             // node, and a retry would land on the node that just failed.
             Server srv = servers.get(Math.floorMod(serverCursor.getAndIncrement(), servers.size()));
             try {
-                written = cdn.downloadDepotChunkFuture(LINUX_DEPOT, chunk, srv, dest, depotKey, null,
-                        cdnTokenFor(content, LINUX_DEPOT, srv, tokenCache)).get(120, TimeUnit.SECONDS);
+                written = cdn.downloadDepotChunkFuture(currentDepot, chunk, srv, dest, depotKey, null,
+                        cdnTokenFor(content, currentDepot, srv, tokenCache)).get(120, TimeUnit.SECONDS);
             } catch (Exception e) {
                 chunkErr = e;
                 Log.w(TAG, "chunk via " + srv.getHost() + " failed (try " + (t + 1) + "/"

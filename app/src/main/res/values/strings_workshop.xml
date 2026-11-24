@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Steam Workshop browser (WorkshopFragment, fragment_workshop.xml). -->
+<resources>
+    <string name="workshop_open_a_mod">Tap ↓ on a mod to add it to the queue.</string>
+    <string name="workshop_add_to_queue">Add to queue</string>
+    <string name="workshop_remove_from_queue">Remove</string>
+    <string name="workshop_item_id">Workshop item %1$d</string>
+    <string name="workshop_download_queue">Download</string>
+    <string name="workshop_download_n">Download (%1$d)</string>
+    <string name="workshop_download_busy">A Steam download is already running. Wait for it to finish.</string>
+    <string name="workshop_download_title">Download %1$d item(s)?</string>
+    <string name="workshop_signin_message">%1$s\n\nThe mods are saved as ZIPs in Download/OxyDroid; then install them into an instance. No Steam sign-in is needed.</string>
+    <string name="workshop_download_many">⚠ That is %1$d mods. They download one at a time, so this can take a long while and take up a lot of storage.</string>
+    <string name="workshop_continue">Continue</string>
+    <string name="workshop_text_smaller">Smaller text</string>
+    <string name="workshop_text_larger">Larger text</string>
+    <string name="workshop_offline">No connection to Steam. The Workshop works only online.</string>
+    <string name="workshop_retry">Try again</string>
+</resources>

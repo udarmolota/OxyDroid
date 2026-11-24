@@ -155,10 +155,78 @@ public class CloudSavesFragment extends Fragment {
             new Thread(SteamCloudSpike.forPullColonies(u, p, APP_ID, colonies, new Callbacks()),
                     "CloudSavesPull").start();
         } else {
-            // Sending to the cloud still follows the previous game's folders: not offered yet.
             busy(false);
-            appendLog(getString(R.string.cloud_saves_push_not_yet));
+            chooseColoniesThenPush(gi, u, p);
         }
+    }
+
+    /**
+     * The colonies on the phone: folders with a save in the game's save_files/ and in
+     * cloud_save_files/&lt;id&gt;/ (where the game puts the colonies it makes). The same name in both:
+     * the newer folder.
+     */
+    private List<File> localColonies(GameInstance gi) {
+        File data = new File(AppStorage.requireSingleton().getInstanceDir(gi.getName()),
+                com.oxydroid.game.GameDescriptor.ONI.userDataDirectory());
+        java.util.Map<String, File> byName = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        List<File> roots = new ArrayList<>();
+        roots.add(new File(data, "save_files"));
+        File[] ids = new File(data, "cloud_save_files").listFiles();
+        if (ids != null) for (File id : ids) if (id.isDirectory()) roots.add(id);
+        for (File root : roots) {
+            File[] dirs = root.listFiles();
+            if (dirs == null) continue;
+            for (File d : dirs) {
+                if (!d.isDirectory() || d.getName().equals("auto_save") || !hasSave(d)) continue;
+                File known = byName.get(d.getName());
+                if (known == null || SteamCloudSpike.newestMtime(d) > SteamCloudSpike.newestMtime(known))
+                    byName.put(d.getName(), d);
+            }
+        }
+        return new ArrayList<>(byName.values());
+    }
+
+    private static boolean hasSave(File dir) {
+        File[] fs = dir.listFiles();
+        if (fs == null) return false;
+        for (File f : fs) if (f.isFile() && f.getName().endsWith(".sav")) return true;
+        return false;
+    }
+
+    /** Pick the colonies to send (offline, before signing in), then send them. */
+    private void chooseColoniesThenPush(GameInstance gi, String user, String pass) {
+        final List<File> colonies = localColonies(gi);
+        if (colonies.isEmpty()) {
+            Toast.makeText(requireContext(), R.string.cloud_saves_push_none, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        CharSequence[] labels = new CharSequence[colonies.size()];
+        final boolean[] checked = new boolean[colonies.size()];
+        for (int i = 0; i < labels.length; i++) {
+            // The colony's name, and under it, smaller, when it was last saved.
+            android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder(colonies.get(i).getName());
+            sb.append('\n');
+            int start = sb.length();
+            sb.append(fmtDate(SteamCloudSpike.newestMtime(colonies.get(i))));
+            sb.setSpan(new android.text.style.RelativeSizeSpan(0.75f), start, sb.length(),
+                    android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            labels[i] = sb;
+        }
+        new MaterialAlertDialogBuilder(requireContext(), R.style.ThemeOverlay_OxyDroid_Dialog_Buttons)
+                .setTitle(R.string.cloud_saves_push_choose)
+                .setMultiChoiceItems(labels, checked, (d, which, isChecked) -> checked[which] = isChecked)
+                .setPositiveButton(R.string.cloud_saves_push, (d, w) -> {
+                    List<File> picked = new ArrayList<>();
+                    for (int i = 0; i < checked.length; i++) if (checked[i]) picked.add(colonies.get(i));
+                    if (picked.isEmpty()) return;
+                    busy(true);
+                    log.setText("");
+                    appendLog(getString(R.string.cloud_saves_log_connecting));
+                    new Thread(SteamCloudSpike.forPushColonies(user, pass, APP_ID, picked, new Callbacks()),
+                            "CloudSavesPush").start();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     // ===== placement: runs offline, after the Steam session is gone =====
@@ -431,7 +499,7 @@ public class CloudSavesFragment extends Fragment {
                         sb.append("\n   ").append(getString(R.string.cloud_saves_clash_on_phone,
                                 fmtDate(cf.localTimestampMs)));
                 }
-                new MaterialAlertDialogBuilder(requireContext())
+                new MaterialAlertDialogBuilder(requireContext(), R.style.ThemeOverlay_OxyDroid_Dialog_Buttons)
                         .setTitle(R.string.cloud_saves_push_confirm_title)
                         .setMessage(getString(R.string.cloud_saves_push_confirm_replace, sb.toString()))
                         .setCancelable(false)
@@ -490,9 +558,10 @@ public class CloudSavesFragment extends Fragment {
         return e.getText() == null ? "" : e.getText().toString().trim();
     }
 
+    /** Day/month/year and the time, the same in every language: 24/11/26 19:16. */
     private String fmtDate(long ms) {
         if (ms <= 0) return "?";
-        return DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(ms));
+        return new java.text.SimpleDateFormat("dd/MM/yy HH:mm", java.util.Locale.ROOT).format(new Date(ms));
     }
 
     /** Append a line and keep the console scrolled to the bottom (so it never looks frozen). */

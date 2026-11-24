@@ -374,6 +374,8 @@ public final class LogExporter {
             textureHistory = "unknown: " + t;
         }
         line(sb, "texture conversion", textureHistory.replace("\n", "\n                    "));
+        java.util.List<Integer> dlcs = gi.dlcs();
+        line(sb, "dlcs", dlcs.isEmpty() ? "(none downloaded)" : dlcs.toString());
         line(sb, "extra env", s.getEnvVars() == null ? "" : s.getEnvVars());
         byte[] out = sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
         zos.putNextEntry(new ZipEntry(name));

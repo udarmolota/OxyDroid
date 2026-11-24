@@ -123,6 +123,8 @@ public class OniModsFragment extends Fragment {
                 msg.append("\n\n").append(app.getString(R.string.oni_mods_unrecognized));
                 for (String n : odd) msg.append("\n• ").append(n);
             }
+            // New mods are switched on by the game's next start (OniMods.markForEnable).
+            OniMods.markForEnable(userDir, done);
             if (!done.isEmpty()) msg.append("\n\n").append(app.getString(R.string.oni_mods_imported_next));
             android.app.Activity act = getActivity();
             if (act == null) return;

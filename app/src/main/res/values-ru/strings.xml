@@ -48,7 +48,7 @@
     <string name="cloud_saves_clash_in_cloud">в облаке: %1$s</string>
     <string name="cloud_saves_clash_on_phone">на телефоне: %1$s</string>
     <string name="cloud_saves_from_cloud_suffix">(из облака)</string>
-    <string name="cloud_saves_world_label">мир %1$s (файлов: %2$d)</string>
+    <string name="cloud_saves_world_label">колония %1$s (файлов: %2$d)</string>
     <string name="cloud_saves_world_clash_title">Мир %1$s уже есть</string>
     <string name="cloud_saves_world_clash_note">Если взять из облака, мир с телефона будет отложен в папку %1$s — ничего не удаляется.</string>
     <string name="cloud_saves_log_world_placed">Скопирован: мир %1$s (файлов: %2$d)</string>
@@ -233,8 +233,8 @@
     <string name="download_tab_game">Игра</string>
     <string name="download_tab_mods">Моды</string>
     <string name="download_install_content">Установить мод / DLC в инстанс</string>
-    <string name="download_mods_note">Скачивание модов Мастерской по ID (число в URL мастерской: …/sharedfiles/filedetails/?id=ЧИСЛО). Логин Steam не нужен. Несколько ID — через пробел. Каждый сохраняется в .zip в /Download/OxyDroid.</string>
-    <string name="download_mods_hint">ID Мастерской — через пробел</string>
+    <string name="download_mods_note">Моды Oxygen Not Included из Мастерской, по номеру или ссылке. Вход не нужен. Моды сохраняются ZIP-ами в Download/OxyDroid, потом их можно установить в экземпляр.</string>
+    <string name="download_mods_hint">Ссылки или номера из Мастерской</string>
     <string name="download_mods_hint_single">ID Мастерской</string>
     <string name="download_mods_start">Скачать моды</string>
     <string name="download_mods_login_head">Прямое скачивание (без логина)</string>
@@ -317,7 +317,7 @@
     <string name="release_notes_body" translatable="false"><b>– Как получить игру</b>\nСкачай из Steam прямо здесь или импортируй ZIP с Linux-версией. Недостающий файл macOS лаунчер попросит сам.\n\n<b>– Сенсорное управление</b>\nОдин палец — инструмент, два двигают карту, щипок — зум. Кнопки и тачпад с редактором раскладки.\n\n<b>– Колонии, моды, достижения</b>\nКолонии из Steam Cloud, моды из ZIP, достижения синхронизируются со Steam.\n\n<b>– Mali и другие GPU</b>\nТекстуры игры один раз преобразуются перед первым запуском.\n\nПервая альфа. Что-то не так? Боковое меню → «Сообщить об ошибке».</string>
     <string name="instance_downloading">скачивается, дождитесь окончания</string>
     <string name="instance_incomplete">не докачано</string>
-    <string name="instance_incomplete_hint">Загрузка прервалась, не закончившись. Откройте боковое меню → %1$s и скачайте заново с тем же именем инстанса — загрузка продолжится с места остановки.</string>
+    <string name="instance_incomplete_hint">Скачивание не завершилось. Скачай заново, есть опция докачки.</string>
     <string name="download_backup_note">После скачивания игра упаковывается в резервный архив в папке «Загрузки». Это происходит уже после того, как полоса дойдёт до 100%, занимает несколько минут на несколько гигабайт и требует, чтобы приложение было открыто — наберитесь терпения.</string>
     <string name="gfx_preset_apply">Применить</string>
     <string name="gfx_preset_pending">«%1$s» применится при следующем запуске</string>
@@ -528,7 +528,7 @@
     <string name="oni_mods_delete_confirm">Удалить %1$s? Папка мода будет удалена из этого экземпляра.</string>
     <string name="oni_mods_failed">Не удалось изменить моды: %1$s</string>
     <string name="oni_mods_exported">Экспортировано модов: %1$d. Zip импортируется обратно целиком, здесь или на другом телефоне.</string>
-    <string name="oni_mods_imported_next">Запустите игру один раз, затем включите новые моды на экране модов.</string>
+    <string name="oni_mods_imported_next">Новые моды включатся сами при следующем запуске игры.</string>
     <string name="oni_mods_unrecognized">Установлено, но признаков мода Oxygen Not Included внутри нет (ни mod_info.yaml, ни DLL, ни перевода). Игра может их не загрузить; пресеты ReShade и сейвы — не моды игры:</string>
     <string name="game_restarting">Перезапуск %1$s…</string>
     <string name="steam_achievements_sync">Синхронизировать со Steam</string>
@@ -544,4 +544,44 @@
     <string name="simdll_failed">Этот файл не подходит: %1$s</string>
     <string name="native_engine_preparing_note">Первый запуск экземпляра занимает на несколько секунд дольше.</string>
     <string name="native_engine_already_starting">Игра уже запускается</string>
+    <string name="download_tab_dlc">DLC</string>
+    <string name="download_dlc_note">Скачивает DLC, купленные на твоём аккаунте Steam, в ZIP в Download/OxyDroid. Потом добавь его в экземпляр с игрой: сразу или позже в новый экземпляр. Войди выше, как для скачивания игры.</string>
+    <string name="download_dlc_instance_hint">Экземпляр</string>
+    <string name="download_dlc_start">Скачать мои DLC</string>
+    <string name="download_dlc_no_game">В этом экземпляре ещё нет игры</string>
+    <string name="nav_workshop">Мастерская Steam</string>
+    <string name="workshop_title">Мастерская Steam</string>
+    <string name="workshop_note">Вставь ссылки или номера модов Oxygen Not Included из Мастерской: они скачаются с твоего аккаунта Steam и установятся в выбранный экземпляр. Мастерская отдаёт моды только аккаунту, на котором есть игра. Вход подтверждается в приложении Steam Mobile (коды Steam Guard не поддерживаются); логин уходит напрямую в Steam и нигде не сохраняется.</string>
+    <string name="workshop_ids_hint">Ссылки или номера из Мастерской</string>
+    <string name="workshop_start">Скачать и установить</string>
+    <string name="workshop_ids_missing">Вставь хотя бы одну ссылку или номер</string>
+    <string name="workshop_required">Обязательно</string>
+    <string name="workshop_codes_unsupported">Коды Steam Guard не поддерживаются: подтверди вход в приложении Steam Mobile</string>
+    <string name="download_dlc_add">Установить скачанные DLC (%1$d) в экземпляр</string>
+    <string name="download_dlc_from_zip">Добавить DLC из ZIP…</string>
+    <string name="download_dlc_choose">Добавить DLC в</string>
+    <string name="download_dlc_installing">Добавляю DLC…</string>
+    <string name="download_dlc_added">DLC добавлены в %1$s: %2$s</string>
+    <string name="download_dlc_failed">DLC не добавлены: %1$s</string>
+    <string name="simdll_emulated_title">Нет SimDLL из macOS-версии</string>
+    <string name="simdll_emulated_message">В этой копии нет файла SimDLL из macOS-версии игры, поэтому будет работать оригинальный файл из Linux-версии под эмуляцией. Игра запустится, но симуляция будет медленнее, особенно в больших колониях и на высокой скорости. Файл можно добавить позже в настройках экземпляра.</string>
+    <string name="simdll_emulated_start">Старт</string>
+    <string name="simdll_add_file">Добавить файл</string>
+    <string name="instance_damaged">повреждена или неполная</string>
+    <string name="instance_damaged_hint">В этой копии не хватает файлов игры.</string>
+    <string name="import_incomplete_title">В этой копии не хватает файлов игры</string>
+    <string name="import_incomplete_message">OxyDroid нужна полная Linux-версия игры последней версии. Её можно скачать прямо здесь: из Steam или GOG.</string>
+    <string name="import_incomplete_files">Не хватает: %1$s</string>
+    <string name="extra_files_title">Дополнительные файлы</string>
+    <string name="extra_files_hint">SimDLL из macOS-версии той же версии игры запускает симуляцию нативно. Без него работает файл из Linux-версии под эмуляцией, медленнее.</string>
+    <string name="extra_files_add_simdll">Добавить SimDLL из macOS</string>
+    <string name="extra_files_simdll_native">Симуляция: нативная (SimDLL из macOS)</string>
+    <string name="extra_files_simdll_emulated">Симуляция: эмуляция (SimDLL из Linux)</string>
+    <string name="extra_files_simdll_none">Симуляция: нет SimDLL, игра не запустится</string>
+    <string name="cloud_saves_push_choose">Какие колонии отправить</string>
+    <string name="cloud_saves_push_none">На телефоне пока нет колоний</string>
+    <string name="download_mods_install">Установить скачанные моды (%1$d) в экземпляр</string>
+    <string name="download_mods_choose">Установить моды в</string>
+    <string name="download_mods_installing">Устанавливаю моды…</string>
+    <string name="download_mods_installed">Установлено в %1$s: модов %2$d. Они включатся при следующем запуске игры.</string>
 </resources>

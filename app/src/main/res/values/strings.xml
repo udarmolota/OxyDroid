@@ -49,7 +49,7 @@ In the cloud: %2$s
     <string name="cloud_saves_clash_in_cloud">in the cloud: %1$s</string>
     <string name="cloud_saves_clash_on_phone">on this phone: %1$s</string>
     <string name="cloud_saves_from_cloud_suffix">(from cloud)</string>
-    <string name="cloud_saves_world_label">world %1$s (%2$d files)</string>
+    <string name="cloud_saves_world_label">colony %1$s (%2$d files)</string>
     <string name="cloud_saves_world_clash_title">World %1$s is already here</string>
     <string name="cloud_saves_world_clash_note">Using the cloud one moves this phone\'s world aside to %1$s — nothing is deleted.</string>
     <string name="cloud_saves_log_world_placed">Copied in: world %1$s (%2$d files)</string>
@@ -257,8 +257,8 @@ In the cloud: %2$s
     <string name="download_tab_game">Game</string>
     <string name="download_tab_mods">Mods</string>
     <string name="download_install_content">Install a mod / DLC into an instance</string>
-    <string name="download_mods_note">Download Workshop mods by ID (the number in the workshop URL: …/sharedfiles/filedetails/?id=NUMBER). No Steam login needed. Several IDs can be space-separated. Each is saved as a .zip in /Download/OxyDroid.</string>
-    <string name="download_mods_hint">Workshop ID(s) — space-separated</string>
+    <string name="download_mods_note">Workshop mods of Oxygen Not Included, by id or link. No sign-in needed. They are saved as ZIPs in Download/OxyDroid; then install them into an instance.</string>
+    <string name="download_mods_hint">Workshop links or ids</string>
     <string name="download_mods_hint_single">Workshop ID</string>
     <string name="download_mods_start">Download mods</string>
     <string name="download_mods_login_head">Direct download (no login)</string>
@@ -338,7 +338,7 @@ In the cloud: %2$s
     <string name="release_notes_body" translatable="false"><b>– Get the game</b>\nDownload it from Steam here, or import a ZIP of the Linux build. A missing macOS file is asked for.\n\n<b>– Touch controls</b>\nOne finger uses the tool, two drag the map, a pinch zooms. Buttons and a touchpad with a layout editor.\n\n<b>– Colonies, mods, achievements</b>\nColonies from Steam Cloud, mods from a ZIP, achievements synced with Steam.\n\n<b>– Mali and other GPUs</b>\nThe game\'s textures are converted once before the first launch.\n\nFirst alpha. Something wrong? Side menu → Report a bug.</string>
     <string name="instance_downloading">downloading, wait until it finishes</string>
     <string name="instance_incomplete">not finished</string>
-    <string name="instance_incomplete_hint">The download stopped before it finished. Open side menu → %1$s and download again with the same instance name — it continues where it stopped.</string>
+    <string name="instance_incomplete_hint">Download not finished. Download it again; resuming is available.</string>
     <string name="download_backup_note">After the download the game is packed into a backup archive in the Downloads folder. That step runs after the progress bar reaches 100%, takes a few minutes for several GB, and needs the app open — please be patient.</string>
     <string name="gfx_preset_apply">Apply</string>
     <string name="gfx_preset_pending">%1$s will be applied on the next launch</string>
@@ -550,7 +550,7 @@ In the cloud: %2$s
     <string name="oni_mods_delete_confirm">Delete %1$s? Its folder is removed from this instance.</string>
     <string name="oni_mods_failed">Could not change the mods: %1$s</string>
     <string name="oni_mods_exported">Exported %1$d mods. The zip imports back whole, here or on another phone.</string>
-    <string name="oni_mods_imported_next">Start the game once, then switch the new mods on in the Mods screen.</string>
+    <string name="oni_mods_imported_next">The new mods are switched on by themselves at the next game start.</string>
     <string name="oni_mods_unrecognized">Installed, but with no sign of an Oxygen Not Included mod inside (no mod_info.yaml, DLL or translation). The game may not load these; ReShade presets and saves are not mods of the game:</string>
     <string name="game_restarting">Restarting %1$s…</string>
     <string name="steam_achievements_sync">Sync with Steam</string>
@@ -566,4 +566,44 @@ In the cloud: %2$s
     <string name="simdll_failed">Could not use this file: %1$s</string>
     <string name="native_engine_preparing_note">The first launch of an instance takes a few seconds longer.</string>
     <string name="native_engine_already_starting">The game is already starting</string>
+    <string name="download_tab_dlc">DLC</string>
+    <string name="download_dlc_note">Downloads the DLCs your Steam account owns into a ZIP in Download/OxyDroid. Then add it to an instance that has the game: now, or later for a new instance. Sign in above as for the game download.</string>
+    <string name="download_dlc_instance_hint">Instance</string>
+    <string name="download_dlc_start">Download my DLCs</string>
+    <string name="download_dlc_no_game">This instance has no game yet</string>
+    <string name="nav_workshop">Steam Workshop</string>
+    <string name="workshop_title">Steam Workshop</string>
+    <string name="workshop_note">Paste Workshop links or ids of Oxygen Not Included mods: they are downloaded with your Steam account and installed into the chosen instance. The Workshop gives mods only to an account that owns the game. The sign-in is approved in the Steam Mobile app (Steam Guard codes are not supported); your login goes straight to Steam and is never stored.</string>
+    <string name="workshop_ids_hint">Workshop links or ids</string>
+    <string name="workshop_start">Download and install</string>
+    <string name="workshop_ids_missing">Paste at least one Workshop link or id</string>
+    <string name="workshop_required">Required</string>
+    <string name="workshop_codes_unsupported">Steam Guard codes are not supported: approve the sign-in in the Steam Mobile app</string>
+    <string name="download_dlc_add">Add the downloaded DLC (%1$d) to an instance</string>
+    <string name="download_dlc_from_zip">Add DLC from a ZIP…</string>
+    <string name="download_dlc_choose">Add the DLC to</string>
+    <string name="download_dlc_installing">Adding the DLC…</string>
+    <string name="download_dlc_added">DLC added to %1$s: %2$s</string>
+    <string name="download_dlc_failed">DLC not added: %1$s</string>
+    <string name="simdll_emulated_title">No SimDLL from the macOS version</string>
+    <string name="simdll_emulated_message">This copy has no SimDLL from the macOS version of the game, so the original file from the Linux version will run under emulation. The game starts, but the simulation is slower, most of all in big colonies and at high speed. You can add the file later in the instance settings.</string>
+    <string name="simdll_emulated_start">Start</string>
+    <string name="simdll_add_file">Add file</string>
+    <string name="instance_damaged">damaged or incomplete</string>
+    <string name="instance_damaged_hint">This copy is missing game files.</string>
+    <string name="import_incomplete_title">This copy is missing game files</string>
+    <string name="import_incomplete_message">OxyDroid needs the complete Linux version of the current game. You can download it right here, from Steam or GOG.</string>
+    <string name="import_incomplete_files">Missing: %1$s</string>
+    <string name="extra_files_title">Additional files</string>
+    <string name="extra_files_hint">SimDLL from the macOS version of the same game version runs the simulation natively. Without it, the Linux file runs under emulation, slower.</string>
+    <string name="extra_files_add_simdll">Add SimDLL from macOS</string>
+    <string name="extra_files_simdll_native">Simulation: native (SimDLL from macOS)</string>
+    <string name="extra_files_simdll_emulated">Simulation: emulated (SimDLL from Linux)</string>
+    <string name="extra_files_simdll_none">Simulation: no SimDLL, the game will not start</string>
+    <string name="cloud_saves_push_choose">Colonies to send</string>
+    <string name="cloud_saves_push_none">No colonies on the phone yet</string>
+    <string name="download_mods_install">Install the downloaded mods (%1$d) into an instance</string>
+    <string name="download_mods_choose">Install the mods into</string>
+    <string name="download_mods_installing">Installing the mods…</string>
+    <string name="download_mods_installed">Installed into %1$s: %2$d mod(s). They are switched on at the next game start.</string>
 </resources>

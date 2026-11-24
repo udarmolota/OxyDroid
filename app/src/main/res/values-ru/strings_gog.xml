@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gog_dl_menu">Скачать из GOG</string>
+    <string name="gog_title">Скачать Oxygen Not Included из GOG</string>
+    <string name="gog_login_note">Входи по почте и паролю GOG. Вход через привязанный аккаунт внутри приложения не доходит до конца — если ты обычно заходишь так, сначала задай пароль GOG: gog.com → Sign in → Password reset.</string>
+    <string name="gog_disclaimer_title">Дисклеймер</string>
+    <string name="gog_disclaimer_text">Пароль OxyDroid не видит — ты вводишь его на странице самого GOG. Токен доступа хранится только в памяти и исчезает при закрытии приложения; куки входа остаются в личном хранилище приложения, чтобы не спрашивать каждый раз, а выход из аккаунта стирает и то, и другое.</string>
+    <string name="gog_login_finishing">Завершаем вход…</string>
+    <string name="gog_login_ok">Вход в GOG выполнен</string>
+    <string name="gog_login_failed">Не удалось войти: %1$s</string>
+    <string name="gog_user_id">ID пользователя: %1$s</string>
+    <string name="gog_check_library">Проверить библиотеку</string>
+    <string name="gog_sign_out">Выйти</string>
+    <string name="gog_checking">Читаем библиотеку…</string>
+    <string name="gog_probe_failed">Не удалось прочитать библиотеку: %1$s</string>
+    <string name="gog_scanning">Проверяем библиотеку — %1$d из %2$d</string>
+    <string name="gog_no_game">Oxygen Not Included в этом аккаунте нет — показаны все игры с Linux-установщиком.</string>
+    <string name="gog_nothing_linux">Ни у одной игры в этом аккаунте нет Linux-установщика.</string>
+    <string name="gog_download">Скачать</string>
+    <string name="gog_queued">В очереди</string>
+    <string name="gog_downloading">Скачивание…</string>
+    <string name="gog_percent">%1$d%%</string>
+    <string name="gog_create_instance">Создать инстанс</string>
+    <string name="gog_item_installer">%1$s · %2$s</string>
+    <string name="gog_item_dlc">DLC · %1$s</string>
+    <string name="gog_dlc_ready">Скачано</string>
+    <string name="gog_dlc_with_game">%1$s\nУстановится вместе с игрой, когда ты создашь инстанс.</string>
+    <string name="gog_dlc_pending_title">DLC ещё скачивается</string>
+    <string name="gog_dlc_pending_message">Часть DLC ещё не скачалась и не попадёт в новый инстанс. Всё равно создать инстанс?</string>
+    <string name="gog_create_anyway">Всё равно создать</string>
+    <string name="gog_keepalive">Скачивание с GOG — можно переключаться на другие приложения</string>
+    <string name="gog_download_interrupted">Загрузка прервалась. Нажми «%1$s» ещё раз, чтобы продолжить.</string>
+    <string name="gog_download_failed">Не удалось скачать: %1$s</string>
+    <string name="gog_extracting">Распаковываем установщик GOG…</string>
+    <string name="gog_install_not_oni">В этом установщике GOG нет Oxygen Not Included для Linux.</string>
+    <string name="gog_storage_title">Нужен доступ к файлам</string>
+    <string name="gog_storage_message">Установщики GOG сохраняются в публичную папку Download/OxyDroid, чтобы их можно было видеть, передавать и использовать снова. Дай OxyDroid «Доступ ко всем файлам» и нажми «Скачать» снова.</string>
+    <string name="gog_storage_grant">Разрешить</string>
+</resources>

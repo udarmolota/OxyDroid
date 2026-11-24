@@ -51,6 +51,14 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:text="@string/download_tab_mods" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_type_dlc"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/download_tab_dlc" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
         <!-- ============ shared Steam login (Game + DLC) ============ -->
@@ -126,6 +134,45 @@
                 android:text="@string/download_start" />
         </LinearLayout>
 
+        <!-- ============ DLC: the content of the DLCs the account owns, into an instance with the game ============ -->
+        <LinearLayout
+            android:id="@+id/section_dlc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/download_dlc_note"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/btn_dlc_start"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/download_dlc_start" />
+
+            <!-- After a DLC download: its ZIP (in /Download/OxyDroid) into an instance -->
+            <Button
+                android:id="@+id/btn_dlc_add"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
+
+            <!-- A DLC ZIP saved earlier, for this or a new instance -->
+            <Button
+                android:id="@+id/btn_dlc_from_zip"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/download_dlc_from_zip" />
+        </LinearLayout>
+
 
         <!-- ============ MODS ============ -->
         <LinearLayout
@@ -135,13 +182,8 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- Part A: with Steam login (uses the login fields above) — direct download. -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/download_mods_login_head"
-                android:textAppearance="?attr/textAppearanceTitleSmall"
-                android:layout_marginBottom="4dp" />
+            <!-- Workshop mods with the Steam sign-in above (the Workshop gives mods only to owners of the
+                 game): into ZIPs in Download/OxyDroid, then into an instance (btn_mods_install). -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -158,7 +200,9 @@
                     android:id="@+id/et_mods_ids"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textNoSuggestions" />
+                    android:minLines="2"
+                    android:gravity="top"
+                    android:inputType="textMultiLine|textNoSuggestions" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <Button
@@ -166,6 +210,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/download_mods_start" />
+
+            <Button
+                android:id="@+id/btn_mods_install"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
         </LinearLayout>
 
         <!-- ============ shared progress + console log ============ -->

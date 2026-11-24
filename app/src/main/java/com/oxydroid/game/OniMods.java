@@ -128,6 +128,31 @@ public final class OniMods {
         return out;
     }
 
+    /** The mods the game switches on by itself at its next start (the bridge's ModsEnable). */
+    public static final String ENABLE_LIST = "oxydroid_enable.txt";
+
+    public static File enableList(File userDataDir) {
+        return new File(dir(userDataDir), ENABLE_LIST);
+    }
+
+    /**
+     * Mod folders just installed into mods/Local/: the game lists a new folder only at its next start,
+     * and switched off. These names go to ENABLE_LIST, and the game's own start switches them on
+     * (tools/unity-native/bridge/ModsEnable.cs), so a new mod works without a visit to the game's menu.
+     */
+    public static void markForEnable(File userDataDir, List<String> localFolders) {
+        if (localFolders == null || localFolders.isEmpty()) return;
+        File f = enableList(userDataDir);
+        File parent = f.getParentFile();
+        if (parent != null) //noinspection ResultOfMethodCallIgnored
+            parent.mkdirs();
+        try (java.io.FileWriter w = new java.io.FileWriter(f, true)) {
+            for (String name : localFolders) w.write("Local/" + name + "\n");
+        } catch (IOException e) {
+            android.util.Log.w("OxyDroid/Mods", "enable list not written: " + e);
+        }
+    }
+
     /** Switches a listed mod on (for the base game and Spaced Out) or off. */
     public static void setEnabled(File userDataDir, Mod mod, boolean enabled) throws IOException {
         File mods = dir(userDataDir);

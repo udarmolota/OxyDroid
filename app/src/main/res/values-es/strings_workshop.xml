@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="workshop_open_a_mod">Toca ↓ en un mod para añadirlo a la cola.</string>
+    <string name="workshop_add_to_queue">A la cola</string>
+    <string name="workshop_remove_from_queue">Quitar</string>
+    <string name="workshop_item_id">Elemento del Workshop %1$d</string>
+    <string name="workshop_download_queue">Descargar</string>
+    <string name="workshop_download_n">Descargar (%1$d)</string>
+    <string name="workshop_download_busy">Ya hay una descarga de Steam en curso. Espera a que termine.</string>
+    <string name="workshop_download_title">¿Descargar %1$d elemento(s)?</string>
+    <string name="workshop_signin_message">%1$s\n\nLos mods se guardan como ZIP en Download/OxyDroid; después instálalos en una instancia. No hace falta iniciar sesión en Steam.</string>
+    <string name="workshop_download_many">⚠ Son %1$d mods. Se descargan de uno en uno, así que puede tardar bastante y ocupar mucho espacio.</string>
+    <string name="workshop_continue">Continuar</string>
+    <string name="workshop_text_smaller">Texto más pequeño</string>
+    <string name="workshop_text_larger">Texto más grande</string>
+    <string name="workshop_offline">Sin conexión con Steam. El Workshop solo funciona en línea.</string>
+    <string name="workshop_retry">Reintentar</string>
+</resources>

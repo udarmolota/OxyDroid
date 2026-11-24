@@ -22,6 +22,11 @@
             android:icon="@drawable/mt_icon_mods"
             android:title="@string/nav_mods"
             android:visible="false" />
+        <!-- The game from GOG (DRM-free Linux installer), into an instance (GogDownloadFragment) -->
+        <item
+            android:id="@+id/action_gog"
+            android:icon="@drawable/mt_icon_folder_open"
+            android:title="@string/gog_dl_menu" />
         <!-- The Thunderstore catalog, the Steam download and Import / export are in the bottom bar
              (menu_bottom_nav.xml), so not here too. -->
     </group>
@@ -47,8 +52,13 @@
             android:visible="false" />
     </group>
 
-    <!-- 3) Steam: cloud saves, multiplayer (the game download is the bottom bar's Game) -->
+    <!-- 3) Steam: Workshop mods, cloud saves, achievements (the game download is the bottom bar's Game) -->
     <group android:id="@+id/group_store" android:checkableBehavior="none">
+        <!-- Workshop mods with the player's Steam account, into an instance (WorkshopFragment) -->
+        <item
+            android:id="@+id/action_workshop"
+            android:icon="@drawable/ic_steam"
+            android:title="@string/nav_workshop" />
         <item
             android:id="@+id/action_cloud_saves"
             android:icon="@drawable/mt_icon_save"

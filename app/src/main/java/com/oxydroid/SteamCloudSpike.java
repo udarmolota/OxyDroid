@@ -118,6 +118,7 @@ public class SteamCloudSpike implements Runnable, Cancellable {
     private File pullDir;                                 // pull target: a temp dir, NOT the Saves/ folder
     private File compareDir;                              // pull: existing Saves/, to skip identical files
     private File coloniesDir;                             // Oxygen Not Included pull: its local save_files/
+    private java.util.List<File> pushColonies;            // Oxygen Not Included push: the colony folders to send
     private final SteamDownloadSpike.Listener listener;   // same shape → same UI wiring
 
     private SteamClient steamClient;
@@ -183,6 +184,17 @@ public class SteamCloudSpike implements Runnable, Cancellable {
     }
 
     /** Push the instance's saves up: new names go silently, existing ones are asked about once. */
+    /**
+     * Oxygen Not Included: send the chosen colony folders (from the instance's save_files/ or
+     * cloud_save_files/&lt;id&gt;/) to the account's Steam Cloud, where the PC game finds them.
+     */
+    public static SteamCloudSpike forPushColonies(String user, String pass, int appId,
+                                                  java.util.List<File> colonies, CloudListener l) {
+        SteamCloudSpike s = new SteamCloudSpike(user, pass, appId, null, false, false, null, l);
+        s.pushColonies = colonies;
+        return s;
+    }
+
     public static SteamCloudSpike forPush(String user, String pass, int appId, String instanceName,
                                           SteamDownloadSpike.Listener l) {
         return new SteamCloudSpike(user, pass, appId, instanceName, false, true, null, l);
@@ -370,6 +382,10 @@ public class SteamCloudSpike implements Runnable, Cancellable {
                 pullColonies(cloud, files, prefixes);
                 return;
             }
+            if (pushColonies != null) {
+                pushColonies(cloud, files, prefixes);
+                return;
+            }
 
             // Split every cloud path into (Valheim folder, path inside it) ONCE, from the full
             // prefix + filename. JavaSteam hands over the protobuf's file_name verbatim and Steam
@@ -522,6 +538,125 @@ public class SteamCloudSpike implements Runnable, Cancellable {
             running = false;   // one-shot: end the callback loop either way
         }
     }
+
+    /**
+     * The Oxygen Not Included push (forPushColonies): every file of the chosen colony folders (the
+     * save, its picture, its auto_save/) to the path the PC game reads,
+     * &lt;root&gt;cloud_save_files/&lt;this account's SteamID&gt;/&lt;Colony&gt;/&lt;file&gt;. The root comes from
+     * the account's own cloud files when it has any. A file the cloud already holds with the same
+     * content is skipped; one the cloud holds differently is asked about once (all such files in one
+     * question). Nothing is ever deleted in the cloud.
+     */
+    private void pushColonies(SteamCloud cloud, List<AppFileInfo> files, List<String> prefixes) {
+        String steamId = Long.toUnsignedString(steamClient.getSteamID().convertToUInt64());
+        String root = null;
+        java.util.Map<String, AppFileInfo> inCloud = new java.util.HashMap<>();
+        for (AppFileInfo f : files) {
+            String full = (prefixOf(f, prefixes) + f.getFilename()).replace('\\', '/');
+            inCloud.put(full.toLowerCase(java.util.Locale.ROOT), f);
+            int at = full.indexOf(CLOUD_COLONIES);
+            if (root == null && at >= 0) root = full.substring(0, at + CLOUD_COLONIES.length());
+        }
+        if (root == null) root = DEFAULT_CLOUD_ROOT + CLOUD_COLONIES;
+        String base = root + steamId + "/";
+        progress("Cloud folder: " + base);
+
+        final class Up {
+            final File file; final String path; final AppFileInfo existing;
+            Up(File file, String path, AppFileInfo existing) { this.file = file; this.path = path; this.existing = existing; }
+        }
+        java.util.List<Up> fresh = new java.util.ArrayList<>(), replace = new java.util.ArrayList<>();
+        int unchanged = 0;
+        for (File colony : pushColonies) {
+            java.util.List<String> rels = new java.util.ArrayList<>();
+            collectFiles(colony, "", rels);
+            for (String rel : rels) {
+                if (rel.endsWith(".before-cloud")) continue;   // the phone's copy a pull kept aside
+                File f = new File(colony, rel);
+                String path = base + colony.getName() + "/" + rel;
+                AppFileInfo c = inCloud.get(path.toLowerCase(java.util.Locale.ROOT));
+                if (c == null) fresh.add(new Up(f, path, null));
+                else if (sameContent(f, c.getShaFile())) unchanged++;
+                else replace.add(new Up(f, path, c));
+            }
+        }
+        if (!replace.isEmpty()) {
+            // One line per colony, with the newest date on each side.
+            java.util.Map<String, long[]> byColony = new java.util.LinkedHashMap<>();
+            for (Up u : replace) {
+                String colony = u.path.substring(base.length());
+                colony = colony.substring(0, colony.indexOf('/'));
+                long[] d = byColony.get(colony);
+                if (d == null) byColony.put(colony, d = new long[3]);
+                long cloudTs = u.existing.getTimestamp() == null ? 0L : u.existing.getTimestamp().getTime();
+                d[0] = Math.max(d[0], cloudTs);
+                d[1] = Math.max(d[1], u.file.lastModified());
+                d[2]++;
+            }
+            java.util.List<CloudFile> clashes = new java.util.ArrayList<>();
+            for (java.util.Map.Entry<String, long[]> e : byColony.entrySet())
+                clashes.add(new CloudFile(e.getKey(), 0L, e.getValue()[0], e.getKey(), (int) e.getValue()[2], e.getValue()[1]));
+            int answer = PUSH_CANCEL;
+            try {
+                if (listener instanceof CloudListener)
+                    answer = ((CloudListener) listener).resolvePushConflicts(clashes).get();
+            } catch (Throwable t) {
+                Log.w(TAG, "push question", t);
+            }
+            if (answer == PUSH_CANCEL) {
+                enumerationCompleted = true;
+                done("Nothing sent.");
+                return;
+            }
+            if (answer == PUSH_REPLACE) fresh.addAll(replace);
+        }
+        if (fresh.isEmpty()) {
+            enumerationCompleted = true;
+            done(unchanged > 0 ? "Everything chosen is already in the cloud (" + unchanged + " file(s))." : "Nothing to send.");
+            return;
+        }
+
+        long batchId = 0;
+        int ok = 0, failed = 0;
+        try {
+            java.util.List<String> names = new java.util.ArrayList<>();
+            for (Up u : fresh) names.add(u.path);
+            progress("Sending " + fresh.size() + " file(s)…");
+            batchId = cloud.beginAppUploadBatch(appId, "OxyDroid", names, java.util.Collections.<String>emptyList(),
+                            steamClient.getSteamID().convertToUInt64(), 0L, ioScope())
+                    .get(60, TimeUnit.SECONDS)
+                    .getBatchID();
+            for (Up u : fresh) {
+                if (!running) break;
+                String label = u.path.substring(base.length());
+                if (uploadOne(cloud, u.file, u.path, batchId, label) != null) {
+                    ok++;
+                    progress("Sent: " + label);
+                } else {
+                    failed++;
+                }
+            }
+        } catch (Throwable t) {
+            Log.e(TAG, "colony upload failed", t);
+            progress("Upload error: " + t);
+            failed = fresh.size() - ok;
+        } finally {
+            if (batchId != 0) {
+                try { cloud.completeAppUploadBatch(appId, batchId, EResult.OK, ioScope()).get(60, TimeUnit.SECONDS); }
+                catch (Throwable t) { Log.w(TAG, "completeAppUploadBatch: " + t); }
+            }
+        }
+        enumerationCompleted = true;
+        done("Sent " + ok + " file(s)"
+                + (unchanged > 0 ? (", " + unchanged + " already in the cloud") : "")
+                + (failed > 0 ? (", " + failed + " failed") : "") + "."
+                + (ok > 0 ? " Your PC picks them up the next time Steam syncs Oxygen Not Included." : ""));
+    }
+
+    /** The folder Oxygen Not Included keeps its Steam Cloud colonies in, under a per-account SteamID folder. */
+    private static final String CLOUD_COLONIES = "cloud_save_files/";
+    /** The cloud root when the account has no colony in the cloud yet (Steam's Documents token, as the game writes it). */
+    private static final String DEFAULT_CLOUD_ROOT = "%WinMyDocuments%Klei/OxygenNotIncluded/";
 
     /** The Oxygen Not Included pull: see {@link #forPullColonies}. */
     private void pullColonies(SteamCloud cloud, List<AppFileInfo> files, List<String> prefixes) {

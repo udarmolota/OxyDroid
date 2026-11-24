@@ -120,6 +120,41 @@ public class GameInstance {
         return new File(getGamePath(), GAME.executable()).isFile();
     }
 
+    /**
+     * The Steam app ids of the DLCs this instance has: owned on the account the content was downloaded
+     * with, and their content in the game folder (SteamDownloadSpike.downloadDlcs). One id per line.
+     * The launch hands them to the game's Steam stand-in (NativeEngine, libsteam_api), which answers
+     * the game's ownership questions with them.
+     */
+    public static final String DLC_LIST = "oxydroid_dlcs.txt";
+
+    public static void writeDlcList(File gameDir, java.util.Collection<Integer> appIds) {
+        StringBuilder sb = new StringBuilder();
+        for (Integer id : appIds) sb.append(id).append('\n');
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(new File(gameDir, DLC_LIST))) {
+            out.write(sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (java.io.IOException e) {
+            android.util.Log.w("OxyDroid/Instance", "DLC list not written: " + e);
+        }
+    }
+
+    /** The DLCs of this instance (see DLC_LIST); empty when none were downloaded. */
+    public java.util.List<Integer> dlcs() {
+        java.util.List<Integer> out = new ArrayList<>();
+        File f = new File(getGamePath(), DLC_LIST);
+        if (!f.isFile()) return out;
+        try {
+            for (String line : new String(java.nio.file.Files.readAllBytes(f.toPath()),
+                    java.nio.charset.StandardCharsets.UTF_8).split("\n")) {
+                line = line.trim();
+                if (!line.isEmpty()) out.add(Integer.parseInt(line));
+            }
+        } catch (Exception e) {
+            android.util.Log.w("OxyDroid/Instance", "DLC list unreadable: " + e);
+        }
+        return out;
+    }
+
     /** Required Valheim runtime files that are absent from this instance. */
     public java.util.List<String> missingCoreFiles() {
         File root = new File(getGamePath());

@@ -91,6 +91,10 @@ public class NewInstanceFragment extends Fragment {
                         intent.getLongExtra(InstallerService.EXTRA_TOTAL, -1));
             } else if (InstallerService.BROADCAST_DONE.equals(action)) {
                 if (progressDialog != null) progressDialog.dismiss();
+                if (!intent.getBooleanExtra(InstallerService.EXTRA_SUCCESS, true)) {
+                    showIncompleteCopy(intent.getStringExtra(InstallerService.EXTRA_MESSAGE));
+                    return;
+                }
                 adviseDriverThenLeave();
             } else if (InstallerService.BROADCAST_ERROR.equals(action)) {
                 mainHandler.post(() -> {
@@ -240,6 +244,29 @@ public class NewInstanceFragment extends Fragment {
 
     /** On install success: detect the GPU, set the recommended driver on the new instance, show a
      *  one-time dialog, then return to the launcher. */
+    /**
+     * The imported copy is missing game files (an old version, another platform, a repack): say what
+     * to do, with the missing files small underneath. The instance stays; the card marks it.
+     */
+    private void showIncompleteCopy(String missing) {
+        if (!isAdded()) return;
+        android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder(
+                getString(R.string.import_incomplete_message));
+        if (missing != null && !missing.isEmpty()) {
+            sb.append("\n\n");
+            int start = sb.length();
+            sb.append(getString(R.string.import_incomplete_files, missing));
+            sb.setSpan(new android.text.style.RelativeSizeSpan(0.8f), start, sb.length(),
+                    android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.import_incomplete_title)
+                .setMessage(sb)
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok, (d, w) -> adviseDriverThenLeave())
+                .show();
+    }
+
     private void adviseDriverThenLeave() {
         final String inst = lastInstanceName;
         if (inst == null) { Navigation.findNavController(requireView()).popBackStack(); return; }
@@ -304,6 +331,14 @@ public class NewInstanceFragment extends Fragment {
         final android.content.Context appCtx = requireContext().getApplicationContext();
         final String[] extras = extraInstallers.toArray(new String[0]);
         final Uri zipUri = selectedZipUri;
+        // A file we produced ourselves (the GOG downloader's installer, ARG_PRESELECTED_FILE) is
+        // already on disk with a real path: hand it over as it is. Copying a multi-gigabyte file
+        // into the cache first would only double the space the install needs. InstallerService
+        // deletes only its own cache copies, so the download itself stays where it is.
+        if ("file".equals(zipUri.getScheme()) && zipUri.getPath() != null) {
+            InstallerService.startInstallInstance(appCtx, zipUri.getPath(), instanceName, extras);
+            return;
+        }
         showProgress(PHASE_COPY, R.string.install_phase_copy, 0, -1);   // up at once, size follows
         new Thread(() -> {
             try {

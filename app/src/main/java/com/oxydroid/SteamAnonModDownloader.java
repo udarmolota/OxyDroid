@@ -107,10 +107,12 @@ public class SteamAnonModDownloader implements Runnable, Cancellable {
     }
 
     /** Minimal resolved info from GetPublishedFileDetails. */
-    private static final class PubInfo {
+    static final class PubInfo {
         int consumerAppId;
         long hcontentFile;     // SteamPipe content manifest GID
         String title = "(workshop item)";
+        String fileUrl;        // the item's one file, for the older user-content storage (Oxygen Not Included)
+        long fileSize;
         boolean ok;
     }
 
@@ -447,7 +449,7 @@ public class SteamAnonModDownloader implements Runnable, Cancellable {
      * Resolve consumer_app_id + content-manifest GID via the public Web API — no login, no CM needed.
      * Keeps the downloader app-agnostic (we feed the right appId to the depot/manifest lookups).
      */
-    private PubInfo resolvePublishedFile(long id) throws Exception {
+    static PubInfo resolvePublishedFile(long id) throws Exception {
         URL url = new URL("https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/");
         HttpURLConnection c = (HttpURLConnection) url.openConnection();
         try {
@@ -479,6 +481,8 @@ public class SteamAnonModDownloader implements Runnable, Cancellable {
             pf.ok = d.optInt("result", 0) == 1;
             pf.consumerAppId = (int) d.optLong("consumer_app_id", 0L);
             pf.title = d.optString("title", "(workshop item)");
+            pf.fileUrl = d.optString("file_url", "");
+            pf.fileSize = d.optLong("file_size", 0L);
             String h = d.optString("hcontent_file", "");
             if (!h.isEmpty()) {
                 try { pf.hcontentFile = Long.parseUnsignedLong(h); } catch (NumberFormatException ignored) {}
@@ -510,7 +514,7 @@ public class SteamAnonModDownloader implements Runnable, Cancellable {
     }
 
     /** Make a Workshop title safe + tidy for a filename (drop illegal chars, collapse spaces, cap length). */
-    private static String sanitizeFileName(String title) {
+    static String sanitizeFileName(String title) {
         if (title == null) return "workshop";
         String s = title.replaceAll("[\\\\/:*?\"<>|]", " ")   // illegal on common filesystems
                         .replaceAll("\\s+", " ")

@@ -34,6 +34,38 @@ static uint64_t vd_steam_id(void)
     return id ? id : 76561197960287930ULL;
 }
 
+/* The DLCs the launcher found on the player's account with their content in the instance
+ * (OXYDROID_STEAM_DLCS, comma-separated Steam app ids). The game asks about each of its DLCs;
+ * the others stay locked, as on a Steam account without them. */
+#define VD_GAME_APP_ID 457140u
+#define VD_MAX_DLCS 32
+static uint32_t vd_dlcs[VD_MAX_DLCS];
+static int vd_dlc_count = -1;
+
+static void vd_load_dlcs(void)
+{
+    if (vd_dlc_count >= 0) return;
+    int n = 0;
+    const char* v = getenv("OXYDROID_STEAM_DLCS");
+    while (v && *v && n < VD_MAX_DLCS) {
+        char* end = NULL;
+        unsigned long id = strtoul(v, &end, 10);
+        if (end == v) break;
+        if (id) vd_dlcs[n++] = (uint32_t)id;
+        v = (*end == ',') ? end + 1 : end;
+    }
+    vd_dlc_count = n;
+}
+
+static int vd_owns(uint32_t app)
+{
+    if (app == VD_GAME_APP_ID) return 1;
+    vd_load_dlcs();
+    for (int i = 0; i < vd_dlc_count; i++)
+        if (vd_dlcs[i] == app) return 1;
+    return 0;
+}
+
 static uint64_t vd_persona_name(void)
 {
     const char* v = getenv("OXYDROID_STEAM_PERSONA");
@@ -151,13 +183,23 @@ VD_EXPORT uint64_t SteamAPI_ISteamAppList_GetAppInstallDir(void) { return 0; }
 VD_EXPORT uint64_t SteamAPI_ISteamAppList_GetAppName(void) { return 0; }
 VD_EXPORT uint64_t SteamAPI_ISteamAppList_GetInstalledApps(void) { return 0; }
 VD_EXPORT uint64_t SteamAPI_ISteamAppList_GetNumInstalledApps(void) { return 0; }
-VD_EXPORT uint64_t SteamAPI_ISteamApps_BGetDLCDataByIndex(void) { return 0; }
-VD_EXPORT uint64_t SteamAPI_ISteamApps_BIsAppInstalled(void) { return 0; }
+VD_EXPORT uint64_t SteamAPI_ISteamApps_BGetDLCDataByIndex(void* self, int32_t index, uint32_t* app, uint8_t* available,
+                                                         char* name, int32_t name_size)
+{
+    (void)self;
+    vd_load_dlcs();
+    if (index < 0 || index >= vd_dlc_count) return 0;
+    if (app) *app = vd_dlcs[index];
+    if (available) *available = 1;
+    if (name && name_size > 0) name[0] = 0;
+    return 1;
+}
+VD_EXPORT uint64_t SteamAPI_ISteamApps_BIsAppInstalled(void* self, uint32_t app) { (void)self; return vd_owns(app); }
 VD_EXPORT uint64_t SteamAPI_ISteamApps_BIsCybercafe(void) { return 0; }
-VD_EXPORT uint64_t SteamAPI_ISteamApps_BIsDlcInstalled(void) { return 0; }
+VD_EXPORT uint64_t SteamAPI_ISteamApps_BIsDlcInstalled(void* self, uint32_t app) { (void)self; return app != VD_GAME_APP_ID && vd_owns(app); }
 VD_EXPORT uint64_t SteamAPI_ISteamApps_BIsLowViolence(void) { return 0; }
 VD_EXPORT uint64_t SteamAPI_ISteamApps_BIsSubscribed(void) { return 1; }
-VD_EXPORT uint64_t SteamAPI_ISteamApps_BIsSubscribedApp(void) { return 1; }
+VD_EXPORT uint64_t SteamAPI_ISteamApps_BIsSubscribedApp(void* self, uint32_t app) { (void)self; return vd_owns(app); }
 VD_EXPORT uint64_t SteamAPI_ISteamApps_BIsSubscribedFromFamilySharing(void) { return 0; }
 VD_EXPORT uint64_t SteamAPI_ISteamApps_BIsSubscribedFromFreeWeekend(void) { return 0; }
 VD_EXPORT uint64_t SteamAPI_ISteamApps_BIsTimedTrial(void) { return 0; }
@@ -168,7 +210,7 @@ VD_EXPORT uint64_t SteamAPI_ISteamApps_GetAppOwner(void) { return vd_steam_id();
 VD_EXPORT uint64_t SteamAPI_ISteamApps_GetAvailableGameLanguages(void) { return (uint64_t)(uintptr_t)vd_language; }
 VD_EXPORT uint64_t SteamAPI_ISteamApps_GetCurrentBetaName(void) { return 0; }
 VD_EXPORT uint64_t SteamAPI_ISteamApps_GetCurrentGameLanguage(void) { return (uint64_t)(uintptr_t)vd_language; }
-VD_EXPORT uint64_t SteamAPI_ISteamApps_GetDLCCount(void) { return 0; }
+VD_EXPORT uint64_t SteamAPI_ISteamApps_GetDLCCount(void) { vd_load_dlcs(); return (uint64_t)vd_dlc_count; }
 VD_EXPORT uint64_t SteamAPI_ISteamApps_GetDlcDownloadProgress(void) { return 0; }
 VD_EXPORT uint64_t SteamAPI_ISteamApps_GetEarliestPurchaseUnixTime(void) { return 0; }
 VD_EXPORT uint64_t SteamAPI_ISteamApps_GetFileDetails(void) { return 0; }
