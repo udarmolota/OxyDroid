@@ -68,17 +68,23 @@ public final class TextureConverter {
      */
     public static List<String> convertIfNeeded(File dataDir, File workDir, Progress progress) throws IOException {
         List<String> done = new ArrayList<>();
-        if (!load()) return done;
+        if (!load()) {
+            history(workDir, "converter library not loaded: textures left as they are");
+            return done;
+        }
         File[] files = dataDir.listFiles();
         if (files == null) return done;
         List<File> pairs = new ArrayList<>();
         List<Long> sizes = new ArrayList<>();
         long total = 0;
+        int checked = 0, unreadable = 0;
         for (File assets : files) {
             if (!assets.isFile() || !assets.getName().endsWith(".assets")) continue;
             File resS = new File(dataDir, assets.getName() + ".resS");
             if (!resS.isFile()) continue;
+            checked++;
             long pending = nativePending(assets.getAbsolutePath(), resS.getAbsolutePath());
+            if (pending < 0) unreadable++;
             // A journal left by an interrupted run means one texture is half-written, whatever the
             // records say: that pair goes through the converter, which puts it back first.
             boolean interrupted = journal(workDir, assets).length() > 0;
@@ -87,8 +93,18 @@ public final class TextureConverter {
             sizes.add(Math.max(pending, 0));
             total += Math.max(pending, 0);
         }
-        if (pairs.isEmpty()) return done;
+        String unread = unreadable > 0 ? ", " + unreadable + " not readable" : "";
+        if (pairs.isEmpty()) {
+            // Every launch comes here; the history gets this once, so it says the instance was looked at.
+            // No pairs at all is the usual case after the first launch: the files live in the archive.
+            if (checked > 0 && !historyFile(workDir).isFile())
+                history(workDir, "checked " + checked + " file(s)" + unread + ": no BC texture data, nothing to convert");
+            return done;
+        }
         Log.i(TAG, pairs.size() + " file(s) to convert, " + (total >> 20) + " MB of BC texture data");
+        history(workDir, "checked " + checked + " file(s)" + unread + ": converting " + pairs.size()
+                + ", " + (total >> 20) + " MB of BC texture data");
+        long started = System.currentTimeMillis();
         long before = 0;
         for (int i = 0; i < pairs.size(); i++) {
             File assets = pairs.get(i);
@@ -96,13 +112,49 @@ public final class TextureConverter {
             Progress inner = progress == null ? null : (d, t) -> progress.onProgress(base + d, all);
             String summary = nativeConvert(assets.getAbsolutePath(), assets.getAbsolutePath() + ".resS",
                     journal(workDir, assets).getAbsolutePath(), inner);
-            if (summary == null)
+            if (summary == null) {
+                history(workDir, "FAILED on " + assets.getName() + " (see the launcher log)");
                 throw new IOException("texture conversion failed for " + assets.getName() + " (see the log)");
+            }
             done.add(assets.getName() + ": " + summary);
+            history(workDir, "  " + assets.getName() + ": " + summary);
             before += sizes.get(i);
             if (progress != null) progress.onProgress(before, total);
         }
+        history(workDir, "done in " + (System.currentTimeMillis() - started) / 1000 + " s");
         return done;
+    }
+
+    /**
+     * The conversion's own record, kept in the instance (native_engine/textures.log) for a report: the
+     * launcher's log of the first launch, where it ran, is soon rotated away, and afterwards the files
+     * live only in the player's archive, where they cannot be checked again.
+     */
+    private static final String HISTORY = "textures.log";
+
+    private static File historyFile(File workDir) {
+        return new File(workDir, HISTORY);
+    }
+
+    private static void history(File workDir, String line) {
+        String stamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+                .format(new java.util.Date());
+        try (java.io.FileWriter out = new java.io.FileWriter(historyFile(workDir), true)) {
+            out.write(stamp + " " + line + "\n");
+        } catch (IOException e) {
+            Log.w(TAG, "texture history not written: " + e);
+        }
+    }
+
+    /** The conversion's record for a report, or a note that there is none (it never ran on this instance). */
+    public static String history(File workDir) {
+        File f = historyFile(workDir);
+        if (!f.isFile()) return "(none: no conversion ran on this instance)";
+        try {
+            return new String(java.nio.file.Files.readAllBytes(f.toPath()), java.nio.charset.StandardCharsets.UTF_8).trim();
+        } catch (IOException e) {
+            return "unreadable: " + e;
+        }
     }
 
     /** For a report: what the GPU samples and how much BC texture data the instance still holds. */

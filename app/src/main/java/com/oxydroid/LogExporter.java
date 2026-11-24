@@ -366,6 +366,14 @@ public final class LogExporter {
             textures = "unknown: " + t;
         }
         line(sb, "textures", textures);
+        String textureHistory;
+        try {
+            textureHistory = com.oxydroid.game.TextureConverter.history(
+                    new java.io.File(gi.getGamePath(), "native_engine"));
+        } catch (Throwable t) {
+            textureHistory = "unknown: " + t;
+        }
+        line(sb, "texture conversion", textureHistory.replace("\n", "\n                    "));
         line(sb, "extra env", s.getEnvVars() == null ? "" : s.getEnvVars());
         byte[] out = sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
         zos.putNextEntry(new ZipEntry(name));
