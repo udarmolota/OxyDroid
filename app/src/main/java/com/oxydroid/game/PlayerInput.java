@@ -65,6 +65,11 @@ public final class PlayerInput implements InputSink.Backend {
             inject.invoke(activity, e);
         } catch (ReflectiveOperationException ex) {
             Log.w(TAG, "inject failed", ex);
+        } finally {
+            // UnityPlayer.injectEvent copies the event into the player at once; without this every
+            // finger movement left an event for the collector, on the UI thread (measured with
+            // OXYPERF: that thread at 20-56% of a core during play, S25 2026-11-24).
+            if (e instanceof MotionEvent) ((MotionEvent) e).recycle();
         }
     }
 

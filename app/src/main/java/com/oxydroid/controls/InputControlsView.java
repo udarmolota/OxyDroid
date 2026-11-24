@@ -219,8 +219,8 @@ public class InputControlsView extends View {
             // Editor only: show how much of the screen a floating stick's capture zone takes.
             if (isEditMode && controlElement.isFloating()) drawFloatZone(canvas, controlElement);
         }
-        if (!isEditMode && !mouseLocked && !cursorHidden && curX >= 0 && (physicalMouse || hasMouseElement()))
-            drawCursor(canvas);
+        if (cursorView != null) updateCursorView();   // visibility may follow a new layout
+        else if (cursorShown()) drawCursor(canvas);
     }
 
     @Override
@@ -683,6 +683,7 @@ public class InputControlsView extends View {
     private void centreCursor() {
         if (gameW > 0) { curX = gameLeft + gameW / 2f; curY = gameTop + gameH / 2f; }
         else if (getWidth() > 0) { curX = getWidth() / 2f; curY = getHeight() / 2f; }
+        updateCursorView();
     }
 
     public float getCursorX() { return curX; }
@@ -713,6 +714,7 @@ public class InputControlsView extends View {
             float[] p = InputSink.pointerInView();
             if (p != null) { curX = p[0]; curY = p[1]; }
         }
+        updateCursorView();
         invalidate();
     }
 
@@ -725,6 +727,7 @@ public class InputControlsView extends View {
     public void setPhysicalMouse(boolean present) {
         if (present == physicalMouse) return;
         physicalMouse = present;
+        updateCursorView();
         invalidate();
     }
 
@@ -735,6 +738,7 @@ public class InputControlsView extends View {
     public void setCursorHidden(boolean hidden) {
         if (hidden == cursorHidden) return;
         cursorHidden = hidden;
+        updateCursorView();
         invalidate();
     }
 
@@ -751,7 +755,9 @@ public class InputControlsView extends View {
         curX = Math.max(minX, Math.min(maxX, x));
         curY = Math.max(minY, Math.min(maxY, y));
         InputSink.sendCursorPos(curX * renderScale, curY * renderScale);
-        invalidate();   // the arrow is drawn here; the gamepad path has no touch to trigger a redraw
+        // The arrow moves; the gamepad path has no touch to trigger a redraw.
+        if (cursorView != null) updateCursorView();
+        else invalidate();
     }
 
     /** A quick click of a mouse button where the cursor is. */
@@ -778,15 +784,59 @@ public class InputControlsView extends View {
     }
 
     private void drawCursor(Canvas c) {
+        drawArrow(c, curX, curY);
+    }
+
+    private final Path arrowPath = new Path();
+
+    private void drawArrow(Canvas c, float x, float y) {
         float s = getResources().getDisplayMetrics().density, w = 17 * s / 1.5f, h = 25 * s / 1.5f;
-        Path p = new Path();
-        p.moveTo(curX, curY);
-        p.lineTo(curX + w, curY + h * 0.85f);
-        p.lineTo(curX + w * 0.55f, curY + h - w * 0.28f);
-        p.lineTo(curX + w * 0.15f, curY + h);
+        Path p = arrowPath;
+        p.rewind();
+        p.moveTo(x, y);
+        p.lineTo(x + w, y + h * 0.85f);
+        p.lineTo(x + w * 0.55f, y + h - w * 0.28f);
+        p.lineTo(x + w * 0.15f, y + h);
         p.close();
         c.drawPath(p, curStroke);
         c.drawPath(p, curFill);
+    }
+
+    /**
+     * The arrow as a small view of its own above the controls (the game's overlay adds it): a cursor
+     * move then only changes its translation, instead of redrawing every on-screen control on each
+     * finger movement. Without it (the controls editor) the arrow is drawn in onDraw as before.
+     */
+    private View cursorView;
+
+    public View createCursorView() {
+        final float s = getResources().getDisplayMetrics().density;
+        cursorView = new View(getContext()) {
+            @Override protected void onDraw(@NonNull Canvas c) {
+                drawArrow(c, 2 * s, 2 * s);   // a little margin for the outline
+            }
+        };
+        cursorView.setWillNotDraw(false);
+        updateCursorView();
+        return cursorView;
+    }
+
+    /** Arrow size in px, for the cursor view's layout. */
+    public int cursorViewSize() {
+        return (int) Math.ceil(30 * getResources().getDisplayMetrics().density);
+    }
+
+    private boolean cursorShown() {
+        return !isEditMode && !mouseLocked && !cursorHidden && curX >= 0 && (physicalMouse || hasMouseElement());
+    }
+
+    private void updateCursorView() {
+        if (cursorView == null) return;
+        float s = getResources().getDisplayMetrics().density;
+        cursorView.setTranslationX(curX - 2 * s);
+        cursorView.setTranslationY(curY - 2 * s);
+        int vis = cursorShown() ? VISIBLE : INVISIBLE;
+        if (cursorView.getVisibility() != vis) cursorView.setVisibility(vis);
     }
 
     // ============================== legacy bindings ==============================

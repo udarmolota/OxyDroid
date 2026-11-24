@@ -64,6 +64,12 @@ public class NativeGameOverlay extends FrameLayout
         controls.setInstanceName(instanceName);   // before layout: the layout is read on the first size change
         controls.setRenderScale(1f);              // the cursor is sent as a fraction of the screen
         addView(controls, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        // The arrow above the controls, moved by translation (InputControlsView.createCursorView).
+        int arrow = controls.cursorViewSize();
+        View cursor = controls.createCursorView();
+        cursor.setClickable(false);
+        cursor.setFocusable(false);
+        addView(cursor, new LayoutParams(arrow, arrow));
         if (PLAYER_HANDLES_INPUT) controls.setVisibility(GONE);
         // Physical mouse, as GameActivity: Android's own pointer is hidden so it does not double up with
         // the overlay's cursor, which stays the single visible one. The overlay covers the whole game,
@@ -517,7 +523,9 @@ public class NativeGameOverlay extends FrameLayout
             controls.setMouseLocked(locked);
             controls.setPhysicalMouse(!mice.isEmpty());
             logMouseState(locked, mice);
-            ui.postDelayed(this, 150);
+            // Twice a second: often enough for the lock and a plugged mouse, and not a steady load on
+            // the UI thread during play (it was every 150 ms).
+            ui.postDelayed(this, 500);
         }
     };
 
