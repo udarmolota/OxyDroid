@@ -88,6 +88,11 @@ static DeviceFns g_trampolines;
 
 void* vkshim_open_custom_loader(const char* driver_path);   // driver.c
 
+// The game runs on a driver of the player's choice (OXYDROID_VULKAN_DRIVER), and whether that driver has
+// given it a swapchain yet: see custom_driver_failed.
+static bool g_custom_driver;
+static atomic_bool g_swapchain_ever_created;
+
 static void load_real(void)
 {
     static atomic_bool done;
@@ -96,6 +101,7 @@ static void load_real(void)
     // OXYDROID_VULKAN_DRIVER: another driver than the phone's, through a private loader (driver.c).
     const char* driver = getenv("OXYDROID_VULKAN_DRIVER");
     void* lib = driver && driver[0] ? vkshim_open_custom_loader(driver) : NULL;
+    g_custom_driver = lib != NULL;
     if (driver && driver[0] && !lib)
         LOG("custom driver: not used, the phone's own driver runs the game");
     if (!lib)
@@ -633,6 +639,33 @@ typedef struct
     bool mutable_srgb;
 } SwapchainVariant;
 
+// A driver of the player's choice that cannot give the game a single swapchain leaves it running with a
+// black screen: sound and controls work, no frame is shown, and the memory grows (PanVK on a Mali-G615,
+// 5 GB in a minute, 2026-11-26). The game ends instead, after a note for the launcher, which then sets the
+// instance back to the phone's own driver and says why (NativeEngine.driverFailedFlag). Only before the
+// first swapchain the driver made, and not for a lost or out-of-date surface, which any driver can have:
+// a swapchain failing later, on a resize, does not end a game in progress.
+static void custom_driver_failed(VkResult r)
+{
+    if (!g_custom_driver || atomic_load(&g_swapchain_ever_created))
+        return;
+    if (r == VK_ERROR_SURFACE_LOST_KHR || r == VK_ERROR_OUT_OF_DATE_KHR || r == VK_ERROR_NATIVE_WINDOW_IN_USE_KHR)
+        return;
+    const char* flag = getenv("OXYDROID_DRIVER_FAILED_FLAG");
+    FILE* f = flag && flag[0] ? fopen(flag, "w") : NULL;
+    if (!f)
+    {
+        LOG("custom driver: it gives no swapchain (%d), and there is no note for the launcher: the game goes on", r);
+        return;
+    }
+    const char* driver = getenv("OXYDROID_VULKAN_DRIVER");
+    fprintf(f, "%s\n%d\n", driver ? driver : "", r);
+    fclose(f);
+    LOG("custom driver: it gives no swapchain (%d), the game would show nothing: ending it, the launcher goes back"
+        " to the phone's own driver", r);
+    _exit(0);
+}
+
 static VkResult swapchain_variants(DeviceFns* f, VkDevice device, const VkSwapchainCreateInfoKHR* info,
                                    const VkAllocationCallbacks* alloc, VkSwapchainKHR* swapchain, VkResult original)
 {
@@ -682,6 +715,7 @@ static VkResult swapchain_variants(DeviceFns* f, VkDevice device, const VkSwapch
     if (!kept)
     {
         LOG("swapchain: no variant works either");
+        custom_driver_failed(original);
         return original;
     }
     LOG("swapchain: using the variant '%s', swapchain 0x%llx", kept_name, (unsigned long long)kept);
@@ -707,6 +741,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL shim_CreateSwapchainKHR(VkDevice device, c
         info->presentMode, info->imageUsage, info->clipped);
     if (r < 0)
         r = swapchain_variants(f, device, info, alloc, swapchain, r);
+    if (r == VK_SUCCESS)
+        atomic_store(&g_swapchain_ever_created, true);
     return r;
 }
 

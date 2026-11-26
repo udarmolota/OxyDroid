@@ -84,6 +84,14 @@ public final class NativeEngine {
         return new File(new File(instance.getGamePath(), "native_engine"), "restart_requested");
     }
 
+    /**
+     * The note vkshim leaves when the Vulkan driver picked for the instance could not give the game a
+     * swapchain (no picture) and it ended the game: the driver's path, then the Vulkan result.
+     */
+    public static File driverFailedFlag(GameInstance instance) {
+        return new File(new File(instance.getGamePath(), "native_engine"), "driver_failed");
+    }
+
     /** Where the crossplay sign-in leaves the Steam ticket for the game (read once, then deleted). */
     public static File steamTicketFile(GameInstance instance) {
         return new File(new File(instance.getGamePath(), "native_engine"), "steam_ticket.bin");
@@ -166,6 +174,11 @@ public final class NativeEngine {
         //noinspection ResultOfMethodCallIgnored
         restart.delete();
         env.add("OXYDROID_RESTART_FLAG=" + restart.getAbsolutePath());
+        // Likewise the note of a Vulkan driver that showed no picture (vkshim, custom_driver_failed).
+        File driverFailed = driverFailedFlag(instance);
+        //noinspection ResultOfMethodCallIgnored
+        driverFailed.delete();
+        env.add("OXYDROID_DRIVER_FAILED_FLAG=" + driverFailed.getAbsolutePath());
         // Mods installed since the last start, switched on by the bridge (OniMods.markForEnable).
         env.add("OXYDROID_MODS_ENABLE=" + OniMods.enableList(instance.getUserDataDir()).getAbsolutePath());
 

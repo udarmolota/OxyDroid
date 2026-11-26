@@ -198,6 +198,7 @@ public class LauncherFragment extends Fragment {
         registerInstallerReceiver();
         refreshInstances();
         showNativeMonoFallbackOnce();
+        showDriverFailureOnce();
         maybeRestartGame();
     }
 
@@ -253,6 +254,39 @@ public class LauncherFragment extends Fragment {
             new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.native_mono_fallback_title)
                     .setMessage(getString(R.string.native_mono_fallback_message, gi.getName(), failure))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show();
+            return;   // one notice at a time
+        }
+    }
+
+    /**
+     * The Vulkan driver picked for an instance gave the game no swapchain, so the game showed nothing and
+     * vkshim ended it (NativeEngine.driverFailedFlag). The instance goes back to the phone's own driver,
+     * and the player learns why, once.
+     */
+    private void showDriverFailureOnce() {
+        for (GameInstance gi : GameInstanceManager.requireSingleton().getInstances()) {
+            File flag = com.oxydroid.game.NativeEngine.driverFailedFlag(gi);
+            if (!flag.isFile()) continue;
+            String path = "";
+            try {
+                String text = new String(java.nio.file.Files.readAllBytes(flag.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+                path = text.split("\n", 2)[0].trim();
+            } catch (Exception ignored) { }
+            //noinspection ResultOfMethodCallIgnored
+            flag.delete();
+            com.oxydroid.InstanceSettings is = gi.settings();
+            String so = is.getVulkanDriverSo();
+            String label = path.isEmpty() ? so : new File(path).getName();
+            for (com.oxydroid.LauncherPreferences.VulkanDriverOption o : com.oxydroid.LauncherPreferences.VULKAN_DRIVERS)
+                if (o.soName.equals(so) && !so.isEmpty()) label = o.label;
+            is.setVulkanDriverSo(com.oxydroid.LauncherPreferences.SYSTEM_VULKAN_DRIVER_SO);
+            com.oxydroid.LauncherLog.line("vulkan driver " + label + " gave " + gi.getName()
+                    + " no swapchain: the game was ended, the instance is back on the System driver");
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.driver_failed_title)
+                    .setMessage(getString(R.string.driver_failed_message, label, gi.getName()))
                     .setPositiveButton(android.R.string.ok, null)
                     .show();
             return;   // one notice at a time

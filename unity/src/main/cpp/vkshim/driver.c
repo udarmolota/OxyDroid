@@ -10,11 +10,18 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "android_linker_ns.h"
 
 #define LOG(...) __android_log_print(ANDROID_LOG_INFO, "VKSHIM", __VA_ARGS__)
+
+// The hook has no liblog of its own (its namespace may not see it yet): it logs through this.
+static void hook_log(const char* message)
+{
+    LOG("%s", message);
+}
 
 void* vkshim_open_custom_loader(const char* driver_path)
 {
@@ -78,6 +85,24 @@ void* vkshim_open_custom_loader(const char* driver_path)
         return NULL;
     }
     hook_set(loader_dlopen_ext, driver);
+
+    // OXYDROID_SWAPCHAIN_LINEAR=1: the loader opens the driver through the hook, which adds CPU access to the
+    // gralloc usage of the swapchain buffers, so a Mali gralloc allocates them uncompressed (driver_hook.c).
+    const char* linear = getenv("OXYDROID_SWAPCHAIN_LINEAR");
+    if (linear && !strcmp(linear, "1"))
+    {
+        void (*hook_wrap)(void*, void*, void (*)(const char*)) =
+            (void (*)(void*, void*, void (*)(const char*)))dlsym(hook, "vkdriverhook_wrap");
+        if (hook_wrap)
+        {
+            hook_wrap(hook, dlsym(driver, "HMI"), hook_log);
+            LOG("custom driver: swapchain buffers with CPU access (OXYDROID_SWAPCHAIN_LINEAR=1)");
+        }
+        else
+        {
+            LOG("custom driver: OXYDROID_SWAPCHAIN_LINEAR=1 ignored, the hook has no vkdriverhook_wrap");
+        }
+    }
 
     void* loader = linkernsbypass_namespace_dlopen_unique("/system/lib64/libvulkan.so", NULL, RTLD_GLOBAL | RTLD_NOW, ns);
     if (!loader)
