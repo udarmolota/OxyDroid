@@ -118,7 +118,7 @@ In the cloud: %2$s
     <string name="vk_compat_off">Off</string>
     <string name="vk_compat_hint">Turn it on if the picture freezes on the logo or in the menu while the game keeps running. The picture is the same; Unity builds each frame differently. Takes effect at the next launch.</string>
     <string name="engine_native_renderer_note">The native engine always renders with Vulkan directly.</string>
-    <string name="engine_native_driver_note">The native engine uses the phone\'s own Vulkan driver.</string>
+    <string name="engine_native_driver_note">System runs the phone\'s own Vulkan driver. Turnip builds are for Adreno GPUs only, PanVK for the Mali-G57; if the game does not start with one, go back to System.</string>
     <string name="haptic_label">Vibrate on button press</string>
     <string name="audio_label">Game sound</string>
     <string name="show_fps_label">Show performance stats: FPS, CPU, GPU, memory, heat (top)</string>

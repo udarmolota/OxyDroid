@@ -189,6 +189,7 @@ public final class NativeEngine {
             steamTicketFile(instance).delete();
         }
         int displayMode = graphicsSettings(context, instance.settings(), env);
+        addVulkanDriver(context, instance.settings(), env);
         addUserEnvironment(context, instance.settings(), env);
         com.oxydroid.LauncherLog.line("native engine environment: " + launchSummary(env));
         VideoPatch.restore(gameDir);   // clips an earlier test build made unreadable
@@ -321,6 +322,23 @@ public final class NativeEngine {
                 token = VULKAN_DRIVER + "=" + vulkanDriverPath(context, token.substring(eq + 1));
             env.add(token);
         }
+    }
+
+    /**
+     * The Vulkan driver picked in the instance settings (Video): a bundled Turnip build or the imported
+     * one, through vkshim's private loader (OXYDROID_VULKAN_DRIVER). System adds nothing. An
+     * OXYDROID_VULKAN_DRIVER in the environment field comes after this one and wins.
+     */
+    private static void addVulkanDriver(Context context, com.oxydroid.InstanceSettings is, List<String> env) {
+        String so = is.getVulkanDriverSo();
+        if (so == null || so.isEmpty()) return;
+        String value = com.oxydroid.C.deps.CUSTOM_DRIVER_FILENAME.equals(so) ? "custom" : so;
+        if (value.equals("custom") && !com.oxydroid.CustomDriverInstaller.isInstalled()) {
+            Log.w(TAG, "vulkan driver: custom picked but none imported, the phone's own driver runs");
+            return;
+        }
+        env.add(VULKAN_DRIVER + "=" + vulkanDriverPath(context, value));
+        Log.i(TAG, "vulkan driver: " + so);
     }
 
     /** OXYDROID_FAKE_MALI=1 in the instance's environment field (see prepare). */

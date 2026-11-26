@@ -2,7 +2,9 @@ package com.oxydroid;
 
 public class C {
 
-    public static final String STORAGE_PROVIDER_AUTHORITY = "com.oxydroid.STORAGE_PROVIDER_AUTHORITY";
+    // From the package name, as the manifest's ${applicationId}: the debug build is com.oxydroid.nativeunity,
+    // and a fixed "com.oxydroid" here sent Manage storage to the release app's provider (or to none).
+    public static final String STORAGE_PROVIDER_AUTHORITY = BuildConfig.APPLICATION_ID + ".STORAGE_PROVIDER_AUTHORITY";
 
     public static class deps {
         public static final String ROOT = "dependencies";
@@ -18,7 +20,10 @@ public class C {
         //        ARM64 glibc/ that referenced only itself. Checked two ways before removal: no
         //        reference anywhere in the code, and no DT_NEEDED on them from any bundled library.
         //        Recompressed at xz -9e on the way (4.7 MB of the 7.4 MB saved is that alone).
-        public static final int BUNDLE_VERSION = 1;
+        //   v2 = + libvulkan_panvk_frist370.so: FristOneRR PanVK v3.7.0 (Mesa 27.0.0-devel, kbase,
+        //        built for Mali-G57), github.com/FristOneRR/FristOneRR-Panvk-Driver release v3.7.0,
+        //        library SHA-256 e6e92930…a6eda12801; with its Mesa licence as LICENSE-PanVK-FristOneRR.txt.
+        public static final int BUNDLE_VERSION = 2;
         // x86_64 game libs (libgcc_s.so.1, libstdc++, the X11 client libs, etc.)
         public static final String LIBS_LINUX_X86_64 = ROOT + "/linux-x86_64";
         // Android ARM64 renderer libs — all in one flat directory

@@ -567,14 +567,16 @@ public class SettingsFragment extends Fragment {
                 ? R.id.rb_zink_zfa : R.id.rb_mobileglues);
         rendererLocked = false;
         for (int i = 0; i < rgRenderer.getChildCount(); i++) rgRenderer.getChildAt(i).setEnabled(!nativeEngine);
-        // The driver import stays live: the native engine can test an imported driver
-        // (OXYDROID_VULKAN_DRIVER=custom in the environment field).
-        for (int id : new int[]{ R.id.spinner_vulkan_driver, R.id.btn_recommend_driver,
+        // The driver picker and the driver import stay live: the native engine runs on the picked driver
+        // through vkshim's private loader (NativeEngine.addVulkanDriver). The recommendation is the
+        // emulated engines' and stays off.
+        for (int id : new int[]{ R.id.btn_recommend_driver,
                 R.id.sw_etc2, R.id.sw_shader_cache, R.id.sw_compat_mode }) {
             View v = view.findViewById(id);
             if (v != null) v.setEnabled(!nativeEngine);
         }
-        view.findViewById(R.id.tv_native_renderer_note).setVisibility(nativeEngine ? View.VISIBLE : View.GONE);
+        // The renderer chooser is hidden (layout), so its note is too.
+        view.findViewById(R.id.tv_native_renderer_note).setVisibility(View.GONE);
         view.findViewById(R.id.tv_native_driver_note).setVisibility(nativeEngine ? View.VISIBLE : View.GONE);
         boolean weakGpu = nativeEngine && com.oxydroid.GpuInfo.query().isWeakForNativeEngine();
         view.findViewById(R.id.tv_engine_weak_gpu_note).setVisibility(weakGpu ? View.VISIBLE : View.GONE);

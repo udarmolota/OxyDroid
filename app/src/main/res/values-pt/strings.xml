@@ -122,7 +122,7 @@ Na nuvem: %2$s
     <string name="vk_compat_off">Desligada</string>
     <string name="vk_compat_hint">Ligue se a imagem congelar no logo ou no menu enquanto o jogo continua. A imagem é a mesma; o Unity monta cada quadro de outro jeito. Vale a partir do próximo início.</string>
     <string name="engine_native_renderer_note">O motor nativo sempre renderiza diretamente com Vulkan.</string>
-    <string name="engine_native_driver_note">O motor nativo usa o driver Vulkan do próprio celular.</string>
+    <string name="engine_native_driver_note">System usa o driver Vulkan do próprio celular. As versões do Turnip são só para GPUs Adreno, e o PanVK para a Mali-G57; se o jogo não abrir com uma, volte para System.</string>
     <string name="haptic_label">Vibrar ao tocar um botão</string>
     <string name="audio_label">Som do jogo</string>
     <string name="show_fps_label">Mostrar desempenho: FPS, CPU, GPU, memória, temperatura (em cima)</string>

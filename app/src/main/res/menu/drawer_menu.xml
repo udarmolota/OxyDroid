@@ -7,8 +7,8 @@
             android:id="@+id/action_install_instance"
             android:icon="@drawable/mt_icon_add"
             android:title="@string/nav_new_instance" />
-        <!-- Custom Vulkan driver: hidden, the native engine uses the phone's own driver. The id
-             stays for LauncherActivity. -->
+        <!-- Custom Vulkan driver: hidden here; the import opens from the instance settings (Video →
+             Upload your custom driver), next to the driver picker. The id stays for LauncherActivity. -->
         <item
             android:id="@+id/action_custom_driver"
             android:icon="@drawable/mt_icon_settings"

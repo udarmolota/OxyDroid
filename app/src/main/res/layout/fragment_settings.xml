@@ -122,13 +122,13 @@
     </com.google.android.material.card.MaterialCardView>
 
     <!-- ============================ VIDEO (renderer + driver) ============================ -->
-    <!-- HIDDEN: the renderer and the Vulkan driver are the emulated engines' settings, and the game
-         runs on the native engine only. Ids kept for SettingsFragment. -->
+    <!-- Shown for the Vulkan driver picker and the driver import (the native engine runs on the picked
+         driver). The renderer chooser and the driver recommendation are the emulated engines' and stay
+         hidden; their ids are kept for SettingsFragment. -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
-        android:visibility="gone"
         app:cardCornerRadius="14dp"
         app:cardElevation="2dp">
 
@@ -138,8 +138,8 @@
           android:orientation="vertical"
           android:padding="16dp">
 
-        <!-- The renderer and the Vulkan driver belong to the emulated engines; the native engine uses
-             neither. Folded to the header until tapped (SettingsFragment.setVideoOpen). -->
+        <!-- The renderer belongs to the emulated engines; the Vulkan driver picker serves the native
+             engine too (NativeEngine.addVulkanDriver). Folded to the header until tapped (SettingsFragment.setVideoOpen). -->
         <TextView
             android:id="@+id/tv_video_header"
             style="@style/AppTheme.CardHeader"
@@ -164,13 +164,15 @@
             android:layout_height="wrap_content"
             android:text="@string/renderer"
             android:textAppearance="?attr/textAppearanceTitleSmall"
-            android:layout_marginBottom="4dp" />
+            android:layout_marginBottom="4dp"
+            android:visibility="gone" />
 
         <RadioGroup
             android:id="@+id/rg_renderer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            android:visibility="gone">
 
           <RadioButton
               android:id="@+id/rb_zink_zfa"
@@ -229,6 +231,7 @@
             android:id="@+id/btn_recommend_driver"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             android:text="@string/driver_recommend"
             android:textSize="14dp" />
 

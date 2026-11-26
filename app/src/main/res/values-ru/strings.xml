@@ -117,7 +117,7 @@
     <string name="vk_compat_off">Выключена</string>
     <string name="vk_compat_hint">Включи, если картинка застывает на логотипе или в меню, а игра при этом идёт. Картинка та же, Unity по-другому собирает кадр. Действует со следующего запуска.</string>
     <string name="engine_native_renderer_note">Нативный движок всегда рисует напрямую через Vulkan.</string>
-    <string name="engine_native_driver_note">Нативный движок использует системный драйвер Vulkan.</string>
+    <string name="engine_native_driver_note">System — родной драйвер Vulkan телефона. Сборки Turnip только для Adreno, PanVK — для Mali-G57; если игра с ними не запускается, верните System.</string>
     <string name="haptic_label">Вибрация при нажатии кнопок</string>
     <string name="audio_label">Звук в игре</string>
     <string name="show_fps_label">Показывать нагрузку: FPS, процессор, видеочип, память, нагрев (вверху)</string>

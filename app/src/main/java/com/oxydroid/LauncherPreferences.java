@@ -62,6 +62,10 @@ public class LauncherPreferences {
         // = Adreno 610). The newer v25 freedreno builds black-screen on these; this is the build
         // that worked on old Adreno in Zomdroid.
         new VulkanDriverOption("vulkan.ad06XX.so",           "Turnip Adreno 6xx (legacy)"),
+        // PanVK (Mesa's Vulkan driver for Mali) on the Android kbase kernel driver: FristOneRR v3.7.0,
+        // Mesa 27.0.0-devel, built for the Mali-G57 (bundle v2, C.deps). Not for CSF Malis (G615 and
+        // newer), which need a CSF build.
+        new VulkanDriverOption("libvulkan_panvk_frist370.so", "PanVK Mali-G57 (FristOneRR v3.7.0)"),
         // User-supplied driver imported via App settings → "Import custom Vulkan driver".
         // The .so is stored in the deps dir as custom_driver.so; pick this to use it.
         new VulkanDriverOption(C.deps.CUSTOM_DRIVER_FILENAME, "Custom driver (imported)")
