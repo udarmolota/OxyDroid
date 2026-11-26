@@ -8,7 +8,8 @@
 //
 // With OXYDROID_SWAPCHAIN_LINEAR=1 (driver.c calls vkdriverhook_wrap) the copy gets this library instead
 // of the driver: its HMI opens the driver's and hands the loader the driver's device with one change, the
-// gralloc usage the driver asks for its swapchain buffers gets CPU read and write added. A Mali gralloc
+// gralloc usage the driver asks for its swapchain buffers (both ways the loader asks, see image_format2)
+// gets CPU read and write added. A Mali gralloc
 // then allocates them uncompressed instead of AFBC, which PanVK builds on MediaTek phones cannot import
 // (GetMemoryFdPropertiesKHR failed, VK_ERROR_INVALID_EXTERNAL_HANDLE on every swapchain; TECNO LJ7 with a
 // Mali-G615, 2026-11-26).
@@ -17,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#define VK_USE_PLATFORM_ANDROID_KHR
 #include <vulkan/vulkan.h>
 
 #define EXPORT __attribute__((visibility("default"), used))
@@ -99,14 +101,19 @@ static PFN_Usage34 g_usage4;
 
 static void log_usage(int version, uint64_t before, uint64_t after)
 {
-    // Once per version: the loader asks for every swapchain.
+    // Once per way of asking (0: AHardwareBuffer usage in vkGetPhysicalDeviceImageFormatProperties2, 1-4: the
+    // vkGetSwapchainGrallocUsage queries): the loader asks for every swapchain.
     static int logged[5];
-    if (!g_log || version < 1 || version > 4 || logged[version])
+    if (!g_log || version < 0 || version > 4 || logged[version])
         return;
     logged[version] = 1;
     char line[160];
-    snprintf(line, sizeof(line), "swapchain gralloc usage (query %d): 0x%llx -> 0x%llx, with CPU access", version,
-             (unsigned long long)before, (unsigned long long)after);
+    if (version == 0)
+        snprintf(line, sizeof(line), "swapchain AHardwareBuffer usage: 0x%llx -> 0x%llx, with CPU access",
+                 (unsigned long long)before, (unsigned long long)after);
+    else
+        snprintf(line, sizeof(line), "swapchain gralloc usage (query %d): 0x%llx -> 0x%llx, with CPU access", version,
+                 (unsigned long long)before, (unsigned long long)after);
     g_log(line);
 }
 
@@ -160,11 +167,59 @@ static VKAPI_ATTR VkResult VKAPI_CALL usage4(VkDevice device, const void* info, 
     return r;
 }
 
+// Since Android 14 the loader asks the driver for the swapchain buffers' usage this way first, as
+// AHardwareBuffer usage in the reply of vkGetPhysicalDeviceImageFormatProperties2, and calls the
+// vkGetSwapchainGrallocUsage queries above only for a driver without it (PanVK has it: on Android 16 none
+// of them was called, 2026-11-26). The AHardwareBuffer CPU bits are the same as gralloc's.
+static PFN_vkGetPhysicalDeviceImageFormatProperties2 g_image_format2;
+static PFN_vkGetPhysicalDeviceImageFormatProperties2 g_image_format2_khr;
+
+static void add_cpu_to_ahb_usage(VkImageFormatProperties2* props, int version)
+{
+    for (VkBaseOutStructure* s = props ? (VkBaseOutStructure*)props->pNext : NULL; s; s = s->pNext)
+    {
+        if (s->sType != VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID)
+            continue;
+        VkAndroidHardwareBufferUsageANDROID* ahb = (VkAndroidHardwareBufferUsageANDROID*)s;
+        uint64_t before = ahb->androidHardwareBufferUsage;
+        ahb->androidHardwareBufferUsage |= CPU_READ | CPU_WRITE;
+        log_usage(version, before, ahb->androidHardwareBufferUsage);
+    }
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL image_format2(VkPhysicalDevice gpu, const VkPhysicalDeviceImageFormatInfo2* info,
+                                                    VkImageFormatProperties2* props)
+{
+    VkResult r = g_image_format2(gpu, info, props);
+    if (r == VK_SUCCESS)
+        add_cpu_to_ahb_usage(props, 0);
+    return r;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL image_format2_khr(VkPhysicalDevice gpu, const VkPhysicalDeviceImageFormatInfo2* info,
+                                                        VkImageFormatProperties2* props)
+{
+    VkResult r = g_image_format2_khr(gpu, info, props);
+    if (r == VK_SUCCESS)
+        add_cpu_to_ahb_usage(props, 0);
+    return r;
+}
+
 // The driver's entry point for a name, or the wrapper standing in for it.
 static PFN_vkVoidFunction wrap_usage_query(const char* name, PFN_vkVoidFunction fn)
 {
     if (!fn || !name)
         return fn;
+    if (!strcmp(name, "vkGetPhysicalDeviceImageFormatProperties2"))
+    {
+        g_image_format2 = (PFN_vkGetPhysicalDeviceImageFormatProperties2)fn;
+        return (PFN_vkVoidFunction)image_format2;
+    }
+    if (!strcmp(name, "vkGetPhysicalDeviceImageFormatProperties2KHR"))
+    {
+        g_image_format2_khr = (PFN_vkGetPhysicalDeviceImageFormatProperties2)fn;
+        return (PFN_vkVoidFunction)image_format2_khr;
+    }
     if (!strcmp(name, "vkGetSwapchainGrallocUsageANDROID"))
     {
         g_usage1 = (PFN_Usage1)fn;
